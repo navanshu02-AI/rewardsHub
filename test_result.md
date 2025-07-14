@@ -152,15 +152,18 @@ backend:
 
   - task: "Rewards Catalog Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented rewards catalog with filtering by category and reward type. Includes sample rewards seeding functionality."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: Rewards catalog management working excellently. POST /admin/seed-rewards successfully seeds 5 sample rewards with diverse categories and types. GET /rewards returns all rewards with proper structure. Filtering by category and reward_type works correctly (tested electronics category and physical_product type). All reward fields properly structured with required data types."
 
   - task: "Recommendation Engine"
     implemented: true
