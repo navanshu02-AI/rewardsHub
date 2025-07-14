@@ -1,0 +1,128 @@
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import axios from 'axios';
+
+const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
+const API = `${BACKEND_URL}/api/v1`;
+
+interface User {
+  id: string;
+  email: string;
+  first_name: string;
+  last_name: string;
+  role: string;
+  department?: string;
+  company?: string;
+  employee_id?: string;
+  location?: string;
+  avatar_url?: string;
+  points_balance: number;
+  total_points_earned: number;
+  recognition_count: number;
+  preferences: Record<string, any>;
+  created_at: string;
+  is_active: boolean;
+}
+
+interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
+  register: (userData: any) => Promise<{ success: boolean; error?: string }>;
+  logout: () => void;
+  updateUserPreferences: (preferences: any) => Promise<{ success: boolean; error?: string }>;
+  loading: boolean;
+  isAuthenticated: boolean;
+}
+
+const AuthContext = createContext<AuthContextType | undefined>(undefined);
+
+interface AuthProviderProps {
+  children: ReactNode;
+}
+
+export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
+  const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
+
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchUserProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [token]);
+
+  const fetchUserProfile = async () => {
+    try {
+      const response = await axios.get(`${API}/users/me`);
+      setUser(response.data);
+    } catch (error) {
+      console.error('Error fetching user profile:', error);
+      logout();
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const login = async (email: string, password: string) => {
+    try {
+      const response = await axios.post(`${API}/auth/login`, { email, password });
+      const { access_token } = response.data;
+      localStorage.setItem('token', access_token);
+      setToken(access_token);
+      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Login failed' };
+    }
+  };
+
+  const register = async (userData: any) => {
+    try {
+      const response = await axios.post(`${API}/auth/register`, userData);
+      return { success: true, data: response.data };
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Registration failed' };
+    }
+  };
+
+  const logout = () => {
+    localStorage.removeItem('token');
+    setToken(null);
+    setUser(null);
+    delete axios.defaults.headers.common['Authorization'];
+  };
+
+  const updateUserPreferences = async (preferences: any) => {
+    try {
+      const response = await axios.put(`${API}/users/me/preferences`, preferences);
+      setUser(response.data);
+      return { success: true };
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Update failed' };
+    }
+  };
+
+  return (
+    <AuthContext.Provider value={{
+      user,
+      login,
+      register,
+      logout,
+      updateUserPreferences,
+      loading,
+      isAuthenticated: !!token
+    }}>
+      {children}
+    </AuthContext.Provider>
+  );
+};
+
+export const useAuth = () => {
+  const context = useContext(AuthContext);
+  if (!context) {
+    throw new Error('useAuth must be used within an AuthProvider');
+  }
+  return context;
+};

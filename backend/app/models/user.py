@@ -1,0 +1,90 @@
+from pydantic import BaseModel, Field, EmailStr
+from typing import List, Optional, Dict, Any
+from datetime import datetime
+import uuid
+from app.models.enums import UserRole
+
+class UserPreferences(BaseModel):
+    categories: List[str] = Field(default_factory=list)
+    price_range: Dict[str, float] = Field(default_factory=lambda: {"min": 0, "max": 50000})
+    interests: List[str] = Field(default_factory=list)
+    gift_occasions: List[str] = Field(default_factory=list)
+    reward_types: List[str] = Field(default_factory=list)
+    preferred_brands: List[str] = Field(default_factory=list)
+    delivery_preferences: Dict[str, Any] = Field(default_factory=lambda: {
+        "preferred_delivery_time": "business_hours",
+        "address_type": "office"
+    })
+    notification_preferences: Dict[str, bool] = Field(default_factory=lambda: {
+        "email_notifications": True,
+        "recognition_alerts": True,
+        "recommendation_updates": True,
+        "achievement_reminders": True
+    })
+
+class User(BaseModel):
+    id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    email: EmailStr
+    password_hash: str
+    first_name: str
+    last_name: str
+    role: UserRole = UserRole.EMPLOYEE
+    department: Optional[str] = None
+    company: Optional[str] = None
+    employee_id: Optional[str] = None
+    manager_id: Optional[str] = None
+    location: Optional[str] = None
+    joining_date: Optional[datetime] = None
+    avatar_url: Optional[str] = None
+    points_balance: int = 0
+    total_points_earned: int = 0
+    recognition_count: int = 0
+    preferences: Dict[str, Any] = Field(default_factory=dict)
+    purchase_history: List[str] = Field(default_factory=list)
+    created_at: datetime = Field(default_factory=datetime.utcnow)
+    updated_at: datetime = Field(default_factory=datetime.utcnow)
+    is_active: bool = True
+
+class UserCreate(BaseModel):
+    email: EmailStr
+    password: str
+    first_name: str
+    last_name: str
+    department: Optional[str] = None
+    company: Optional[str] = None
+
+class UserUpdate(BaseModel):
+    first_name: Optional[str] = None
+    last_name: Optional[str] = None
+    department: Optional[str] = None
+    company: Optional[str] = None
+    employee_id: Optional[str] = None
+    location: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+class UserResponse(BaseModel):
+    id: str
+    email: EmailStr
+    first_name: str
+    last_name: str
+    role: UserRole
+    department: Optional[str]
+    company: Optional[str]
+    employee_id: Optional[str]
+    location: Optional[str]
+    avatar_url: Optional[str]
+    points_balance: int
+    total_points_earned: int
+    recognition_count: int
+    preferences: Dict[str, Any]
+    created_at: datetime
+    is_active: bool
+
+class UserLogin(BaseModel):
+    email: EmailStr
+    password: str
+
+class Token(BaseModel):
+    access_token: str
+    token_type: str
+    expires_in: int
