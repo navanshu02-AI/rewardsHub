@@ -406,11 +406,15 @@ const Dashboard = () => {
   const { user } = useAuth();
   const [recommendations, setRecommendations] = useState([]);
   const [rewards, setRewards] = useState([]);
+  const [partners, setPartners] = useState([]);
+  const [users, setUsers] = useState([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     fetchRecommendations();
     fetchRewards();
+    fetchPartners();
+    fetchUsers();
   }, []);
 
   const fetchRecommendations = async () => {
@@ -433,6 +437,24 @@ const Dashboard = () => {
     }
   };
 
+  const fetchPartners = async () => {
+    try {
+      const response = await axios.get(`${API}/ecommerce/partners`);
+      setPartners(response.data);
+    } catch (error) {
+      console.error('Error fetching partners:', error);
+    }
+  };
+
+  const fetchUsers = async () => {
+    try {
+      const response = await axios.get(`${API}/admin/users`);
+      setUsers(response.data);
+    } catch (error) {
+      console.error('Error fetching users:', error);
+    }
+  };
+
   const seedRewards = async () => {
     try {
       await axios.post(`${API}/admin/seed-rewards`);
@@ -440,6 +462,19 @@ const Dashboard = () => {
       alert('Sample rewards added successfully!');
     } catch (error) {
       console.error('Error seeding rewards:', error);
+    }
+  };
+
+  const assignPoints = async (userId, points) => {
+    try {
+      await axios.post(`${API}/admin/assign-points/${userId}`, null, {
+        params: { points }
+      });
+      fetchUsers();
+      alert(`Successfully assigned ${points} points!`);
+    } catch (error) {
+      console.error('Error assigning points:', error);
+      alert('Error assigning points');
     }
   };
 
@@ -505,6 +540,74 @@ const Dashboard = () => {
         </div>
       </div>
 
+      {/* Admin Controls */}
+      <div className="mb-8 bg-gray-50 p-6 rounded-lg">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Controls</h2>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <button
+              onClick={seedRewards}
+              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-4"
+            >
+              Seed Sample Rewards
+            </button>
+          </div>
+          <div>
+            <h3 className="font-semibold mb-2">Assign Points to Users:</h3>
+            <div className="space-y-2">
+              {users.map((user) => (
+                <div key={user.id} className="flex items-center justify-between bg-white p-3 rounded">
+                  <span className="text-sm">
+                    {user.first_name} {user.last_name} ({user.email}) - {user.points_balance} pts
+                  </span>
+                  <button
+                    onClick={() => assignPoints(user.id, 1000)}
+                    className="bg-green-600 text-white px-3 py-1 rounded text-sm hover:bg-green-700"
+                  >
+                    +1000 Points
+                  </button>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* E-commerce Partners */}
+      <div className="mb-8">
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Shop with Our Partners</h2>
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          {partners.map((partner) => (
+            <div key={partner.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
+              <img
+                src={partner.logo_url}
+                alt={partner.name}
+                className="w-full h-40 object-cover rounded-t-lg"
+              />
+              <div className="p-4">
+                <h3 className="font-semibold text-gray-900 mb-2">{partner.name}</h3>
+                <p className="text-sm text-gray-600 mb-3">{partner.description}</p>
+                <div className="flex flex-wrap gap-1 mb-3">
+                  {partner.categories.map((category) => (
+                    <span key={category} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
+                      {category}
+                    </span>
+                  ))}
+                </div>
+                <a
+                  href={partner.url}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-block bg-blue-600 text-white px-4 py-2 rounded text-sm hover:bg-blue-700 transition-colors"
+                >
+                  Visit Store
+                </a>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
       {/* Recommendations */}
       {recommendations.rewards && recommendations.rewards.length > 0 && (
         <div className="mb-8">
@@ -525,7 +628,7 @@ const Dashboard = () => {
                   <p className="text-sm text-gray-600 mt-1">{reward.description}</p>
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-                    <span className="text-sm text-gray-500">${reward.price}</span>
+                    <span className="text-sm text-gray-500">₹{reward.price.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>
@@ -538,14 +641,6 @@ const Dashboard = () => {
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
           <h2 className="text-2xl font-bold text-gray-900">All Rewards</h2>
-          {rewards.length === 0 && (
-            <button
-              onClick={seedRewards}
-              className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
-            >
-              Add Sample Rewards
-            </button>
-          )}
         </div>
         {rewards.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -566,7 +661,7 @@ const Dashboard = () => {
                   <p className="text-sm text-gray-600 mb-3">{reward.description}</p>
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-                    <span className="text-sm text-gray-500">${reward.price}</span>
+                    <span className="text-sm text-gray-500">₹{reward.price.toLocaleString('en-IN')}</span>
                   </div>
                 </div>
               </div>
