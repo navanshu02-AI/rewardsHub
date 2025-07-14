@@ -380,18 +380,18 @@ async def seed_rewards():
             "category": PreferenceCategory.ELECTRONICS,
             "reward_type": RewardType.PHYSICAL_PRODUCT,
             "points_required": 500,
-            "price": 99.99,
+            "price": 8299.00,
             "image_url": "https://images.unsplash.com/photo-1583394838336-acd977736f90",
             "availability": 50,
             "tags": ["electronics", "audio", "wireless"]
         },
         {
-            "title": "Gift Card - Amazon",
-            "description": "$50 Amazon gift card",
+            "title": "Amazon.in Gift Card",
+            "description": "₹4,000 Amazon India gift card",
             "category": PreferenceCategory.GIFT_CARDS,
             "reward_type": RewardType.GIFT_CARD,
             "points_required": 250,
-            "price": 50.00,
+            "price": 4000.00,
             "image_url": "https://images.unsplash.com/photo-1543465077-db45d34aa2ab",
             "availability": 100,
             "tags": ["gift card", "shopping", "amazon"]
@@ -402,7 +402,7 @@ async def seed_rewards():
             "category": PreferenceCategory.FITNESS,
             "reward_type": RewardType.PHYSICAL_PRODUCT,
             "points_required": 750,
-            "price": 149.99,
+            "price": 12499.00,
             "image_url": "https://images.unsplash.com/photo-1544956481-5449dc85c935",
             "availability": 30,
             "tags": ["fitness", "health", "wearable"]
@@ -413,7 +413,7 @@ async def seed_rewards():
             "category": PreferenceCategory.FOOD,
             "reward_type": RewardType.EXPERIENCE,
             "points_required": 300,
-            "price": 60.00,
+            "price": 4999.00,
             "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
             "availability": 20,
             "tags": ["food", "experience", "coffee"]
@@ -424,10 +424,32 @@ async def seed_rewards():
             "category": PreferenceCategory.EDUCATION,
             "reward_type": RewardType.DIGITAL_PRODUCT,
             "points_required": 400,
-            "price": 79.99,
+            "price": 6649.00,
             "image_url": "https://images.unsplash.com/photo-1513475382585-d06e58bcb0e0",
             "availability": 100,
             "tags": ["education", "learning", "online"]
+        },
+        {
+            "title": "Flipkart Gift Voucher",
+            "description": "₹3,000 Flipkart gift voucher",
+            "category": PreferenceCategory.GIFT_CARDS,
+            "reward_type": RewardType.GIFT_CARD,
+            "points_required": 200,
+            "price": 3000.00,
+            "image_url": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
+            "availability": 100,
+            "tags": ["gift card", "shopping", "flipkart"]
+        },
+        {
+            "title": "FirstCry Shopping Voucher",
+            "description": "₹2,500 FirstCry voucher for baby products",
+            "category": PreferenceCategory.GIFT_CARDS,
+            "reward_type": RewardType.GIFT_CARD,
+            "points_required": 150,
+            "price": 2500.00,
+            "image_url": "https://images.unsplash.com/photo-1555827684-08f3bb29a7bc",
+            "availability": 50,
+            "tags": ["gift card", "shopping", "firstcry", "baby"]
         }
     ]
     
@@ -436,6 +458,69 @@ async def seed_rewards():
         await db.rewards.insert_one(reward.dict())
     
     return {"message": "Sample rewards seeded successfully"}
+
+@api_router.post("/admin/assign-points/{user_id}")
+async def assign_points(user_id: str, points: int):
+    """Admin endpoint to assign points to a user"""
+    try:
+        # Update user's points balance
+        result = await db.users.update_one(
+            {"id": user_id},
+            {"$inc": {"points_balance": points}, "$set": {"updated_at": datetime.utcnow()}}
+        )
+        
+        if result.matched_count == 0:
+            raise HTTPException(status_code=404, detail="User not found")
+        
+        # Get updated user
+        updated_user = await db.users.find_one({"id": user_id})
+        
+        return {
+            "message": f"Successfully assigned {points} points to user",
+            "user_id": user_id,
+            "new_balance": updated_user["points_balance"]
+        }
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=str(e))
+
+@api_router.get("/admin/users")
+async def get_all_users():
+    """Admin endpoint to get all users"""
+    users = await db.users.find({}, {"password_hash": 0}).to_list(100)
+    return [{"id": user["id"], "email": user["email"], "first_name": user["first_name"], 
+             "last_name": user["last_name"], "points_balance": user["points_balance"]} 
+            for user in users]
+
+@api_router.get("/ecommerce/partners")
+async def get_ecommerce_partners():
+    """Get list of e-commerce partners"""
+    partners = [
+        {
+            "id": "amazon_in",
+            "name": "Amazon India",
+            "url": "https://www.amazon.in",
+            "logo_url": "https://images.unsplash.com/photo-1523474253046-8cd2748b5fd2",
+            "description": "India's largest online marketplace",
+            "categories": ["Electronics", "Books", "Fashion", "Home"]
+        },
+        {
+            "id": "flipkart",
+            "name": "Flipkart",
+            "url": "https://www.flipkart.com",
+            "logo_url": "https://images.unsplash.com/photo-1556742049-0cfed4f6a45d",
+            "description": "India's leading e-commerce platform",
+            "categories": ["Electronics", "Fashion", "Home", "Books"]
+        },
+        {
+            "id": "firstcry",
+            "name": "FirstCry",
+            "url": "https://www.firstcry.com",
+            "logo_url": "https://images.unsplash.com/photo-1555827684-08f3bb29a7bc",
+            "description": "India's largest online store for baby and kids products",
+            "categories": ["Baby Care", "Toys", "Fashion", "Health"]
+        }
+    ]
+    return partners
 
 # Include the router in the main app
 app.include_router(api_router)
