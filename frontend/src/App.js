@@ -414,13 +414,19 @@ const Dashboard = () => {
   const [rewards, setRewards] = useState([]);
   const [partners, setPartners] = useState([]);
   const [users, setUsers] = useState([]);
+  const [recognitions, setRecognitions] = useState([]);
+  const [redemptions, setRedemptions] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [showRecognitionForm, setShowRecognitionForm] = useState(false);
+  const [showGiftForm, setShowGiftForm] = useState(false);
 
   useEffect(() => {
     fetchRecommendations();
     fetchRewards();
     fetchPartners();
     fetchUsers();
+    fetchRecognitions();
+    fetchRedemptions();
   }, []);
 
   const fetchRecommendations = async () => {
@@ -461,11 +467,29 @@ const Dashboard = () => {
     }
   };
 
+  const fetchRecognitions = async () => {
+    try {
+      const response = await axios.get(`${API}/recognition/received`);
+      setRecognitions(response.data);
+    } catch (error) {
+      console.error('Error fetching recognitions:', error);
+    }
+  };
+
+  const fetchRedemptions = async () => {
+    try {
+      const response = await axios.get(`${API}/redemptions`);
+      setRedemptions(response.data);
+    } catch (error) {
+      console.error('Error fetching redemptions:', error);
+    }
+  };
+
   const seedRewards = async () => {
     try {
       await axios.post(`${API}/admin/seed-rewards`);
       fetchRewards();
-      alert('Sample rewards added successfully!');
+      alert('Indian market rewards added successfully!');
     } catch (error) {
       console.error('Error seeding rewards:', error);
     }
@@ -484,6 +508,18 @@ const Dashboard = () => {
     }
   };
 
+  const redeemReward = async (rewardId) => {
+    try {
+      const response = await axios.post(`${API}/redeem`, { reward_id: rewardId });
+      alert(`Reward redeemed successfully! ${response.data.message}`);
+      fetchRedemptions();
+      // Refresh user data to update points
+      window.location.reload();
+    } catch (error) {
+      alert(error.response?.data?.detail || 'Error redeeming reward');
+    }
+  };
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -499,12 +535,12 @@ const Dashboard = () => {
           Welcome back, {user?.first_name}!
         </h1>
         <p className="mt-2 text-gray-600">
-          Your personalized rewards dashboard
+          Your personalized rewards and recognition dashboard
         </p>
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
             <div className="bg-blue-100 rounded-full p-3">
@@ -515,6 +551,19 @@ const Dashboard = () => {
             <div className="ml-4">
               <p className="text-2xl font-bold text-gray-900">{user?.points_balance || 0}</p>
               <p className="text-gray-600">Available Points</p>
+            </div>
+          </div>
+        </div>
+        <div className="bg-white p-6 rounded-lg shadow">
+          <div className="flex items-center">
+            <div className="bg-yellow-100 rounded-full p-3">
+              <svg className="w-6 h-6 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+              </svg>
+            </div>
+            <div className="ml-4">
+              <p className="text-2xl font-bold text-gray-900">{user?.total_points_earned || 0}</p>
+              <p className="text-gray-600">Total Earned</p>
             </div>
           </div>
         </div>
@@ -533,21 +582,47 @@ const Dashboard = () => {
         </div>
         <div className="bg-white p-6 rounded-lg shadow">
           <div className="flex items-center">
-            <div className="bg-purple-100 rounded-full p-3">
-              <svg className="w-6 h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" />
+            <div className="bg-red-100 rounded-full p-3">
+              <svg className="w-6 h-6 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
               </svg>
             </div>
             <div className="ml-4">
-              <p className="text-2xl font-bold text-gray-900">{recommendations.rewards?.length || 0}</p>
-              <p className="text-gray-600">Recommendations</p>
+              <p className="text-2xl font-bold text-gray-900">{user?.recognition_count || 0}</p>
+              <p className="text-gray-600">Recognitions</p>
             </div>
           </div>
         </div>
       </div>
 
-      {/* Admin Controls */}
+      {/* Quick Actions */}
       <div className="mb-8 bg-gray-50 p-6 rounded-lg">
+        <h2 className="text-xl font-bold text-gray-900 mb-4">Quick Actions</h2>
+        <div className="flex flex-wrap gap-4">
+          <button
+            onClick={() => setShowRecognitionForm(true)}
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Give Recognition
+          </button>
+          <button
+            onClick={() => setShowGiftForm(true)}
+            className="bg-green-600 text-white px-4 py-2 rounded hover:bg-green-700"
+          >
+            Recommend Gift
+          </button>
+          <button
+            onClick={() => window.location.href = '/preferences'}
+            className="bg-purple-600 text-white px-4 py-2 rounded hover:bg-purple-700"
+          >
+            Update Preferences
+          </button>
+        </div>
+      </div>
+
+      {/* Admin Controls */}
+      {user?.role === 'hr_admin' && (
+        <div className="mb-8 bg-gray-50 p-6 rounded-lg">
         <h2 className="text-xl font-bold text-gray-900 mb-4">Admin Controls</h2>
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div>
@@ -555,7 +630,7 @@ const Dashboard = () => {
               onClick={seedRewards}
               className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700 mr-4"
             >
-              Seed Sample Rewards
+              Seed Indian Market Rewards
             </button>
           </div>
           <div>
@@ -578,10 +653,11 @@ const Dashboard = () => {
           </div>
         </div>
       </div>
+      )}
 
       {/* E-commerce Partners */}
       <div className="mb-8">
-        <h2 className="text-2xl font-bold text-gray-900 mb-4">Shop with Our Partners</h2>
+        <h2 className="text-2xl font-bold text-gray-900 mb-4">Shop with Our Indian Partners</h2>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
           {partners.map((partner) => (
             <div key={partner.id} className="bg-white rounded-lg shadow hover:shadow-md transition-shadow">
@@ -619,7 +695,10 @@ const Dashboard = () => {
         <div className="mb-8">
           <div className="flex justify-between items-center mb-4">
             <h2 className="text-2xl font-bold text-gray-900">Recommended for You</h2>
-            <p className="text-sm text-gray-600">{recommendations.reason}</p>
+            <div className="text-right">
+              <p className="text-sm text-gray-600">{recommendations.reason}</p>
+              <p className="text-xs text-gray-500">Confidence: {Math.round(recommendations.confidence_score * 100)}%</p>
+            </div>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
             {recommendations.rewards.slice(0, 3).map((reward) => (
@@ -630,12 +709,31 @@ const Dashboard = () => {
                   className="w-full h-48 object-cover rounded-t-lg"
                 />
                 <div className="p-4">
+                  <div className="flex justify-between items-start mb-2">
                   <h3 className="font-semibold text-gray-900">{reward.title}</h3>
+                    {reward.brand && (
+                      <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                        {reward.brand}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-sm text-gray-600 mt-1">{reward.description}</p>
+                  {reward.original_price_inr && reward.original_price_inr > reward.price_inr && (
+                    <p className="text-xs text-red-600 mt-1">
+                      Save ₹{(reward.original_price_inr - reward.price_inr).toLocaleString('en-IN')}
+                    </p>
+                  )}
                   <div className="mt-4 flex justify-between items-center">
                     <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-                    <span className="text-sm text-gray-500">₹{reward.price.toLocaleString('en-IN')}</span>
+                    <span className="text-sm text-gray-500">₹{reward.price_inr.toLocaleString('en-IN')}</span>
                   </div>
+                  <button
+                    onClick={() => redeemReward(reward.id)}
+                    disabled={user?.points_balance < reward.points_required}
+                    className="w-full mt-3 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {user?.points_balance >= reward.points_required ? 'Redeem Now' : 'Insufficient Points'}
+                  </button>
                 </div>
               </div>
             ))}
@@ -646,7 +744,7 @@ const Dashboard = () => {
       {/* All Rewards */}
       <div className="mb-8">
         <div className="flex justify-between items-center mb-4">
-          <h2 className="text-2xl font-bold text-gray-900">All Rewards</h2>
+          <h2 className="text-2xl font-bold text-gray-900">Rewards Catalog</h2>
         </div>
         {rewards.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -660,22 +758,60 @@ const Dashboard = () => {
                 <div className="p-4">
                   <div className="flex justify-between items-start mb-2">
                     <h3 className="font-semibold text-gray-900">{reward.title}</h3>
-                    <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
-                      {reward.category.replace('_', ' ')}
-                    </span>
+                    <div className="flex flex-col items-end">
+                      <span className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded mb-1">
+                        {reward.category.replace('_', ' ')}
+                      </span>
+                      {reward.brand && (
+                        <span className="text-xs bg-gray-100 text-gray-600 px-2 py-1 rounded">
+                          {reward.brand}
+                        </span>
+                      )}
+                    </div>
                   </div>
                   <p className="text-sm text-gray-600 mb-3">{reward.description}</p>
+                  {reward.rating && (
+                    <div className="flex items-center mb-2">
+                      <div className="flex text-yellow-400">
+                        {[...Array(5)].map((_, i) => (
+                          <svg key={i} className={`w-4 h-4 ${i < Math.floor(reward.rating) ? 'fill-current' : 'text-gray-300'}`} viewBox="0 0 20 20">
+                            <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z"/>
+                          </svg>
+                        ))}
+                      </div>
+                      <span className="text-sm text-gray-500 ml-2">({reward.review_count})</span>
+                    </div>
+                  )}
+                  {reward.original_price_inr && reward.original_price_inr > reward.price_inr && (
+                    <div className="mb-2">
+                      <span className="text-sm text-gray-500 line-through">₹{reward.original_price_inr.toLocaleString('en-IN')}</span>
+                      <span className="text-sm text-red-600 ml-2">
+                        Save ₹{(reward.original_price_inr - reward.price_inr).toLocaleString('en-IN')}
+                      </span>
+                    </div>
+                  )}
                   <div className="flex justify-between items-center">
                     <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-                    <span className="text-sm text-gray-500">₹{reward.price.toLocaleString('en-IN')}</span>
+                    <span className="text-sm text-gray-500">₹{reward.price_inr.toLocaleString('en-IN')}</span>
                   </div>
+                  <div className="mt-2 text-xs text-gray-500">
+                    Delivery: {reward.delivery_time || '3-5 business days'}
+                  </div>
+                  <button
+                    onClick={() => redeemReward(reward.id)}
+                    disabled={user?.points_balance < reward.points_required || reward.availability <= 0}
+                    className="w-full mt-3 bg-blue-600 text-white py-2 rounded hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                  >
+                    {reward.availability <= 0 ? 'Out of Stock' : 
+                     user?.points_balance >= reward.points_required ? 'Redeem Now' : 'Insufficient Points'}
+                  </button>
                 </div>
               </div>
             ))}
           </div>
         ) : (
           <div className="text-center py-12">
-            <p className="text-gray-500">No rewards available yet. Add some sample rewards to get started!</p>
+            <p className="text-gray-500">No rewards available yet. Add some Indian market rewards to get started!</p>
           </div>
         )}
       </div>
@@ -687,14 +823,20 @@ const PreferencesPage = () => {
   const { user, updateUserPreferences } = useAuth();
   const [preferences, setPreferences] = useState({
     categories: [],
-    price_range: { min: 0, max: 1000 },
+    price_range: { min: 0, max: 50000 },
     interests: [],
     gift_occasions: [],
     reward_types: [],
+    preferred_brands: [],
+    delivery_preferences: {
+      preferred_delivery_time: "business_hours",
+      address_type: "office"
+    },
     notification_preferences: {
       email_notifications: true,
       recognition_alerts: true,
-      recommendation_updates: true
+      recommendation_updates: true,
+      achievement_reminders: true
     }
   });
   const [categories, setCategories] = useState([]);
@@ -769,12 +911,27 @@ const PreferencesPage = () => {
     });
   };
 
+  const handleBrandAdd = (brand) => {
+    if (brand.trim() && !preferences.preferred_brands.includes(brand.trim())) {
+      setPreferences({
+        ...preferences,
+        preferred_brands: [...preferences.preferred_brands, brand.trim()]
+      });
+    }
+  };
+
+  const handleBrandRemove = (brand) => {
+    setPreferences({
+      ...preferences,
+      preferred_brands: preferences.preferred_brands.filter(b => b !== brand)
+    });
+  };
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Preferences</h1>
         <p className="mt-2 text-gray-600">
-          Customize your experience to get personalized recommendations
+          Customize your experience to get personalized Indian market recommendations
         </p>
       </div>
 
@@ -799,11 +956,11 @@ const PreferencesPage = () => {
 
         {/* Price Range */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Price Range</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Price Range (INR)</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Price ($)
+                Minimum Price (₹)
               </label>
               <input
                 type="number"
@@ -817,7 +974,7 @@ const PreferencesPage = () => {
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maximum Price ($)
+                Maximum Price (₹)
               </label>
               <input
                 type="number"
@@ -884,6 +1041,112 @@ const PreferencesPage = () => {
           </div>
         </div>
 
+        {/* Preferred Brands */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Preferred Brands</h2>
+          <div className="mb-4">
+            <input
+              type="text"
+              placeholder="Add a preferred brand (press Enter)"
+              onKeyPress={(e) => {
+                if (e.key === 'Enter') {
+                  handleBrandAdd(e.target.value);
+                  e.target.value = '';
+                }
+              }}
+              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            {preferences.preferred_brands.map((brand) => (
+              <span
+                key={brand}
+                className="bg-green-100 text-green-800 px-3 py-1 rounded-full text-sm flex items-center"
+              >
+                {brand}
+                <button
+                  onClick={() => handleBrandRemove(brand)}
+                  className="ml-2 text-green-600 hover:text-green-800"
+                >
+                  ×
+                </button>
+              </span>
+            ))}
+          </div>
+        </div>
+
+        {/* Delivery Preferences */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Delivery Preferences</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferred Delivery Time
+              </label>
+              <select
+                value={preferences.delivery_preferences.preferred_delivery_time}
+                onChange={(e) => setPreferences({
+                  ...preferences,
+                  delivery_preferences: {
+                    ...preferences.delivery_preferences,
+                    preferred_delivery_time: e.target.value
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="business_hours">Business Hours (9 AM - 6 PM)</option>
+                <option value="evening">Evening (6 PM - 9 PM)</option>
+                <option value="weekend">Weekend</option>
+                <option value="anytime">Anytime</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Preferred Address Type
+              </label>
+              <select
+                value={preferences.delivery_preferences.address_type}
+                onChange={(e) => setPreferences({
+                  ...preferences,
+                  delivery_preferences: {
+                    ...preferences.delivery_preferences,
+                    address_type: e.target.value
+                  }
+                })}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="office">Office</option>
+                <option value="home">Home</option>
+              </select>
+            </div>
+          </div>
+        </div>
+
+        {/* Notification Preferences */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Notification Preferences</h2>
+          <div className="space-y-4">
+            {Object.entries(preferences.notification_preferences).map(([key, value]) => (
+              <label key={key} className="flex items-center">
+                <input
+                  type="checkbox"
+                  checked={value}
+                  onChange={(e) => setPreferences({
+                    ...preferences,
+                    notification_preferences: {
+                      ...preferences.notification_preferences,
+                      [key]: e.target.checked
+                    }
+                  })}
+                  className="mr-3"
+                />
+                <span className="capitalize">
+                  {key.replace(/_/g, ' ')}
+                </span>
+              </label>
+            ))}
+          </div>
+        </div>
         {/* Save Button */}
         <div className="flex justify-end">
           <button
