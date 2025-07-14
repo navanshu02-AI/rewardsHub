@@ -10,7 +10,7 @@ import time
 from typing import Dict, Any, Optional
 
 # Configuration
-BACKEND_URL = "https://5bd755cb-8dfc-4f2c-a17b-2ac9828a6e03.preview.emergentagent.com/api"
+BACKEND_URL = "http://localhost:8000/api"
 TEST_USER_EMAIL = "sarah.johnson@techcorp.com"
 TEST_USER_PASSWORD = "SecurePass123!"
 TEST_USER_FIRST_NAME = "Sarah"
