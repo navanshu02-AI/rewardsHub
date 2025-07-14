@@ -122,15 +122,18 @@ backend:
 
   - task: "User Profile Management"
     implemented: true
-    working: "NA"
+    working: true
     file: "/app/backend/server.py"
     stuck_count: 0
     priority: "high"
-    needs_retesting: true
+    needs_retesting: false
     status_history:
       - working: "NA"
         agent: "main"
         comment: "Implemented user profile endpoints for viewing and updating user information. Includes role-based access control."
+      - working: true
+        agent: "testing"
+        comment: "✅ TESTED: User profile management working perfectly. GET /users/me returns complete user profile with all required fields. PUT /users/me successfully updates user information (department, company, etc.) and persists changes. Authentication required for all profile operations. Response data integrity verified."
 
   - task: "User Preferences System"
     implemented: true
