@@ -21,6 +21,9 @@ class Settings(BaseSettings):
     # CORS
     BACKEND_CORS_ORIGINS: list = ["*"]
     
+    # Gemini API Key
+    GEMINI_API_KEY: str = os.getenv("GEMINI_API_KEY", "AIzaSyB5hcA_Y78KZklASumIaoT2UNsLJHSuIwU")
+    
     class Config:
         case_sensitive = True
         env_file = ".env"
