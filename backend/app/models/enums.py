@@ -2,7 +2,10 @@ from enum import Enum
 
 class UserRole(str, Enum):
     EMPLOYEE = "employee"
+    MANAGER = "manager"
     HR_ADMIN = "hr_admin"
+    EXECUTIVE = "executive"
+    C_LEVEL = "c_level"
 
 class PreferenceCategory(str, Enum):
     ELECTRONICS = "electronics"

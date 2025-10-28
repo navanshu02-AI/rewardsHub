@@ -1,4 +1,4 @@
-from pydantic import BaseModel, Field, EmailStr
+from pydantic import BaseModel, Field, EmailStr, validator
 from typing import List, Optional, Dict, Any
 from datetime import datetime
 import uuid
@@ -52,6 +52,8 @@ class UserCreate(BaseModel):
     last_name: str
     department: Optional[str] = None
     company: Optional[str] = None
+    manager_id: Optional[str] = None
+    role: Optional[UserRole] = None
 
 class UserUpdate(BaseModel):
     first_name: Optional[str] = None
@@ -71,6 +73,7 @@ class UserResponse(BaseModel):
     department: Optional[str]
     company: Optional[str]
     employee_id: Optional[str]
+    manager_id: Optional[str]
     location: Optional[str]
     avatar_url: Optional[str]
     points_balance: int
@@ -79,6 +82,21 @@ class UserResponse(BaseModel):
     preferences: Dict[str, Any]
     created_at: datetime
     is_active: bool
+    role_metadata: Dict[str, Any] = Field(default_factory=dict)
+
+    @validator('role_metadata', always=True)
+    def _populate_role_metadata(cls, value, values):
+        role = values.get('role')
+        metadata = {
+            'is_manager': role == UserRole.MANAGER,
+            'is_hr_admin': role == UserRole.HR_ADMIN,
+            'is_executive': role in {UserRole.EXECUTIVE, UserRole.C_LEVEL},
+        }
+        role_value = role.value if isinstance(role, UserRole) else role
+        metadata['role_value'] = role_value
+        if isinstance(value, dict) and value:
+            metadata.update(value)
+        return metadata
 
 class UserLogin(BaseModel):
     email: EmailStr
