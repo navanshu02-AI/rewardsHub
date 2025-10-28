@@ -3,6 +3,7 @@ from enum import Enum
 class UserRole(str, Enum):
     EMPLOYEE = "employee"
     HR_ADMIN = "hr_admin"
+    EXECUTIVE = "executive"
 
 class PreferenceCategory(str, Enum):
     ELECTRONICS = "electronics"

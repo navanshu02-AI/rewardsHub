@@ -1,8 +1,10 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
 import uuid
-from app.models.enums import RecognitionType, AchievementType
+from typing import List, Optional
+
+from pydantic import BaseModel, Field
+
+from app.models.enums import AchievementType, RecognitionType
 
 class Recognition(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -18,15 +20,19 @@ class Recognition(BaseModel):
     status: str = "pending"
     created_at: datetime = Field(default_factory=datetime.utcnow)
     approved_at: Optional[datetime] = None
+    requires_approval: bool = False
+    deduct_from_giver: bool = True
 
 class RecognitionCreate(BaseModel):
     to_user_id: Optional[str] = None
     to_user_ids: Optional[List[str]] = None
     message: str
-    points_awarded: int
+    points_awarded: int = Field(gt=0)
     recognition_type: RecognitionType
     achievement_type: Optional[AchievementType] = None
     is_public: bool = True
+    require_approval: bool = False
+    deduct_from_giver: Optional[bool] = None
 
 class Achievement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
