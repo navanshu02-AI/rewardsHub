@@ -102,6 +102,108 @@ uvicorn main:app --reload
 ```
 The backend API will be available at `http://127.0.0.1:8000`, and interactive documentation can be found at `http://127.0.0.1:8000/docs`.
 
+### Seed role hierarchies & reporting lines
+
+Recognition permissions depend on accurate reporting structures. After the database connection is configured:
+
+1. Normalise legacy role labels and ensure the `manager_id` field exists by running the helper script:
+
+   ```bash
+   cd backend
+   python -m scripts.backfill_roles_and_managers
+   ```
+
+2. Seed at least one hierarchy that covers every role. The snippet below upserts an HR admin, a people manager, and two employees so the test matrix has real data:
+
+   ```bash
+   cd backend
+   python - <<'PY'
+   import asyncio
+   from datetime import datetime
+
+   from app.database.connection import connect_to_mongo, close_mongo_connection, get_database
+   from app.models.enums import UserRole
+
+   async def seed_hierarchy() -> None:
+       await connect_to_mongo()
+       db = await get_database()
+       timestamp = datetime.utcnow()
+       users = [
+           {
+               "id": "hr-1",
+               "email": "hr.admin@example.com",
+               "password_hash": "not-used-in-seed",
+               "first_name": "Harper",
+               "last_name": "Rowe",
+               "role": UserRole.HR_ADMIN.value,
+               "points_balance": 0,
+               "total_points_earned": 0,
+               "recognition_count": 0,
+               "created_at": timestamp,
+               "updated_at": timestamp,
+               "is_active": True,
+           },
+           {
+               "id": "manager-1",
+               "email": "maria.manager@example.com",
+               "password_hash": "not-used-in-seed",
+               "first_name": "Maria",
+               "last_name": "Diaz",
+               "role": UserRole.MANAGER.value,
+               "manager_id": "hr-1",
+               "department": "Engineering",
+               "points_balance": 0,
+               "total_points_earned": 0,
+               "recognition_count": 0,
+               "created_at": timestamp,
+               "updated_at": timestamp,
+               "is_active": True,
+           },
+           {
+               "id": "employee-1",
+               "email": "eli.employee@example.com",
+               "password_hash": "not-used-in-seed",
+               "first_name": "Eli",
+               "last_name": "Nguyen",
+               "role": UserRole.EMPLOYEE.value,
+               "manager_id": "manager-1",
+               "department": "Engineering",
+               "points_balance": 0,
+               "total_points_earned": 0,
+               "recognition_count": 0,
+               "created_at": timestamp,
+               "updated_at": timestamp,
+               "is_active": True,
+           },
+           {
+               "id": "employee-2",
+               "email": "pat.peer@example.com",
+               "password_hash": "not-used-in-seed",
+               "first_name": "Pat",
+               "last_name": "Peer",
+               "role": UserRole.EMPLOYEE.value,
+               "manager_id": "manager-1",
+               "department": "Engineering",
+               "points_balance": 0,
+               "total_points_earned": 0,
+               "recognition_count": 0,
+               "created_at": timestamp,
+               "updated_at": timestamp,
+               "is_active": True,
+           },
+       ]
+
+       for user in users:
+           await db.users.update_one({"id": user["id"]}, {"$set": user}, upsert=True)
+
+       await close_mongo_connection()
+
+   asyncio.run(seed_hierarchy())
+   PY
+   ```
+
+3. Repeat the pattern for additional departments or executives as needed. The backend tests expect `manager_id` values to be populated for managers and their reports.
+
 ### 4. Frontend Setup
 
 The frontend is a React application.
@@ -132,14 +234,61 @@ If deploying via **GitHub Actions**, you should:
 1.  Store your key as a **Repository Secret** in your GitHub settings (e.g., `GEMINI_API_KEY`).
 2.  Pass this secret to your deployment environment as an environment variable.
 
+## 🧭 Role-Based Recognition Matrix
+
+| Role                | Peer scope eligibility                                      | Direct report scope                      | Company-wide scope | Points control                 |
+| ------------------- | ----------------------------------------------------------- | ---------------------------------------- | ------------------ | ------------------------------ |
+| Employee            | ✅ Same `manager_id` or, when unset, same `department`       | ❌                                        | ❌                  | Fixed at 10 points             |
+| Manager             | ✅ Same `manager_id` or `department` fallback                | ✅ Direct reports only                    | ❌                  | Fixed at 10 points             |
+| HR Admin            | ✅                                                            | ✅                                        | ✅                  | Custom 10–10,000 points        |
+| Executive / C-Level | ✅                                                            | ✅                                        | ✅                  | Custom 10–10,000 points        |
+
+### Recognition API payload examples
+
+**Peer recognition from an employee**
+
+```json
+POST /api/v1/recognitions
+{
+  "to_user_id": "employee-2",
+  "message": "Jumped in to unblock the release train!",
+  "scope": "peer",
+  "recognition_type": "peer_to_peer"
+}
+```
+
+**Company-wide recognition from HR with custom points**
+
+```json
+POST /api/v1/recognitions
+{
+  "to_user_id": "employee-1",
+  "message": "Delivered the customer summit flawlessly",
+  "scope": "global",
+  "recognition_type": "company_wide",
+  "points_awarded": 250
+}
+```
+
+The backend enforces the matrix above and responds with HTTP 403 whenever a user selects a scope outside their role or targets a teammate who is not eligible.
+
 ## 🧪 Running Tests
 
-To run the backend test suite:
 ```bash
+# Backend role and balance rules
 cd backend
-# Make sure your virtual environment is active
-pytest
+pytest backend/tests
+
+# Frontend recognition modal interactions (watch mode disabled for CI)
+cd ../frontend
+yarn test --watchAll=false
 ```
+
+Each command can be run independently; the backend suite mocks MongoDB while the frontend suite uses Jest and React Testing Library.
+
+## ✅ Release QA
+
+Manual regression steps for the recognition permissions live in [`docs/manual-qa-checklist.md`](docs/manual-qa-checklist.md). Run through the checklist before cutting a release to confirm that forbidden scenarios return HTTP 403 and that privileged roles can still complete positive recognition flows.
 
 ## 🤝 Contributing
 
