@@ -4,12 +4,14 @@ import axios from 'axios';
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
 
+export type UserRole = 'employee' | 'manager' | 'hr_admin' | 'executive' | 'c_level';
+
 interface User {
   id: string;
   email: string;
   first_name: string;
   last_name: string;
-  role: string;
+  role: UserRole;
   department?: string;
   company?: string;
   employee_id?: string;
@@ -31,6 +33,7 @@ interface AuthContextType {
   updateUserPreferences: (preferences: any) => Promise<{ success: boolean; error?: string }>;
   loading: boolean;
   isAuthenticated: boolean;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -44,16 +47,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
 
-  useEffect(() => {
-    if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchUserProfile();
-    } else {
-      setLoading(false);
+  const fetchUserProfile = React.useCallback(async (toggleLoading: boolean = true) => {
+    if (toggleLoading) {
+      setLoading(true);
     }
-  }, [token]);
-
-  const fetchUserProfile = async () => {
     try {
       const response = await axios.get(`${API}/users/me`);
       setUser(response.data);
@@ -61,9 +58,20 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       console.error('Error fetching user profile:', error);
       logout();
     } finally {
+      if (toggleLoading) {
+        setLoading(false);
+      }
+    }
+  }, []);
+
+  useEffect(() => {
+    if (token) {
+      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchUserProfile();
+    } else {
       setLoading(false);
     }
-  };
+  }, [token, fetchUserProfile]);
 
   const login = async (email: string, password: string) => {
     try {
@@ -112,7 +120,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       logout,
       updateUserPreferences,
       loading,
-      isAuthenticated: !!token
+      isAuthenticated: !!token,
+      refreshUser: () => fetchUserProfile(false)
     }}>
       {children}
     </AuthContext.Provider>
