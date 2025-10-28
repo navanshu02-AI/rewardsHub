@@ -52,3 +52,8 @@ class RecognitionType(str, Enum):
     COMPANY_WIDE = "company_wide"
     MILESTONE = "milestone"
     SPOT_AWARD = "spot_award"
+
+class RecognitionScope(str, Enum):
+    PEER = "peer"
+    REPORT = "report"
+    GLOBAL = "global"

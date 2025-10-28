@@ -5,6 +5,8 @@ import StatsCards from './StatsCards';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
+import RecognitionModal from '../Recognition/RecognitionModal';
+import RecognitionHistory from '../Recognition/RecognitionHistory';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -41,6 +43,8 @@ const Dashboard: React.FC = () => {
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
+  const [showRecognitionModal, setShowRecognitionModal] = useState(false);
+  const [historyRefreshToken, setHistoryRefreshToken] = useState<number>(Date.now());
 
   useEffect(() => {
     fetchData();
@@ -73,6 +77,12 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleRecognitionSuccess = () => {
+    setHistoryRefreshToken(Date.now());
+    setShowRecognitionModal(false);
+    void fetchData();
+  };
+
   const redeemReward = async (rewardId: string) => {
     try {
       const response = await axios.post(`${API}/rewards/redeem`, { reward_id: rewardId });
@@ -94,6 +104,11 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <RecognitionModal
+        isOpen={showRecognitionModal}
+        onClose={() => setShowRecognitionModal(false)}
+        onSuccess={handleRecognitionSuccess}
+      />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
           Welcome back, {user?.first_name}! 🇮🇳
@@ -105,10 +120,17 @@ const Dashboard: React.FC = () => {
 
       <StatsCards user={user} rewardsCount={rewards.length} />
       
-      <QuickActions onSeedRewards={seedRewards} />
+      <QuickActions
+        onSeedRewards={seedRewards}
+        onGiveRecognition={() => setShowRecognitionModal(true)}
+      />
+
+      <div className="mb-8">
+        <RecognitionHistory refreshToken={historyRefreshToken} />
+      </div>
 
       {recommendations && (
-        <RecommendationsSection 
+        <RecommendationsSection
           recommendations={recommendations} 
           onRedeemReward={redeemReward}
           userPoints={user?.points_balance || 0}
