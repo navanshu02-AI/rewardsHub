@@ -2,6 +2,7 @@ from fastapi import Depends, HTTPException, status
 from typing import Dict, Iterable, Set, Union
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.security import verify_token
+from app.models.enums import UserRole
 from app.models.user import User
 from app.models.enums import UserRole
 from app.services.auth_service import auth_service

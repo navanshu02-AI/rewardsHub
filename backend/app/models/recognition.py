@@ -1,5 +1,3 @@
-from pydantic import BaseModel, Field
-from typing import List, Optional
 from datetime import datetime
 import uuid
 from app.models.enums import RecognitionType, AchievementType, RecognitionScope, UserRole
