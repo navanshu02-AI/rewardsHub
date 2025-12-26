@@ -113,7 +113,7 @@ Recognition permissions depend on accurate reporting structures. After the datab
    python -m scripts.backfill_roles_and_managers
    ```
 
-2. Seed at least one hierarchy that covers every role. The snippet below upserts an HR admin, a people manager, and two employees so the test matrix has real data:
+2. Seed at least one hierarchy that covers every role. The snippet below upserts an HR admin, a people manager, and two employees so the test matrix has real data (check this):
 
    ```bash
    cd backend
