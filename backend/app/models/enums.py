@@ -2,8 +2,10 @@ from enum import Enum
 
 class UserRole(str, Enum):
     EMPLOYEE = "employee"
+    MANAGER = "manager"
     HR_ADMIN = "hr_admin"
     EXECUTIVE = "executive"
+    C_LEVEL = "c_level"
 
 class PreferenceCategory(str, Enum):
     ELECTRONICS = "electronics"
@@ -50,3 +52,8 @@ class RecognitionType(str, Enum):
     COMPANY_WIDE = "company_wide"
     MILESTONE = "milestone"
     SPOT_AWARD = "spot_award"
+
+class RecognitionScope(str, Enum):
+    PEER = "peer"
+    REPORT = "report"
+    GLOBAL = "global"

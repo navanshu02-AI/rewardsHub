@@ -6,6 +6,7 @@ import HomePage from './pages/HomePage';
 import AuthPage from './components/Auth/AuthPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import PreferencesPage from './components/Preferences/PreferencesPage';
+import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -32,6 +33,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <PreferencesPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/recognitions"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <RecognitionHistoryPage />
                 </ProtectedRoute>
               }
             />
