@@ -36,6 +36,8 @@ class User(BaseModel):
     location: Optional[str] = None
     joining_date: Optional[datetime] = None
     avatar_url: Optional[str] = None
+    reset_token_hash: Optional[str] = None
+    reset_token_expires_at: Optional[datetime] = None
     points_balance: int = 0
     total_points_earned: int = 0
     recognition_count: int = 0

@@ -4,6 +4,8 @@ import { AuthProvider } from './contexts/AuthContext';
 import NavBar from './components/Layout/NavBar';
 import HomePage from './pages/HomePage';
 import AuthPage from './components/Auth/AuthPage';
+import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
+import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
@@ -18,6 +20,8 @@ function App() {
           <Routes>
             <Route path="/" element={<HomePage />} />
             <Route path="/auth" element={<AuthPage />} />
+            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+            <Route path="/reset-password" element={<ResetPasswordPage />} />
             <Route
               path="/dashboard"
               element={

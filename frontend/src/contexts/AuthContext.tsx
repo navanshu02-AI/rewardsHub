@@ -29,6 +29,8 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
+  requestPasswordReset: (email: string) => Promise<{ success: boolean; resetToken?: string; message?: string; expiresAt?: string; error?: string }>;
+  resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => void;
   updateUserPreferences: (preferences: any) => Promise<{ success: boolean; error?: string }>;
   loading: boolean;
@@ -102,6 +104,32 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     delete axios.defaults.headers.common['Authorization'];
   };
 
+  const requestPasswordReset = async (email: string) => {
+    try {
+      const response = await axios.post(`${API}/auth/forgot-password`, { email });
+      return {
+        success: true,
+        resetToken: response.data?.reset_token,
+        message: response.data?.message,
+        expiresAt: response.data?.expires_at
+      };
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Unable to send reset email' };
+    }
+  };
+
+  const resetPassword = async (token: string, newPassword: string) => {
+    try {
+      const response = await axios.post(`${API}/auth/reset-password`, {
+        token,
+        new_password: newPassword
+      });
+      return { success: true, message: response.data?.message };
+    } catch (error: any) {
+      return { success: false, error: error.response?.data?.detail || 'Unable to reset password' };
+    }
+  };
+
   const updateUserPreferences = async (preferences: any) => {
     try {
       const response = await axios.put(`${API}/users/me/preferences`, preferences);
@@ -117,6 +145,8 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       user,
       login,
       register,
+      requestPasswordReset,
+      resetPassword,
       logout,
       updateUserPreferences,
       loading,

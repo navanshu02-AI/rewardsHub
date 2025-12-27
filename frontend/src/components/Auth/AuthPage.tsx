@@ -86,6 +86,17 @@ const AuthPage: React.FC = () => {
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Password"
               />
+              {isLogin && (
+                <div className="text-right mt-2">
+                  <button
+                    type="button"
+                    onClick={() => navigate('/forgot-password')}
+                    className="text-sm text-blue-600 hover:text-blue-500 font-medium transition-colors"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+              )}
             </div>
             {!isLogin && (
               <>

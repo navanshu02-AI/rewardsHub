@@ -12,6 +12,8 @@ class Settings(BaseSettings):
     SECRET_KEY: str = os.getenv("SECRET_KEY", "your-secret-key-here-change-in-production")
     ALGORITHM: str = "HS256"
     ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
+    PASSWORD_RESET_TOKEN_EXPIRE_MINUTES: int = 30
+    EXPOSE_RESET_TOKEN_IN_RESPONSE: bool = os.getenv("EXPOSE_RESET_TOKEN_IN_RESPONSE", "true").lower() == "true"
     
     # API
     API_V1_STR: str = "/api/v1"

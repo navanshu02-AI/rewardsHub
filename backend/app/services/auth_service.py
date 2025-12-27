@@ -1,13 +1,21 @@
+import hashlib
+import logging
+import secrets
+from datetime import datetime, timedelta
 from typing import Optional, Union
-from datetime import timedelta
+
 from fastapi import HTTPException, status
+
 from app.core.security import hash_password, verify_password, create_access_token
 from app.core.config import settings
+from app.models.auth import PasswordResetResponse
 from app.models.user import User, UserCreate, UserLogin, Token
 from app.models.enums import UserRole
 from app.database.connection import get_database
 
 PRIVILEGED_ROLE_ASSIGNERS = {UserRole.HR_ADMIN, UserRole.EXECUTIVE, UserRole.C_LEVEL}
+RESET_MESSAGE = "If that email exists in our system, we've sent password reset instructions."
+logger = logging.getLogger(__name__)
 
 def _coerce_role(role: Optional[Union[UserRole, str]]) -> Optional[UserRole]:
     if role is None:
@@ -100,6 +108,66 @@ class AuthService:
             token_type="bearer",
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
+
+    async def request_password_reset(self, email: str) -> PasswordResetResponse:
+        """Generate a password reset token for the given email."""
+        db = await get_database()
+        user = await db.users.find_one({"email": email})
+
+        # Always generate a token to avoid leaking which emails are registered
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        expires_at = datetime.utcnow() + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+
+        reset_token_to_return = None
+        if user:
+            await db.users.update_one(
+                {"email": email},
+                {
+                    "$set": {
+                        "reset_token_hash": token_hash,
+                        "reset_token_expires_at": expires_at,
+                        "updated_at": datetime.utcnow()
+                    }
+                }
+            )
+            if settings.EXPOSE_RESET_TOKEN_IN_RESPONSE:
+                reset_token_to_return = token
+                logger.info("Generated password reset token for %s: %s", email, token)
+        return PasswordResetResponse(
+            message=RESET_MESSAGE,
+            reset_token=reset_token_to_return,
+            expires_at=expires_at if reset_token_to_return else None
+        )
+
+    async def reset_password(self, token: str, new_password: str) -> dict:
+        """Reset the user's password using a valid reset token."""
+        db = await get_database()
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        user_data = await db.users.find_one({"reset_token_hash": token_hash})
+
+        if not user_data:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token"
+            )
+
+        expires_at = user_data.get("reset_token_expires_at")
+        if not expires_at or expires_at < datetime.utcnow():
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Invalid or expired reset token"
+            )
+
+        new_hash = hash_password(new_password)
+        await db.users.update_one(
+            {"id": user_data["id"]},
+            {
+                "$set": {"password_hash": new_hash, "updated_at": datetime.utcnow()},
+                "$unset": {"reset_token_hash": "", "reset_token_expires_at": ""}
+            }
+        )
+        return PasswordResetResponse(message="Password has been reset successfully")
     
     async def get_user_by_id(self, user_id: str) -> User:
         """Get user by ID"""
