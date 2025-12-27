@@ -13,8 +13,31 @@ PRIVILEGED_ROLES: Set[UserRole] = {UserRole.HR_ADMIN, UserRole.EXECUTIVE, UserRo
 MANAGERIAL_ROLES: Set[UserRole] = {UserRole.MANAGER}
 EXECUTIVE_ROLES: Set[UserRole] = {UserRole.EXECUTIVE, UserRole.C_LEVEL}
 
+ROLE_FALLBACKS: Dict[str, UserRole] = {
+    "admin": UserRole.HR_ADMIN,
+    "administrator": UserRole.HR_ADMIN,
+    "c_level": UserRole.C_LEVEL,
+    "executive": UserRole.EXECUTIVE,
+    "manager": UserRole.MANAGER,
+    "employee": UserRole.EMPLOYEE,
+}
+
 def _normalize_role(role: Union[UserRole, str]) -> UserRole:
-    return role if isinstance(role, UserRole) else UserRole(role)
+    if isinstance(role, UserRole):
+        return role
+
+    if isinstance(role, str):
+        normalized = role.strip().lower()
+        fallback = ROLE_FALLBACKS.get(normalized)
+        if fallback:
+            return fallback
+
+        try:
+            return UserRole(normalized)
+        except ValueError:
+            return UserRole.EMPLOYEE
+
+    return UserRole.EMPLOYEE
 
 def _ensure_role_membership(user: User, allowed_roles: Iterable[UserRole]) -> User:
     user_role = _normalize_role(user.role)
