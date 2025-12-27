@@ -43,7 +43,7 @@ const RewardsCatalog: React.FC<RewardsCatalogProps> = ({
   return (
     <div className="mb-8">
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Indian Rewards Catalog 🛍️</h2>
+        <h2 className="text-2xl font-bold text-gray-900">Rewards Catalog 🛍️</h2>
         <div className="text-sm text-gray-500">
           {rewards.length} rewards available
         </div>
@@ -68,7 +68,7 @@ const RewardsCatalog: React.FC<RewardsCatalogProps> = ({
             </svg>
           </div>
           <h3 className="text-lg font-medium text-gray-900 mb-2">No rewards available yet</h3>
-          <p className="text-gray-500">Add some Indian market rewards to get started!</p>
+          <p className="text-gray-500">Add rewards for your preferred regions to get started!</p>
         </div>
       )}
     </div>
