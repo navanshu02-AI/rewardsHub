@@ -1,4 +1,5 @@
 import React from 'react';
+import { useAuth } from '../../contexts/AuthContext';
 
 interface Reward {
   id: string;
@@ -41,16 +42,10 @@ const RewardCard: React.FC<RewardCardProps> = ({
   userPoints,
   isRecommended = false
 }) => {
-  const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-IN', {
-      style: 'currency',
-      currency: 'INR',
-      maximumFractionDigits: 0
-    }).format(amount);
-  };
+  const { currency, formatCurrency } = useAuth();
 
-  const currentPrice = reward.prices?.INR ?? 0;
-  const originalPrice = reward.original_prices?.INR;
+  const currentPrice = reward.prices?.[currency] ?? 0;
+  const originalPrice = reward.original_prices?.[currency];
 
   const canRedeem = userPoints >= reward.points_required && reward.availability > 0;
 

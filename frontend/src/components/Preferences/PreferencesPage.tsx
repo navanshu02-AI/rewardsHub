@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import RegionCurrencySelector from '../Common/RegionCurrencySelector';
+import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -40,7 +41,7 @@ const getCurrencySymbol = (currency: string) => {
 };
 
 const PreferencesPage: React.FC = () => {
-  const { user, updateUserPreferences } = useAuth();
+  const { user, updateUserPreferences, region, currency, formatCurrency, setRegionCurrency } = useAuth();
   const [preferences, setPreferences] = useState({
     categories: [] as string[],
     region: 'IN',
@@ -51,6 +52,8 @@ const PreferencesPage: React.FC = () => {
     gift_occasions: [] as string[],
     reward_types: [] as string[],
     preferred_brands: [] as string[],
+    region,
+    currency,
     delivery_preferences: {
       preferred_delivery_time: "business_hours",
       address_type: "office"
@@ -132,6 +135,13 @@ const PreferencesPage: React.FC = () => {
       };
     });
   };
+      setPreferences((prev) => ({ ...prev, ...user.preferences }));
+    }
+  }, [user]);
+
+  useEffect(() => {
+    setPreferences((prev) => ({ ...prev, region, currency }));
+  }, [region, currency]);
 
   const fetchCategories = async () => {
     try {
@@ -194,6 +204,15 @@ const PreferencesPage: React.FC = () => {
     });
   };
 
+  const handleRegionChange = (selectedRegion: string) => {
+    if (REGION_CONFIG[selectedRegion as keyof typeof REGION_CONFIG]) {
+      const newRegion = selectedRegion as keyof typeof REGION_CONFIG;
+      const newCurrency = REGION_CONFIG[newRegion].currency;
+      setPreferences((prev) => ({ ...prev, region: newRegion, currency: newCurrency }));
+      setRegionCurrency(newRegion, newCurrency);
+    }
+  };
+
   const addBrand = () => {
     if (newBrand.trim() && !preferences.preferred_brands.includes(newBrand.trim())) {
       setPreferences({
@@ -251,6 +270,26 @@ const PreferencesPage: React.FC = () => {
           <p className="mt-2 text-sm text-gray-500">
             Budget ranges adjust automatically based on your currency selection.
           </p>
+        <h1 className="text-3xl font-bold text-gray-900">Preferences {REGION_CONFIG[region].flag}</h1>
+        <p className="mt-2 text-gray-600">
+          Customize your experience to get localized recommendations, pricing, and rewards wherever you work.
+        </p>
+      </div>
+
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* Region & Currency */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Region & Currency</h2>
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <p className="text-sm text-gray-600">
+              Select where your team operates to see rewards priced in your local currency.
+            </p>
+            <RegionCurrencySelector
+              label="Primary region"
+              onChange={handleRegionChange}
+              align="right"
+            />
+          </div>
         </div>
 
         {/* Categories */}
@@ -278,6 +317,11 @@ const PreferencesPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Minimum Price ({getCurrencySymbol(preferences.currency)})
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Price Range ({currency})</h2>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">
+                Minimum Price
               </label>
               <input
                 type="number"
@@ -289,6 +333,7 @@ const PreferencesPage: React.FC = () => {
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Maximum Price ({getCurrencySymbol(preferences.currency)})
+                Maximum Price
               </label>
               <input
                 type="number"
@@ -302,6 +347,7 @@ const PreferencesPage: React.FC = () => {
             Current range: {getCurrencySymbol(preferences.currency)}
             {preferences.price_range.min.toLocaleString()} - {getCurrencySymbol(preferences.currency)}
             {preferences.price_range.max.toLocaleString()}
+            Current range: {formatCurrency(preferences.price_range.min, currency)} - {formatCurrency(preferences.price_range.max, currency)}
           </div>
         </div>
 
@@ -362,7 +408,7 @@ const PreferencesPage: React.FC = () => {
 
         {/* Preferred Brands */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Preferred Indian Brands</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Preferred Brands</h2>
           <div className="flex gap-2 mb-4">
             <input
               type="text"

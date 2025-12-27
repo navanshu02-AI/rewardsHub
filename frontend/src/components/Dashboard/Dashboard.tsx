@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import { useAuth } from '../../contexts/AuthContext';
+import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import StatsCards from './StatsCards';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
@@ -47,7 +47,7 @@ interface Recommendations {
 }
 
 const Dashboard: React.FC = () => {
-  const { user } = useAuth();
+  const { user, currency, region } = useAuth();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
@@ -56,13 +56,13 @@ const Dashboard: React.FC = () => {
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [currency]);
 
   const fetchData = async () => {
     try {
       const [recommendationsRes, rewardsRes] = await Promise.all([
-        axios.get(`${API}/recommendations`),
-        axios.get(`${API}/rewards`)
+        axios.get(`${API}/recommendations`, { params: { currency } }),
+        axios.get(`${API}/rewards`, { params: { currency } })
       ]);
       
       setRecommendations(recommendationsRes.data);
@@ -78,7 +78,7 @@ const Dashboard: React.FC = () => {
     try {
       await axios.post(`${API}/rewards/seed`);
       fetchData();
-      alert('Indian market rewards added successfully!');
+      alert('Regional rewards added successfully!');
     } catch (error) {
       console.error('Error seeding rewards:', error);
       alert('Error seeding rewards');
@@ -119,10 +119,10 @@ const Dashboard: React.FC = () => {
       />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.first_name}! 🇮🇳
+          Welcome back, {user?.first_name}! {REGION_CONFIG[region]?.flag}
         </h1>
         <p className="mt-2 text-gray-600">
-          Your personalized Indian rewards and recognition dashboard
+          Your personalized rewards and recognition dashboard tailored to your region
         </p>
       </div>
 
