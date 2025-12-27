@@ -15,11 +15,38 @@ interface RewardType {
   label: string;
 }
 
+const DEFAULT_BUDGET_RANGES: Record<string, { min: number; max: number }> = {
+  INR: { min: 0, max: 50000 },
+  USD: { min: 0, max: 600 },
+  EUR: { min: 0, max: 550 },
+};
+
+const REGION_CURRENCY_MAP: Record<string, string> = {
+  IN: 'INR',
+  US: 'USD',
+  EU: 'EUR',
+};
+
+const getCurrencySymbol = (currency: string) => {
+  switch (currency) {
+    case 'USD':
+      return '$';
+    case 'EUR':
+      return '€';
+    case 'INR':
+    default:
+      return '₹';
+  }
+};
+
 const PreferencesPage: React.FC = () => {
   const { user, updateUserPreferences } = useAuth();
   const [preferences, setPreferences] = useState({
     categories: [] as string[],
-    price_range: { min: 0, max: 50000 },
+    region: 'IN',
+    currency: 'INR',
+    price_range: DEFAULT_BUDGET_RANGES['INR'],
+    budget_ranges: DEFAULT_BUDGET_RANGES,
     interests: [] as string[],
     gift_occasions: [] as string[],
     reward_types: [] as string[],
@@ -45,9 +72,66 @@ const PreferencesPage: React.FC = () => {
     fetchCategories();
     fetchRewardTypes();
     if (user?.preferences) {
-      setPreferences({ ...preferences, ...user.preferences });
+      const userBudgetRanges = { ...DEFAULT_BUDGET_RANGES, ...(user.preferences.budget_ranges || {}) };
+      const derivedCurrency = (user.preferences.currency || REGION_CURRENCY_MAP[user.preferences.region] || 'INR') as keyof typeof DEFAULT_BUDGET_RANGES;
+      const derivedPriceRange = user.preferences.price_range || userBudgetRanges[derivedCurrency] || DEFAULT_BUDGET_RANGES[derivedCurrency];
+
+      setPreferences((prev) => ({
+        ...prev,
+        ...user.preferences,
+        budget_ranges: userBudgetRanges,
+        currency: derivedCurrency,
+        price_range: derivedPriceRange,
+      }));
     }
   }, [user]);
+
+  const handleRegionChange = (regionCode: string) => {
+    setPreferences((prev) => {
+      const mappedCurrency = REGION_CURRENCY_MAP[regionCode] || prev.currency;
+      const mappedRange = prev.budget_ranges[mappedCurrency] || DEFAULT_BUDGET_RANGES[mappedCurrency] || prev.price_range;
+
+      return {
+        ...prev,
+        region: regionCode,
+        currency: mappedCurrency,
+        price_range: mappedRange,
+        budget_ranges: {
+          ...prev.budget_ranges,
+          [mappedCurrency]: mappedRange,
+        },
+      };
+    });
+  };
+
+  const handleCurrencyChange = (currencyCode: string) => {
+    setPreferences((prev) => {
+      const updatedRange = prev.budget_ranges[currencyCode] || DEFAULT_BUDGET_RANGES[currencyCode] || prev.price_range;
+      return {
+        ...prev,
+        currency: currencyCode,
+        price_range: updatedRange,
+        budget_ranges: {
+          ...prev.budget_ranges,
+          [currencyCode]: updatedRange,
+        },
+      };
+    });
+  };
+
+  const updatePriceRange = (key: 'min' | 'max', value: number) => {
+    setPreferences((prev) => {
+      const updatedRange = { ...prev.price_range, [key]: value };
+      return {
+        ...prev,
+        price_range: updatedRange,
+        budget_ranges: {
+          ...prev.budget_ranges,
+          [prev.currency]: updatedRange,
+        },
+      };
+    });
+  };
 
   const fetchCategories = async () => {
     try {
@@ -130,13 +214,45 @@ const PreferencesPage: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-gray-900">Preferences 🇮🇳</h1>
-        <p className="mt-2 text-gray-600">
-          Customize your experience to get personalized Indian market recommendations
-        </p>
+        <h1 className="text-3xl font-bold text-gray-900">Preferences</h1>
+        <p className="mt-2 text-gray-600">Customize your experience to get personalized recommendations</p>
       </div>
 
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        {/* Region and Currency */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Region & Currency</h2>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Region</label>
+              <select
+                value={preferences.region}
+                onChange={(e) => handleRegionChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="IN">India</option>
+                <option value="US">United States</option>
+                <option value="EU">European Union</option>
+              </select>
+            </div>
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-2">Currency</label>
+              <select
+                value={preferences.currency}
+                onChange={(e) => handleCurrencyChange(e.target.value)}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+              >
+                <option value="INR">Indian Rupee (₹)</option>
+                <option value="USD">US Dollar ($)</option>
+                <option value="EUR">Euro (€)</option>
+              </select>
+            </div>
+          </div>
+          <p className="mt-2 text-sm text-gray-500">
+            Budget ranges adjust automatically based on your currency selection.
+          </p>
+        </div>
+
         {/* Categories */}
         <div className="mb-8">
           <h2 className="text-xl font-semibold text-gray-900 mb-4">Preferred Categories</h2>
@@ -157,39 +273,35 @@ const PreferencesPage: React.FC = () => {
 
         {/* Price Range */}
         <div className="mb-8">
-          <h2 className="text-xl font-semibold text-gray-900 mb-4">Price Range (INR)</h2>
+          <h2 className="text-xl font-semibold text-gray-900 mb-4">Budget Range ({preferences.currency})</h2>
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Minimum Price (₹)
+                Minimum Price ({getCurrencySymbol(preferences.currency)})
               </label>
               <input
                 type="number"
                 value={preferences.price_range.min}
-                onChange={(e) => setPreferences({
-                  ...preferences,
-                  price_range: { ...preferences.price_range, min: Number(e.target.value) }
-                })}
+                onChange={(e) => updatePriceRange('min', Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
-                Maximum Price (₹)
+                Maximum Price ({getCurrencySymbol(preferences.currency)})
               </label>
               <input
                 type="number"
                 value={preferences.price_range.max}
-                onChange={(e) => setPreferences({
-                  ...preferences,
-                  price_range: { ...preferences.price_range, max: Number(e.target.value) }
-                })}
+                onChange={(e) => updatePriceRange('max', Number(e.target.value))}
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
           </div>
           <div className="mt-2 text-sm text-gray-500">
-            Current range: ₹{preferences.price_range.min.toLocaleString('en-IN')} - ₹{preferences.price_range.max.toLocaleString('en-IN')}
+            Current range: {getCurrencySymbol(preferences.currency)}
+            {preferences.price_range.min.toLocaleString()} - {getCurrencySymbol(preferences.currency)}
+            {preferences.price_range.max.toLocaleString()}
           </div>
         </div>
 

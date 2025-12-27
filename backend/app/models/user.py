@@ -6,7 +6,14 @@ from app.models.enums import UserRole
 
 class UserPreferences(BaseModel):
     categories: List[str] = Field(default_factory=list)
+    region: str = "IN"
+    currency: str = "INR"
     price_range: Dict[str, float] = Field(default_factory=lambda: {"min": 0, "max": 50000})
+    budget_ranges: Dict[str, Dict[str, float]] = Field(default_factory=lambda: {
+        "INR": {"min": 0, "max": 50000},
+        "USD": {"min": 0, "max": 600},
+        "EUR": {"min": 0, "max": 550}
+    })
     interests: List[str] = Field(default_factory=list)
     gift_occasions: List[str] = Field(default_factory=list)
     reward_types: List[str] = Field(default_factory=list)
