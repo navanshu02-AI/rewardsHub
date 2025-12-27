@@ -18,8 +18,16 @@ interface Reward {
   category: string;
   reward_type: string;
   points_required: number;
-  price_inr: number;
-  original_price_inr?: number;
+  prices: {
+    INR: number;
+    USD: number;
+    EUR: number;
+  };
+  original_prices?: {
+    INR?: number;
+    USD?: number;
+    EUR?: number;
+  };
   image_url?: string;
   brand?: string;
   vendor?: string;

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Optional
+from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
 from app.models.enums import PreferenceCategory, RewardType
@@ -11,8 +11,8 @@ class Reward(BaseModel):
     category: PreferenceCategory
     reward_type: RewardType
     points_required: int
-    price_inr: float
-    original_price_inr: Optional[float] = None
+    prices: Dict[str, float] = Field(default_factory=lambda: {"INR": 0.0, "USD": 0.0, "EUR": 0.0})
+    original_prices: Optional[Dict[str, float]] = None
     image_url: Optional[str] = None
     brand: Optional[str] = None
     vendor: Optional[str] = None
@@ -31,8 +31,8 @@ class RewardCreate(BaseModel):
     category: PreferenceCategory
     reward_type: RewardType
     points_required: int
-    price_inr: float
-    original_price_inr: Optional[float] = None
+    prices: Dict[str, float]
+    original_prices: Optional[Dict[str, float]] = None
     image_url: Optional[str] = None
     brand: Optional[str] = None
     vendor: Optional[str] = None
@@ -47,8 +47,8 @@ class RewardUpdate(BaseModel):
     title: Optional[str] = None
     description: Optional[str] = None
     points_required: Optional[int] = None
-    price_inr: Optional[float] = None
-    original_price_inr: Optional[float] = None
+    prices: Optional[Dict[str, float]] = None
+    original_prices: Optional[Dict[str, float]] = None
     availability: Optional[int] = None
     is_popular: Optional[bool] = None
     rating: Optional[float] = None

@@ -23,7 +23,7 @@ class GeminiService:
             "When asked for product or reward recommendations, respond ONLY with a JSON object with a single key 'rewards' which contains an array of reward objects. "
             "The fields for each reward object are: title, description, category (must be one of: electronics, fashion, books, food, travel, fitness, home, entertainment, education, gift_cards, jewelry, health_wellness, automotive, sports, beauty_personal_care), "
             "reward_type (must be one of: physical_product, digital_product, experience, gift_card, recognition, voucher, cash_reward), "
-            "points_required (integer), price_inr (float), brand, image_url, availability (integer), is_popular (boolean), rating (float), review_count (integer), tags (array of strings). "
+            "points_required (integer), prices (object with INR, USD, EUR numeric keys), optional original_prices (object with INR, USD, EUR numeric keys), brand, image_url, availability (integer), is_popular (boolean), rating (float), review_count (integer), tags (array of strings). "
             "If you need to ask a clarifying question, respond with a JSON object with a single key 'question'. Do not return anything else."
         )
         
@@ -75,7 +75,7 @@ class GeminiService:
                     await asyncio.sleep(wait_time)
                 else:
                     raise e
-        
+
         raise Exception("Failed to get a response from Gemini after several retries.")
 
-gemini_service = GeminiService() 
+gemini_service = GeminiService()
