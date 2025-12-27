@@ -257,7 +257,14 @@ class BackendTester:
             # Test preferences update
             preferences_data = {
                 "categories": ["electronics", "fitness", "education"],
+                "region": "US",
+                "currency": "USD",
                 "price_range": {"min": 25.0, "max": 500.0},
+                "budget_ranges": {
+                    "INR": {"min": 0, "max": 50000},
+                    "USD": {"min": 25.0, "max": 500.0},
+                    "EUR": {"min": 20.0, "max": 450.0}
+                },
                 "interests": ["technology", "health", "learning"],
                 "gift_occasions": ["birthday", "work anniversary", "achievement"],
                 "reward_types": ["physical_product", "digital_product", "experience"],
@@ -280,7 +287,8 @@ class BackendTester:
                 
                 # Verify preferences were saved correctly
                 if (user_preferences.get("categories") == preferences_data["categories"] and
-                    user_preferences.get("price_range") == preferences_data["price_range"]):
+                    user_preferences.get("price_range") == preferences_data["price_range"] and
+                    user_preferences.get("currency") == preferences_data["currency"]):
                     self.log_test("User Preferences System", True, "Preferences updated successfully", user_preferences)
                     return True
                 else:
@@ -477,7 +485,15 @@ class BackendTester:
                 preferences_data = self.test_results["User Preferences System"]["details"]
                 
                 # Verify UserPreferences structure
-                expected_preference_fields = ["categories", "price_range", "interests", "reward_types"]
+                expected_preference_fields = [
+                    "categories",
+                    "region",
+                    "currency",
+                    "price_range",
+                    "budget_ranges",
+                    "interests",
+                    "reward_types"
+                ]
                 preferences_missing_fields = [field for field in expected_preference_fields if field not in preferences_data]
                 
                 if preferences_missing_fields:
@@ -489,7 +505,12 @@ class BackendTester:
                 if not isinstance(price_range, dict) or "min" not in price_range or "max" not in price_range:
                     self.log_test("Database Models - UserPreferences", False, "Invalid price_range structure")
                     return False
-                
+
+                budget_ranges = preferences_data.get("budget_ranges", {})
+                if not isinstance(budget_ranges, dict) or len(budget_ranges) == 0:
+                    self.log_test("Database Models - UserPreferences", False, "Invalid budget_ranges structure")
+                    return False
+
                 self.log_test("Database Models - UserPreferences", True, "UserPreferences model structure validated")
             
             self.log_test("Database Models", True, "All database models properly structured and validated")
