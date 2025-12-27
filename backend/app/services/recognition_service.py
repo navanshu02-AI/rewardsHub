@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import Dict, List, Optional, Sequence
 
 from fastapi import HTTPException, status
+from pymongo.errors import OperationFailure
 
 from app.database.connection import get_database
 from app.models.enums import RecognitionScope, RecognitionType, UserRole
@@ -146,8 +147,33 @@ class RecognitionService:
             to_user_snapshots=[self._map_user_summary(recipient).dict() for recipient in recipients],
         )
 
-        await db.recognitions.insert_one(recognition.dict())
-        await self._reward_recipients(recipients, points_awarded)
+        client = getattr(db, "client", None)
+        session = None
+        transaction_started = False
+
+        if client:
+            try:
+                session = await client.start_session()
+                session.start_transaction()
+                transaction_started = True
+            except (OperationFailure, AttributeError):
+                if session:
+                    await session.end_session()
+                session = None
+
+        if transaction_started and session:
+            try:
+                await db.recognitions.insert_one(recognition.dict(), session=session)
+                await self._reward_recipients(recipients, points_awarded, session=session)
+                await session.commit_transaction()
+            except Exception:
+                await session.abort_transaction()
+                raise
+            finally:
+                await session.end_session()
+        else:
+            await db.recognitions.insert_one(recognition.dict())
+            await self._reward_recipients(recipients, points_awarded)
 
         return recognition
 
@@ -238,7 +264,9 @@ class RecognitionService:
 
         return history
 
-    async def _reward_recipients(self, recipients: Sequence[Dict[str, object]], points: int) -> None:
+    async def _reward_recipients(
+        self, recipients: Sequence[Dict[str, object]], points: int, session=None
+    ) -> None:
         db = await get_database()
         update = {
             "$inc": {
@@ -249,7 +277,7 @@ class RecognitionService:
             "$set": {"updated_at": datetime.utcnow()},
         }
         for recipient in recipients:
-            await db.users.update_one({"id": recipient["id"]}, update)
+            await db.users.update_one({"id": recipient["id"]}, update, session=session)
 
     async def _load_users(self, user_ids: Sequence[str]) -> List[Dict[str, object]]:
         db = await get_database()
