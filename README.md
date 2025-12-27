@@ -25,6 +25,15 @@ RewardsHub is a modern, full-stack application designed to manage employee rewar
 | **Styling**   | [Tailwind CSS](https://tailwindcss.com/)                                                                  |
 | **API Client**| [Axios](https://axios-http.com/)                                                                          |
 
+## 🗂️ Project Structure
+
+-   `backend/`: FastAPI service, Pydantic models, and MongoDB data access helpers.
+-   `frontend/`: React app with Tailwind styling, shared UI components, and API client utilities.
+-   `docs/`: Release and QA playbooks, including the manual regression checklist.
+-   `tests/`: Cross-cutting test assets used by both backend and frontend suites.
+
+If you are exploring a specific feature, start in the corresponding folder above; most domain logic lives under `backend/app` and `frontend/src`.
+
 
 ## ⚙️ Getting Started
 
