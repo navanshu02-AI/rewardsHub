@@ -43,6 +43,7 @@ class RecognitionService:
         }
 
         peers: List[RecognitionUserSummary] = []
+        peer_enabled = True
         peer_query: Dict[str, object] = {"id": {"$ne": current_user.id}, "is_active": True}
         peer_message: Optional[str] = None
         if current_user.manager_id:
@@ -52,10 +53,12 @@ class RecognitionService:
             peer_query["department"] = current_user.department
             peer_message = "Peers are colleagues within your department when no manager is assigned."
         else:
+            peer_enabled = False
             peer_message = "Peers require a shared manager. Please contact HR if your reporting line is missing."
 
-        peer_docs = await db.users.find(peer_query, projection).to_list(200)
-        peers = [self._map_user_summary(doc) for doc in peer_docs]
+        if peer_enabled:
+            peer_docs = await db.users.find(peer_query, projection).to_list(200)
+            peers = [self._map_user_summary(doc) for doc in peer_docs]
 
         report_enabled = user_role in (MANAGER_ROLES | PRIVILEGED_ROLES)
         report_docs: List[Dict[str, object]] = []
@@ -85,7 +88,7 @@ class RecognitionService:
 
         return {
             "peer": {
-                "enabled": True,
+                "enabled": peer_enabled,
                 "recipients": [summary.dict() for summary in peers],
                 "description": peer_message,
                 "emptyMessage": "You need to share a manager to send peer recognition." if not peers else None,
