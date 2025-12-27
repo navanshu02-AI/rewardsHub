@@ -38,7 +38,7 @@ class RecommendationService:
             personalization_factors.append("Preferred brands")
         
         # Add price range filter
-        query["price_inr"] = {"$gte": price_range.get("min", 0), "$lte": price_range.get("max", 50000)}
+        query["prices.INR"] = {"$gte": price_range.get("min", 0), "$lte": price_range.get("max", 50000)}
         personalization_factors.append("Budget preferences")
         
         # Exclude already purchased items
@@ -93,7 +93,7 @@ class RecommendationService:
         # Build query for gift recommendations
         query = {
             "is_active": True,
-            "price_inr": {"$gte": budget_min, "$lte": budget_max}
+            "prices.INR": {"$gte": budget_min, "$lte": budget_max}
         }
         
         if preferred_categories:
@@ -104,7 +104,7 @@ class RecommendationService:
             ("is_popular", -1),
             ("rating", -1)
         ]).limit(10).to_list(10)
-        
+
         return [Reward(**gift) for gift in gifts]
 
 recommendation_service = RecommendationService()

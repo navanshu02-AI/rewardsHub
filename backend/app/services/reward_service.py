@@ -39,7 +39,7 @@ class RewardService:
         """Update a reward"""
         db = await get_database()
         
-        update_dict = {k: v for k, v in update_data.dict().items() if v is not None}
+        update_dict = update_data.dict(exclude_none=True)
         
         result = await db.rewards.update_one(
             {"id": reward_id},
@@ -63,8 +63,8 @@ class RewardService:
                 "category": PreferenceCategory.ELECTRONICS,
                 "reward_type": RewardType.PHYSICAL_PRODUCT,
                 "points_required": 800,
-                "price_inr": 8999.00,
-                "original_price_inr": 9999.00,
+                "prices": {"INR": 8999.00, "USD": 109.99, "EUR": 99.99},
+                "original_prices": {"INR": 9999.00, "USD": 129.99, "EUR": 119.99},
                 "brand": "Sony",
                 "vendor": "Amazon India",
                 "image_url": "https://images.unsplash.com/photo-1583394838336-acd977736f90",
@@ -81,7 +81,7 @@ class RewardService:
                 "category": PreferenceCategory.GIFT_CARDS,
                 "reward_type": RewardType.GIFT_CARD,
                 "points_required": 500,
-                "price_inr": 5000.00,
+                "prices": {"INR": 5000.00, "USD": 60.00, "EUR": 55.00},
                 "brand": "Amazon",
                 "vendor": "Amazon India",
                 "image_url": "https://images.unsplash.com/photo-1543465077-db45d34aa2ab",
@@ -98,8 +98,8 @@ class RewardService:
                 "category": PreferenceCategory.FITNESS,
                 "reward_type": RewardType.PHYSICAL_PRODUCT,
                 "points_required": 1200,
-                "price_inr": 14999.00,
-                "original_price_inr": 16999.00,
+                "prices": {"INR": 14999.00, "USD": 179.99, "EUR": 169.99},
+                "original_prices": {"INR": 16999.00, "USD": 199.99, "EUR": 189.99},
                 "brand": "Fitbit",
                 "vendor": "Flipkart",
                 "image_url": "https://images.unsplash.com/photo-1544956481-5449dc85c935",
@@ -116,7 +116,7 @@ class RewardService:
                 "category": PreferenceCategory.JEWELRY,
                 "reward_type": RewardType.PHYSICAL_PRODUCT,
                 "points_required": 2000,
-                "price_inr": 15000.00,
+                "prices": {"INR": 15000.00, "USD": 179.00, "EUR": 165.00},
                 "brand": "Tanishq",
                 "vendor": "Tanishq Stores",
                 "image_url": "https://images.unsplash.com/photo-1610375461246-83df859d849d",
@@ -133,7 +133,7 @@ class RewardService:
                 "category": PreferenceCategory.FASHION,
                 "reward_type": RewardType.VOUCHER,
                 "points_required": 400,
-                "price_inr": 4000.00,
+                "prices": {"INR": 4000.00, "USD": 48.00, "EUR": 44.00},
                 "brand": "Myntra",
                 "vendor": "Myntra",
                 "image_url": "https://images.unsplash.com/photo-1441986300917-64674bd600d8",
@@ -143,6 +143,38 @@ class RewardService:
                 "rating": 4.3,
                 "review_count": 1890,
                 "tags": ["fashion", "clothing", "voucher", "myntra"]
+            },
+            {
+                "title": "Starbucks USA Gift Card - $50",
+                "description": "Enjoy coffee and snacks at any Starbucks across the United States",
+                "category": PreferenceCategory.FOOD,
+                "reward_type": RewardType.GIFT_CARD,
+                "points_required": 450,
+                "prices": {"INR": 4200.00, "USD": 50.00, "EUR": 46.00},
+                "vendor": "Starbucks",
+                "image_url": "https://images.unsplash.com/photo-1495474472287-4d71bcdd2085",
+                "availability": 60,
+                "delivery_time": "Instant",
+                "is_popular": False,
+                "rating": 4.6,
+                "review_count": 2200,
+                "tags": ["coffee", "gift card", "usa"]
+            },
+            {
+                "title": "Eurail Global Pass - 3 Days",
+                "description": "Flexible 3-day train travel across 33 European countries",
+                "category": PreferenceCategory.TRAVEL,
+                "reward_type": RewardType.EXPERIENCE,
+                "points_required": 2500,
+                "prices": {"INR": 23500.00, "USD": 280.00, "EUR": 260.00},
+                "vendor": "Eurail",
+                "image_url": "https://images.unsplash.com/photo-1504215680853-026ed2a45def",
+                "availability": 20,
+                "delivery_time": "Instant digital delivery",
+                "is_popular": True,
+                "rating": 4.7,
+                "review_count": 540,
+                "tags": ["travel", "europe", "rail", "experience"]
             }
         ]
         

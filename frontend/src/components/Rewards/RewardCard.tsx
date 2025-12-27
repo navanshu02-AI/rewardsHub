@@ -7,8 +7,16 @@ interface Reward {
   category: string;
   reward_type: string;
   points_required: number;
-  price_inr: number;
-  original_price_inr?: number;
+  prices: {
+    INR: number;
+    USD: number;
+    EUR: number;
+  };
+  original_prices?: {
+    INR?: number;
+    USD?: number;
+    EUR?: number;
+  };
   image_url?: string;
   brand?: string;
   vendor?: string;
@@ -41,6 +49,9 @@ const RewardCard: React.FC<RewardCardProps> = ({
     }).format(amount);
   };
 
+  const currentPrice = reward.prices?.INR ?? 0;
+  const originalPrice = reward.original_prices?.INR;
+
   const canRedeem = userPoints >= reward.points_required && reward.availability > 0;
 
   return (
@@ -62,9 +73,9 @@ const RewardCard: React.FC<RewardCardProps> = ({
             POPULAR
           </div>
         )}
-        {reward.original_price_inr && reward.original_price_inr > reward.price_inr && (
+        {originalPrice && originalPrice > currentPrice && (
           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-            SAVE {formatCurrency(reward.original_price_inr - reward.price_inr)}
+            SAVE {formatCurrency(originalPrice - currentPrice)}
           </div>
         )}
       </div>
@@ -99,18 +110,18 @@ const RewardCard: React.FC<RewardCardProps> = ({
           </div>
         )}
 
-        {reward.original_price_inr && reward.original_price_inr > reward.price_inr && (
+        {originalPrice && originalPrice > currentPrice && (
           <div className="mb-2">
-            <span className="text-sm text-gray-500 line-through">{formatCurrency(reward.original_price_inr)}</span>
+            <span className="text-sm text-gray-500 line-through">{formatCurrency(originalPrice)}</span>
             <span className="text-sm text-red-600 ml-2 font-medium">
-              Save {formatCurrency(reward.original_price_inr - reward.price_inr)}
+              Save {formatCurrency(originalPrice - currentPrice)}
             </span>
           </div>
         )}
 
         <div className="flex justify-between items-center mb-2">
           <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-          <span className="text-sm text-gray-500">{formatCurrency(reward.price_inr)}</span>
+          <span className="text-sm text-gray-500">{formatCurrency(currentPrice)}</span>
         </div>
 
         <div className="text-xs text-gray-500 mb-3">
