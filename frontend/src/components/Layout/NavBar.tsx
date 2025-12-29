@@ -48,22 +48,23 @@ const NavBar: React.FC = () => {
           {user && (
             <>
               <button
+                onClick={() => navigate('/dashboard')}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                Dashboard
+              </button>
+              <button
                 onClick={() => navigate('/recognitions')}
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Recognitions
               </button>
-              <span className="inline-flex items-center gap-2 rounded-full border border-amber-100 bg-amber-50 px-3 py-1 text-xs font-semibold text-amber-800 shadow-inner">
-                <svg
-                  className="h-4 w-4 text-amber-500"
-                  fill="currentColor"
-                  viewBox="0 0 20 20"
-                  aria-hidden="true"
-                >
-                  <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.802 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.802-2.034a1 1 0 00-1.176 0l-2.802 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.88 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
-                </svg>
-                {user.points_balance.toLocaleString()} pts
-              </span>
+              <button
+                onClick={() => navigate('/profile')}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                Profile
+              </button>
 
               <div className="relative" ref={menuRef}>
                 <button
@@ -88,13 +89,13 @@ const NavBar: React.FC = () => {
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
-                        navigate('/preferences');
+                        navigate('/profile');
                       }}
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
                       role="menuitem"
                     >
                       <span className="h-2 w-2 rounded-full bg-blue-500" aria-hidden />
-                      Preferences
+                      Profile
                     </button>
                     <button
                       onClick={() => {
