@@ -220,15 +220,6 @@ Recognition permissions depend on accurate reporting structures. After the datab
 
    Public signup remains employee-only; only privileged actors can assign managers or elevated roles.
 
-5. Bootstrap your first HR/Admin account (needed to call the privileged endpoints) with the helper script:
-
-   ```bash
-   cd backend
-   python -m scripts.create_admin hr.admin@example.com "StrongPassword123" Harper Rowe --role hr_admin
-   ```
-
-   The script will create or update the user with a hashed password and the selected privileged role (`hr_admin` by default; pass `--role executive` or `--role c_level` for other elevated roles). Log in with this account via `POST /api/v1/auth/login` to obtain a token, then use `POST /api/v1/users/provision` to create additional HR/Admin/Manager users with their reporting lines.
-
 ### 4. Frontend Setup
 
 The frontend is a React application.
