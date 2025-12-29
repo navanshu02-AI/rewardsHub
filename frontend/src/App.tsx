@@ -8,7 +8,6 @@ import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
-import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -32,17 +31,8 @@ function App() {
               }
             />
             <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
               path="/preferences"
-              element={<Navigate to="/profile" replace />}
+              element={<Navigate to="/dashboard" replace />}
             />
             <Route
               path="/recognitions"

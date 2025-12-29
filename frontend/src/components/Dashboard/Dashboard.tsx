@@ -5,7 +5,6 @@ import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
 import RecognitionModal from '../Recognition/RecognitionModal';
-import RecognitionHistory from '../Recognition/RecognitionHistory';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -51,7 +50,6 @@ const Dashboard: React.FC = () => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRecognitionModal, setShowRecognitionModal] = useState(false);
-  const [historyRefreshToken, setHistoryRefreshToken] = useState<number>(Date.now());
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
@@ -75,7 +73,6 @@ const Dashboard: React.FC = () => {
   };
 
   const handleRecognitionSuccess = () => {
-    setHistoryRefreshToken(Date.now());
     setShowRecognitionModal(false);
     void fetchData();
   };
@@ -125,10 +122,6 @@ const Dashboard: React.FC = () => {
         onGiveRecognition={() => setShowRecognitionModal(true)}
         onRecommendGift={handleRecommendGift}
       />
-
-      <div className="mb-8">
-        <RecognitionHistory refreshToken={historyRefreshToken} />
-      </div>
 
       {recommendations && (
         <div ref={recommendationsRef}>

@@ -59,12 +59,6 @@ const NavBar: React.FC = () => {
               >
                 Recognitions
               </button>
-              <button
-                onClick={() => navigate('/profile')}
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                Profile
-              </button>
 
               <div className="relative" ref={menuRef}>
                 <button
@@ -86,17 +80,6 @@ const NavBar: React.FC = () => {
                     <div className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {user.first_name} {user.last_name}
                     </div>
-                    <button
-                      onClick={() => {
-                        setIsMenuOpen(false);
-                        navigate('/profile');
-                      }}
-                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
-                      role="menuitem"
-                    >
-                      <span className="h-2 w-2 rounded-full bg-blue-500" aria-hidden />
-                      Profile
-                    </button>
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
