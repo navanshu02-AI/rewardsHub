@@ -213,6 +213,13 @@ Recognition permissions depend on accurate reporting structures. After the datab
 
 3. Repeat the pattern for additional departments or executives as needed. The backend tests expect `manager_id` values to be populated for managers and their reports.
 
+4. Use the privileged provisioning endpoints to keep hierarchy maintenance in HR/admin hands:
+
+   - `POST /api/v1/users/provision` (requires HR/Admin/Executive token) creates a user and lets you set `role` and `manager_id` in one step.
+   - `PUT /api/v1/users/{user_id}/reporting` (requires HR/Admin/Executive token) updates a user's `role` or `manager_id` when teams change.
+
+   Public signup remains employee-only; only privileged actors can assign managers or elevated roles.
+
 ### 4. Frontend Setup
 
 The frontend is a React application.

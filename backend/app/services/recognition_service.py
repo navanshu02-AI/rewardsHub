@@ -280,7 +280,8 @@ class RecognitionService:
             "$set": {"updated_at": datetime.utcnow()},
         }
         for recipient in recipients:
-            await db.users.update_one({"id": recipient["id"]}, update, session=session)
+            kwargs = {"session": session} if session else {}
+            await db.users.update_one({"id": recipient["id"]}, update, **kwargs)
 
     async def _load_users(self, user_ids: Sequence[str]) -> List[Dict[str, object]]:
         db = await get_database()
