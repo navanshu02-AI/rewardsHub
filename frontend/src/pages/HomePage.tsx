@@ -10,51 +10,53 @@ const HomePage: React.FC = () => {
   const activeRegion = REGION_CONFIG[region];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100">
       {/* Hero Section */}
       <div className="relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-24">
-          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12">
+        <div className="absolute inset-0 opacity-60 pointer-events-none" aria-hidden="true">
+          <div className="w-[60%] h-[60%] bg-gradient-to-br from-blue-200/60 via-indigo-100/60 to-transparent rounded-full blur-3xl transform translate-x-1/3 -translate-y-1/4" />
+        </div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-24">
+          <div className="flex flex-col lg:flex-row lg:items-start lg:gap-12 relative">
             <div className="flex-1">
               <div className="flex items-center justify-between mb-4">
                 <div className="text-sm text-gray-600">Now available globally</div>
                 <RegionCurrencySelector label="Choose your region & currency" align="right" />
               </div>
-              <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl">
-                Recognize & Reward
-                <span className="text-blue-600"> Excellence Anywhere</span>
-                <span className="text-2xl block mt-2">{activeRegion.flag} Optimized for {activeRegion.label}</span>
+              <h1 className="text-4xl font-extrabold text-gray-900 sm:text-5xl lg:text-6xl">
+                Reward teams everywhere with local care
+                <span className="text-2xl block mt-2 text-blue-700">{activeRegion.flag} Built for {activeRegion.label}</span>
               </h1>
-              <p className="mt-4 text-xl text-gray-500">
-                Personalized rewards and recognition platform for distributed teams. Localized pricing, regional rewards,
-                and cultural sensitivity no matter where your people work.
+              <p className="mt-4 text-lg text-gray-600 max-w-2xl">
+                Global recognition that feels personal—localized rewards, pricing, and cultural nuance for every team member.
               </p>
-              <div className="mt-8 flex flex-wrap gap-4">
+              <div className="mt-10 flex flex-wrap items-center gap-4">
                 <button
                   onClick={() => navigate('/auth')}
-                  className="bg-blue-600 text-white px-8 py-3 rounded-lg font-semibold hover:bg-blue-700 transition-colors shadow-lg"
+                  className="bg-blue-600 text-white px-8 py-3 rounded-xl font-semibold hover:bg-blue-700 transition-colors shadow-lg shadow-blue-200"
                 >
-                  Get Started Free
+                  Start free
                 </button>
                 <button
                   onClick={() => navigate('/auth')}
-                  className="border-2 border-blue-600 text-blue-600 px-8 py-3 rounded-lg font-semibold hover:bg-blue-50 transition-colors"
+                  className="text-blue-700 font-semibold flex items-center gap-2 hover:text-blue-800"
                 >
-                  Book a Demo
+                  Book a demo
+                  <span aria-hidden>→</span>
                 </button>
               </div>
-              <div className="mt-6 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-600">
-                <div className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+              <div className="mt-8 grid grid-cols-1 sm:grid-cols-3 gap-4 text-sm text-gray-700">
+                <div className="flex items-center bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-blue-50">
                   <span className="text-green-500 mr-2">✓</span>
-                  Multi-currency rewards ({currency})
+                  Local payouts in {currency}
                 </div>
-                <div className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                <div className="flex items-center bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-blue-50">
                   <span className="text-green-500 mr-2">✓</span>
-                  Localized catalogs per region
+                  Region-tuned reward catalogs
                 </div>
-                <div className="flex items-center bg-white p-3 rounded-lg shadow-sm">
+                <div className="flex items-center bg-white/80 backdrop-blur p-3 rounded-lg shadow-sm border border-blue-50">
                   <span className="text-green-500 mr-2">✓</span>
-                  Culture-aware celebrations
+                  Culture-smart celebrations
                 </div>
               </div>
             </div>
@@ -62,7 +64,7 @@ const HomePage: React.FC = () => {
               <img
                 src="https://images.unsplash.com/photo-1573497491765-dccce02d84dc"
                 alt="Global team celebrating"
-                className="w-full rounded-lg shadow-xl"
+                className="w-full rounded-2xl shadow-xl ring-1 ring-indigo-100"
               />
             </div>
           </div>
