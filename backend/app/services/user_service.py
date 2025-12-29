@@ -4,7 +4,7 @@ from typing import List, Optional
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from app.models.user import User, UserUpdate, UserPreferences
+from app.models.user import User, UserUpdate, UserPreferences, UserReportingUpdate
 from app.database.connection import get_database
 
 class UserService:
@@ -137,5 +137,31 @@ class UserService:
 
         if result.matched_count == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
+
+    async def update_reporting(self, user_id: str, payload: UserReportingUpdate) -> User:
+        """Update reporting lines and roles for a user."""
+        db = await get_database()
+
+        update_dict = {}
+        if payload.manager_id is not None:
+            manager_id = payload.manager_id.strip() if isinstance(payload.manager_id, str) else payload.manager_id
+            update_dict["manager_id"] = manager_id or None
+        if payload.role is not None:
+            update_dict["role"] = payload.role
+
+        if not update_dict:
+            existing = await db.users.find_one({"id": user_id})
+            if not existing:
+                raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+            return User(**existing)
+
+        update_dict["updated_at"] = datetime.utcnow()
+
+        result = await db.users.update_one({"id": user_id}, {"$set": update_dict})
+        if result.matched_count == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        updated = await db.users.find_one({"id": user_id})
+        return User(**updated)
 
 user_service = UserService()
