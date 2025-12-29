@@ -7,8 +7,8 @@ import AuthPage from './components/Auth/AuthPage';
 import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
-import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
+import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -32,13 +32,17 @@ function App() {
               }
             />
             <Route
-              path="/preferences"
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <NavBar />
-                  <PreferencesPage />
+                  <ProfilePage />
                 </ProtectedRoute>
               }
+            />
+            <Route
+              path="/preferences"
+              element={<Navigate to="/profile" replace />}
             />
             <Route
               path="/recognitions"
