@@ -9,6 +9,94 @@ const HomePage: React.FC = () => {
 
   const activeRegion = REGION_CONFIG[region];
 
+  const partners = [
+    {
+      name: 'Amazon',
+      descriptor: 'Global ecommerce coverage',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <path
+            fill="#FF9900"
+            d="M97 42c-12 7-33 14-48 12-9-1-17-3-23-6a1.2 1.2 0 01.9-2.1c8 2 15 3 24 3 13 0 29-4 40-10a1 1 0 011 1.7z"
+          />
+          <path
+            fill="#111827"
+            d="M89 35c-2 2-5 3-7 3s-3-1-3-3c0-5 6-5 10-5v-1c0-2-1-3-3-3a12 12 0 00-6 2l-1-4c2-2 5-3 8-3 6 0 9 3 9 9v8c0 1 0 3 1 4h-6zm-4-5c-2 0-4 0-4 2 0 1 1 2 2 2s2-1 2-2zM43 25c2 0 4 0 5 1v6a10 10 0 00-5-1c-3 0-6 2-6 6s3 5 6 5a11 11 0 005-1v6a29 29 0 01-6 1c-5 0-11-3-11-11 0-7 5-12 12-12zm51 10c0-3 0-6-1-9h6l1 3h1c1-2 3-4 6-4 1 0 2 0 3 1l-2 6c-1-1-2-1-3-1-2 0-3 1-3 4v9h-8zm-75 0c0 3 0 5 2 5s2-2 2-5v-9h7v10c0 7-4 9-9 9-1 0-2 0-3-1v-5c1 1 2 1 3 1s2-1 2-4v-10h-6zm53-12c2 0 4 0 5 1v6a10 10 0 00-5-1c-3 0-6 2-6 6s3 5 6 5a11 11 0 005-1v6a29 29 0 01-6 1c-5 0-11-3-11-11 0-7 5-12 12-12z"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: 'Best Buy',
+      descriptor: 'Electronics everywhere',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <rect x="10" y="12" width="90" height="36" rx="8" fill="#FFDD00" />
+          <path
+            d="M20 22h30v16H20zM56 22h32v6H56zM56 32h32v6H56z"
+            fill="#0B1F41"
+            opacity="0.95"
+          />
+          <circle cx="96" cy="30" r="7" fill="#0B1F41" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Zalando',
+      descriptor: 'Fashion-first discovery',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <path
+            d="M25 30c0-9 6-14 17-14 15 0 32 8 45 8 5 0 8-1 8-1s-3 5-8 9c-10 8-24 12-37 12-17 0-25-6-25-14z"
+            fill="#F46A2B"
+          />
+        </svg>
+      ),
+    },
+    {
+      name: 'Myntra',
+      descriptor: 'Local style favorites',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <path d="M45 44L34 18h9l6 16 6-16h9L53 44z" fill="#F0528D" />
+          <path d="M58 44l11-26h9L67 44z" fill="#F79E1B" />
+          <path d="M49 44L38 18h-8l13 26z" fill="#8C52FF" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Sephora',
+      descriptor: 'Beauty & wellbeing',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <rect x="20" y="10" width="80" height="40" rx="6" fill="#0E0E0E" />
+          <path d="M65 14c-7 12-7 20 0 32" stroke="#FFFFFF" strokeWidth="5" strokeLinecap="round" />
+        </svg>
+      ),
+    },
+    {
+      name: 'Tesco',
+      descriptor: 'Groceries close by',
+      logo: (
+        <svg viewBox="0 0 120 60" className="h-8" role="img" aria-hidden>
+          <rect x="15" y="15" width="90" height="30" rx="6" fill="#FFFFFF" stroke="#1A3FAA" strokeWidth="3" />
+          <g fill="#D6001C">
+            <rect x="24" y="20" width="14" height="4" rx="2" />
+            <rect x="44" y="20" width="14" height="4" rx="2" />
+            <rect x="64" y="20" width="14" height="4" rx="2" />
+            <rect x="84" y="20" width="14" height="4" rx="2" />
+          </g>
+          <g fill="#1A3FAA">
+            <rect x="28" y="34" width="10" height="3" rx="1.5" />
+            <rect x="48" y="34" width="10" height="3" rx="1.5" />
+            <rect x="68" y="34" width="10" height="3" rx="1.5" />
+            <rect x="88" y="34" width="10" height="3" rx="1.5" />
+          </g>
+        </svg>
+      ),
+    },
+  ];
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-indigo-100">
       {/* Hero Section */}
@@ -121,21 +209,28 @@ const HomePage: React.FC = () => {
       </div>
 
       {/* Partners Section */}
-      <div className="py-16 bg-gray-50">
+      <div className="py-16 bg-gradient-to-r from-slate-50 via-white to-slate-50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center">
             <h2 className="text-3xl font-extrabold text-gray-900">
               Trusted by teams across regions
             </h2>
-            <p className="mt-4 text-lg text-gray-500">
-              Choose from thousands of products across leading marketplaces worldwide
+            <p className="mt-3 text-base text-gray-500">
+              Leading marketplaces and brands your people already love
             </p>
           </div>
-          <div className="mt-12 grid grid-cols-2 md:grid-cols-6 gap-8 items-center">
-            {['Amazon', 'Best Buy', 'Zalando', 'Myntra', 'Sephora', 'Tesco'].map((partner) => (
-              <div key={partner} className="text-center">
-                <div className="bg-white p-4 rounded-lg shadow-sm border border-gray-200">
-                  <div className="text-sm font-medium text-gray-900">{partner}</div>
+          <div className="mt-12 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 md:gap-6 items-stretch">
+            {partners.map((partner) => (
+              <div
+                key={partner.name}
+                className="group bg-white/70 border border-gray-200/80 rounded-xl p-4 sm:p-5 shadow-sm transition-all duration-200 hover:-translate-y-1 hover:shadow-md hover:border-blue-100"
+              >
+                <div className="flex flex-col items-center gap-3 text-center">
+                  <div className="w-full bg-slate-100/80 rounded-lg py-3 flex items-center justify-center transition-colors duration-200 group-hover:bg-white">
+                    {partner.logo}
+                  </div>
+                  <div className="text-sm font-semibold text-gray-900">{partner.name}</div>
+                  <div className="text-xs text-gray-500 truncate">{partner.descriptor}</div>
                 </div>
               </div>
             ))}
