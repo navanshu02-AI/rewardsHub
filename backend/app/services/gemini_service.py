@@ -10,11 +10,17 @@ settings = Settings()
 class GeminiService:
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.api_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key={self.api_key}"
+        self.enabled = bool(self.api_key)
+        self.api_url = None
+        if self.enabled:
+            self.api_url = (
+                "https://generativelanguage.googleapis.com/v1beta/models/"
+                f"gemini-1.5-flash:generateContent?key={self.api_key}"
+            )
 
     async def ask_gemini(self, user_query: str, conversation: list = None):
-        if not self.api_key or self.api_key == "YOUR_GEMINI_API_KEY_HERE":
-            raise ValueError("Gemini API key is not set.")
+        if not self.enabled:
+            raise ValueError("Gemini API is disabled. Set GEMINI_API_KEY to enable it.")
         
         headers = {"Content-Type": "application/json"}
         

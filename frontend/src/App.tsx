@@ -7,7 +7,6 @@ import AuthPage from './components/Auth/AuthPage';
 import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
-import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
@@ -33,12 +32,7 @@ function App() {
             />
             <Route
               path="/preferences"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <PreferencesPage />
-                </ProtectedRoute>
-              }
+              element={<Navigate to="/dashboard" replace />}
             />
             <Route
               path="/recognitions"

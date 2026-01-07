@@ -105,6 +105,23 @@ GEMINI_API_KEY=YOUR_GEMINI_API_KEY_HERE
 ```
 > **IMPORTANT**: Replace `YOUR_GEMINI_API_KEY_HERE` with your actual Google Gemini API key. For `SECRET_KEY`, you can use a long, random string.
 
+### 🔒 Security: required env vars
+
+The backend reads required security configuration from environment variables. In non-development environments, ensure these values are set:
+
+- `SECRET_KEY` is **required** outside development and must be a strong, secret value (long and random).
+- `GEMINI_API_KEY` is optional; AI-powered features are disabled when missing.
+- `BACKEND_CORS_ORIGINS` defaults to the development value in `backend/.env.example`; override it with a comma-separated list (e.g., `https://app.example.com,https://admin.example.com`) for production.
+- `EXPOSE_RESET_TOKEN_IN_RESPONSE` defaults to `false` and should only be `true` in development.
+
+Concise example (see `backend/.env.example` for the defaults):
+
+```ini
+SECRET_KEY=replace-with-strong-secret
+BACKEND_CORS_ORIGINS=https://app.example.com,https://admin.example.com
+EXPOSE_RESET_TOKEN_IN_RESPONSE=false
+```
+
 **e. Run the backend server:**
 ```bash
 uvicorn main:app --reload
@@ -212,6 +229,13 @@ Recognition permissions depend on accurate reporting structures. After the datab
    ```
 
 3. Repeat the pattern for additional departments or executives as needed. The backend tests expect `manager_id` values to be populated for managers and their reports.
+
+4. Use the privileged provisioning endpoints to keep hierarchy maintenance in HR/admin hands:
+
+   - `POST /api/v1/users/provision` (requires HR/Admin/Executive token) creates a user and lets you set `role` and `manager_id` in one step.
+   - `PUT /api/v1/users/{user_id}/reporting` (requires HR/Admin/Executive token) updates a user's `role` or `manager_id` when teams change.
+
+   Public signup remains employee-only; only privileged actors can assign managers or elevated roles.
 
 ### 4. Frontend Setup
 

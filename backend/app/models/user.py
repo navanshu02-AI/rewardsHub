@@ -73,6 +73,11 @@ class UserUpdate(BaseModel):
     location: Optional[str] = None
     avatar_url: Optional[str] = None
 
+
+class UserReportingUpdate(BaseModel):
+    manager_id: Optional[str] = None
+    role: Optional[UserRole] = None
+
 class UserResponse(BaseModel):
     id: str
     email: EmailStr

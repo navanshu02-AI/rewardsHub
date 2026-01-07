@@ -1,12 +1,10 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import axios from 'axios';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
-import StatsCards from './StatsCards';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
 import RecognitionModal from '../Recognition/RecognitionModal';
-import RecognitionHistory from '../Recognition/RecognitionHistory';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -52,7 +50,7 @@ const Dashboard: React.FC = () => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRecognitionModal, setShowRecognitionModal] = useState(false);
-  const [historyRefreshToken, setHistoryRefreshToken] = useState<number>(Date.now());
+  const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchData();
@@ -64,7 +62,7 @@ const Dashboard: React.FC = () => {
         axios.get(`${API}/recommendations`, { params: { currency } }),
         axios.get(`${API}/rewards`, { params: { currency } })
       ]);
-      
+
       setRecommendations(recommendationsRes.data);
       setRewards(rewardsRes.data);
     } catch (error) {
@@ -74,19 +72,7 @@ const Dashboard: React.FC = () => {
     }
   };
 
-  const seedRewards = async () => {
-    try {
-      await axios.post(`${API}/rewards/seed`);
-      fetchData();
-      alert('Regional rewards added successfully!');
-    } catch (error) {
-      console.error('Error seeding rewards:', error);
-      alert('Error seeding rewards');
-    }
-  };
-
   const handleRecognitionSuccess = () => {
-    setHistoryRefreshToken(Date.now());
     setShowRecognitionModal(false);
     void fetchData();
   };
@@ -99,6 +85,12 @@ const Dashboard: React.FC = () => {
       fetchData();
     } catch (error: any) {
       alert(error.response?.data?.detail || 'Error redeeming reward');
+    }
+  };
+
+  const handleRecommendGift = () => {
+    if (recommendationsRef.current) {
+      recommendationsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
     }
   };
 
@@ -126,27 +118,23 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      <StatsCards user={user} rewardsCount={rewards.length} />
-      
       <QuickActions
-        onSeedRewards={seedRewards}
         onGiveRecognition={() => setShowRecognitionModal(true)}
+        onRecommendGift={handleRecommendGift}
       />
 
-      <div className="mb-8">
-        <RecognitionHistory refreshToken={historyRefreshToken} />
-      </div>
-
       {recommendations && (
-        <RecommendationsSection
-          recommendations={recommendations} 
-          onRedeemReward={redeemReward}
-          userPoints={user?.points_balance || 0}
-        />
+        <div ref={recommendationsRef}>
+          <RecommendationsSection
+            recommendations={recommendations}
+            onRedeemReward={redeemReward}
+            userPoints={user?.points_balance || 0}
+          />
+        </div>
       )}
 
-      <RewardsCatalog 
-        rewards={rewards} 
+      <RewardsCatalog
+        rewards={rewards}
         onRedeemReward={redeemReward}
         userPoints={user?.points_balance || 0}
       />

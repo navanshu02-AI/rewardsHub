@@ -1,7 +1,9 @@
 from fastapi import APIRouter, Depends
-from app.models.user import User, UserUpdate, UserResponse
+
+from app.models.user import User, UserReportingUpdate, UserResponse, UserUpdate, UserCreate
 from app.services.user_service import user_service
 from app.api.dependencies import get_current_user, get_current_admin_user
+from app.services.auth_service import auth_service
 
 router = APIRouter()
 
@@ -32,6 +34,28 @@ async def update_user_preferences(
 async def get_all_users():
     """Get all users (admin only)"""
     return await user_service.get_all_users()
+
+
+@router.post("/provision", response_model=UserResponse)
+async def provision_user(
+    user_data: UserCreate,
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Provision a user with role/manager assignments (admin only)."""
+    user = await auth_service.register_user(user_data, created_by=current_user)
+    return UserResponse(**user.dict())
+
+
+@router.put("/{user_id}/reporting", response_model=UserResponse)
+async def update_reporting_line(
+    user_id: str,
+    payload: UserReportingUpdate,
+    current_user: User = Depends(get_current_admin_user)
+):
+    """Update reporting details like manager or role (admin only)."""
+    updated_user = await user_service.update_reporting(user_id, payload)
+    return UserResponse(**updated_user.dict())
+
 
 @router.post("/assign-points/{user_id}", dependencies=[Depends(get_current_admin_user)])
 async def assign_points(user_id: str, points: int):
