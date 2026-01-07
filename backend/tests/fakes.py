@@ -67,6 +67,10 @@ class FakeCollection:
                     return False
                 if "$in" in value and doc_value not in value["$in"]:
                     return False
+                if "$gte" in value and (doc_value is None or doc_value < value["$gte"]):
+                    return False
+                if "$gt" in value and (doc_value is None or doc_value <= value["$gt"]):
+                    return False
             else:
                 if doc_value != value:
                     return False
@@ -84,7 +88,7 @@ class FakeCollection:
                 return results[0] if results else None
         return None
 
-    async def update_one(self, query: Dict[str, Any], update: Dict[str, Any]) -> Dict[str, int]:
+    async def update_one(self, query: Dict[str, Any], update: Dict[str, Any], **kwargs: Any) -> Dict[str, int]:
         for document in self._documents.values():
             if self._matches(document, query):
                 if "$inc" in update:
@@ -97,7 +101,7 @@ class FakeCollection:
                 return {"matched_count": 1, "modified_count": 1}
         return {"matched_count": 0, "modified_count": 0}
 
-    async def insert_one(self, document: Dict[str, Any]) -> Dict[str, Any]:
+    async def insert_one(self, document: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         self._upsert(document)
         return {"inserted_id": document.get("id")}
 
@@ -109,7 +113,14 @@ class FakeCollection:
 
 
 class FakeDatabase:
-    def __init__(self, users: Optional[Iterable[Dict[str, Any]]] = None, recognitions: Optional[Iterable[Dict[str, Any]]] = None) -> None:
+    def __init__(
+        self,
+        users: Optional[Iterable[Dict[str, Any]]] = None,
+        recognitions: Optional[Iterable[Dict[str, Any]]] = None,
+        rewards: Optional[Iterable[Dict[str, Any]]] = None,
+        redemptions: Optional[Iterable[Dict[str, Any]]] = None,
+    ) -> None:
         self.users = FakeCollection(users)
         self.recognitions = FakeCollection(recognitions)
-
+        self.rewards = FakeCollection(rewards)
+        self.redemptions = FakeCollection(redemptions)
