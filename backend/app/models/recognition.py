@@ -51,6 +51,15 @@ class RecognitionHistoryEntry(BaseModel):
     from_user: RecognitionUserSummary
     to_users: List[RecognitionUserSummary]
 
+class RecognitionFeedEntry(BaseModel):
+    id: str
+    message: str
+    points_awarded: int
+    recognition_type: RecognitionType
+    created_at: datetime
+    from_user: RecognitionUserSummary
+    to_users: List[RecognitionUserSummary]
+
 class Achievement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     user_id: str

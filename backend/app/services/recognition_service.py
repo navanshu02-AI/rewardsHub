@@ -9,6 +9,7 @@ from app.models.enums import RecognitionScope, RecognitionType, UserRole
 from app.models.recognition import (
     Recognition,
     RecognitionCreate,
+    RecognitionFeedEntry,
     RecognitionHistoryEntry,
     RecognitionUserSummary,
 )
@@ -266,6 +267,95 @@ class RecognitionService:
             history.append(entry)
 
         return history
+
+    async def get_public_feed(
+        self,
+        current_user: User,
+        limit: int = 50,
+        cursor: Optional[str] = None,
+        skip: int = 0,
+    ) -> List[RecognitionFeedEntry]:
+        db = await get_database()
+        query: Dict[str, object] = {"is_public": True}
+        cursor_created_at: Optional[datetime] = None
+        cursor_id: Optional[str] = None
+
+        if cursor:
+            try:
+                cursor_created_at_raw, cursor_id = cursor.split("|", 1)
+                cursor_created_at = datetime.fromisoformat(cursor_created_at_raw)
+            except ValueError as exc:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Invalid cursor format.",
+                ) from exc
+
+        if cursor_created_at and cursor_id:
+            query["$or"] = [
+                {"created_at": {"$lt": cursor_created_at}},
+                {"created_at": cursor_created_at, "id": {"$lt": cursor_id}},
+            ]
+
+        cursor_query = db.recognitions.find(query).sort([("created_at", -1), ("id", -1)])
+        if not cursor and skip:
+            cursor_query = cursor_query.skip(skip)
+        records = await cursor_query.limit(limit).to_list(limit)
+
+        user_ids: set[str] = set()
+        for record in records:
+            user_ids.add(record["from_user_id"])
+            for rid in record.get("to_user_ids", []):
+                user_ids.add(rid)
+
+        user_map: Dict[str, RecognitionUserSummary] = {}
+        if user_ids:
+            projection = {
+                "_id": 0,
+                "id": 1,
+                "first_name": 1,
+                "last_name": 1,
+                "department": 1,
+                "role": 1,
+                "manager_id": 1,
+                "avatar_url": 1,
+            }
+            docs = await db.users.find({"id": {"$in": list(user_ids)}}, projection).to_list(len(user_ids))
+            user_map = {doc["id"]: self._map_user_summary(doc) for doc in docs}
+
+        feed: List[RecognitionFeedEntry] = []
+        for record in records:
+            from_summary = self._extract_snapshot(record.get("from_user_snapshot"))
+            if not from_summary:
+                from_summary = user_map.get(record["from_user_id"])
+            to_summaries = [
+                summary
+                for summary in (
+                    [self._extract_snapshot(snap) for snap in record.get("to_user_snapshots", [])]
+                    or [user_map.get(rid) for rid in record.get("to_user_ids", [])]
+                )
+                if summary is not None
+            ]
+            if not from_summary:
+                continue
+            try:
+                rec_type = record.get("recognition_type")
+                rec_type_enum = rec_type if isinstance(rec_type, RecognitionType) else RecognitionType(rec_type)
+            except ValueError:
+                rec_type_enum = RecognitionType.PEER_TO_PEER
+
+            feed.append(
+                RecognitionFeedEntry(
+                    id=record["id"],
+                    message=record["message"],
+                    points_awarded=record["points_awarded"],
+                    recognition_type=rec_type_enum,
+                    created_at=record.get("created_at", datetime.utcnow()),
+                    from_user=from_summary,
+                    to_users=to_summaries,
+                )
+            )
+
+        return feed
 
     async def _reward_recipients(
         self, recipients: Sequence[Dict[str, object]], points: int, session=None
