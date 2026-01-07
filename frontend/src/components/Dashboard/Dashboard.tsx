@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
@@ -53,21 +54,11 @@ const Dashboard: React.FC = () => {
   const [showRecognitionModal, setShowRecognitionModal] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchData();
   }, [currency]);
-
-  useEffect(() => {
-    if (!toastMessage) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setToastMessage(null), 4000);
-    return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
 
   const rewardsById = useMemo(() => {
     const map = new Map<string, Reward>();
@@ -120,7 +111,7 @@ const Dashboard: React.FC = () => {
     );
 
     const suffix = message ? ` ${message}` : '';
-    setToastMessage(`Reward redeemed successfully!${suffix}`);
+    toast.success(`Reward redeemed successfully!${suffix}`);
   };
 
   const handleRecommendGift = () => {
@@ -139,11 +130,6 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {toastMessage && (
-        <div className="notification-toast" role="status" aria-live="polite">
-          {toastMessage}
-        </div>
-      )}
       <RecognitionModal
         isOpen={showRecognitionModal}
         onClose={() => setShowRecognitionModal(false)}
