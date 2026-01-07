@@ -9,6 +9,7 @@ import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
+import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
@@ -47,6 +48,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <RecognitionHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/feed"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <RecognitionFeedPage />
                 </ProtectedRoute>
               }
             />
