@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime
-from typing import Any, Dict, Iterable, List, Optional
+from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 
 class FakeCursor:
@@ -11,9 +11,25 @@ class FakeCursor:
         self._projection = projection
         self._limit: Optional[int] = None
 
-    def sort(self, key: str, direction: int) -> "FakeCursor":
-        reverse = direction == -1
+    def sort(
+        self,
+        key: str | Sequence[tuple[str, int]],
+        direction: Optional[int] = None,
+    ) -> "FakeCursor":
+        if isinstance(key, (list, tuple)):
+            sort_fields = list(key)
+            for field, field_direction in reversed(sort_fields):
+                reverse = field_direction == -1
+                self._documents.sort(key=lambda doc: doc.get(field), reverse=reverse)
+            return self
+
+        reverse = (direction or 1) == -1
         self._documents.sort(key=lambda doc: doc.get(key), reverse=reverse)
+        return self
+
+    def skip(self, count: int) -> "FakeCursor":
+        if count > 0:
+            self._documents = self._documents[count:]
         return self
 
     def limit(self, limit: int) -> "FakeCursor":
@@ -70,6 +86,10 @@ class FakeCollection:
                 if "$gte" in value and (doc_value is None or doc_value < value["$gte"]):
                     return False
                 if "$gt" in value and (doc_value is None or doc_value <= value["$gt"]):
+                    return False
+                if "$lte" in value and (doc_value is None or doc_value > value["$lte"]):
+                    return False
+                if "$lt" in value and (doc_value is None or doc_value >= value["$lt"]):
                     return False
             else:
                 if doc_value != value:

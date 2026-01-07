@@ -4,7 +4,12 @@ from fastapi import APIRouter, Depends, Query
 
 from app.api.dependencies import get_current_user
 from app.models.enums import RecognitionType
-from app.models.recognition import Recognition, RecognitionCreate, RecognitionHistoryEntry
+from app.models.recognition import (
+    Recognition,
+    RecognitionCreate,
+    RecognitionFeedEntry,
+    RecognitionHistoryEntry,
+)
 from app.models.user import User
 from app.services.recognition_service import recognition_service
 
@@ -40,4 +45,19 @@ async def get_history(
         direction=direction,
         recognition_type=recognition_type,
         limit=limit,
+    )
+
+
+@router.get("/feed", response_model=List[RecognitionFeedEntry])
+async def get_public_feed(
+    limit: int = Query(50, ge=1, le=50),
+    cursor: Optional[str] = Query(None, description="Pagination cursor in '<created_at>|<id>' format"),
+    skip: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
+) -> List[RecognitionFeedEntry]:
+    return await recognition_service.get_public_feed(
+        current_user,
+        limit=limit,
+        cursor=cursor,
+        skip=skip,
     )
