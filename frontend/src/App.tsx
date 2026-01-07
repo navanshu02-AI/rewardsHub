@@ -8,6 +8,7 @@ import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
+import RedemptionsPage from './pages/RedemptionsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -40,6 +41,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <RecognitionHistoryPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/redemptions"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <RedemptionsPage />
                 </ProtectedRoute>
               }
             />
