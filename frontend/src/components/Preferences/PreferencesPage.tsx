@@ -1,5 +1,6 @@
 import React, { useEffect, useState } from 'react';
 import axios from 'axios';
+import toast from 'react-hot-toast';
 import RegionCurrencySelector from '../Common/RegionCurrencySelector';
 import { useAuth, REGION_CONFIG, Region, Currency } from '../../contexts/AuthContext';
 
@@ -86,7 +87,6 @@ const PreferencesPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [newInterest, setNewInterest] = useState('');
   const [newBrand, setNewBrand] = useState('');
-  const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   useEffect(() => {
     fetchCategories();
@@ -122,15 +122,6 @@ const PreferencesPage: React.FC = () => {
     setPreferences((prev) => ({ ...prev, region, currency, price_range: priceRange }));
   }, [region, currency]);
 
-  useEffect(() => {
-    if (!toastMessage) {
-      return;
-    }
-
-    const timeout = window.setTimeout(() => setToastMessage(null), 4000);
-    return () => window.clearTimeout(timeout);
-  }, [toastMessage]);
-
   const fetchCategories = async () => {
     try {
       const response = await axios.get(`${API}/preferences/categories`);
@@ -154,9 +145,9 @@ const PreferencesPage: React.FC = () => {
     const result = await updateUserPreferences(preferences as any);
     setLoading(false);
     if (result.success) {
-      setToastMessage('Preferences updated successfully! 🎉');
+      toast.success('Preferences updated successfully! 🎉');
     } else {
-      alert('Failed to update preferences: ' + result.error);
+      toast.error(`Failed to update preferences: ${result.error || 'Unknown error'}`);
     }
   };
 
@@ -220,11 +211,6 @@ const PreferencesPage: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-      {toastMessage && (
-        <div className="notification-toast" role="status" aria-live="polite">
-          {toastMessage}
-        </div>
-      )}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">Preferences {REGION_CONFIG[region].flag}</h1>
         <p className="mt-2 text-gray-600">Customize your experience to get localized recommendations, pricing, and rewards.</p>

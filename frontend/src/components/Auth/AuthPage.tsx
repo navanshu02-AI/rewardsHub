@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
+import toast from 'react-hot-toast';
 import { useAuth } from '../../contexts/AuthContext';
 
 const AuthPage: React.FC = () => {
@@ -35,7 +36,7 @@ const AuthPage: React.FC = () => {
         if (result.success) {
           setIsLogin(true);
           setError('');
-          alert('Registration successful! Please login.');
+          toast.success('Registration successful! Please login.');
         } else {
           setError(result.error || 'Registration failed');
         }

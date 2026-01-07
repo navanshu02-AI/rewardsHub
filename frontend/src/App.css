@@ -63,22 +63,6 @@
   @apply w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent;
 }
 
-.notification-toast {
-  @apply fixed top-4 right-4 bg-green-500 text-white p-4 rounded-lg shadow-lg z-50;
-  animation: slideIn 0.3s ease-out;
-}
-
-@keyframes slideIn {
-  from {
-    transform: translateX(100%);
-    opacity: 0;
-  }
-  to {
-    transform: translateX(0);
-    opacity: 1;
-  }
-}
-
 .loader {
   border: 4px solid #f3f3f3;
   border-top: 4px solid #3498db;
