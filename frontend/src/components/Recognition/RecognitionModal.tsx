@@ -1,5 +1,6 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import axios from 'axios';
+import * as Dialog from '@radix-ui/react-dialog';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
@@ -51,6 +52,7 @@ const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshUser } = useAuth();
+  const lastFocusedElement = useRef<HTMLElement | null>(null);
   const [scopes, setScopes] = useState<RecipientResponse | null>(null);
   const [scopeLoading, setScopeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
@@ -70,9 +72,13 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
   useEffect(() => {
     if (isOpen) {
+      lastFocusedElement.current = document.activeElement as HTMLElement | null;
       void loadRecipients();
     } else {
       resetForm();
+      if (lastFocusedElement.current && document.contains(lastFocusedElement.current)) {
+        lastFocusedElement.current.focus();
+      }
     }
   }, [isOpen]);
 
@@ -165,172 +171,183 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const activeScope = scopes ? scopes[selectedScope] : null;
   const recipients = activeScope?.recipients || [];
 
-  if (!isOpen) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-40 px-4">
-      <div className="bg-white rounded-xl shadow-xl max-w-2xl w-full p-6 overflow-y-auto max-h-[90vh]">
-        <div className="flex items-start justify-between mb-4">
-          <div>
-            <h2 className="text-2xl font-semibold text-gray-900">Celebrate a teammate</h2>
-            <p className="text-sm text-gray-500">Send a note of appreciation and reward points in seconds.</p>
-          </div>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600" aria-label="Close recognition modal">
-            <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-            </svg>
-          </button>
-        </div>
-
-        {error && (
-          <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-            {error}
-          </div>
-        )}
-
-        {scopeLoading ? (
-          <div className="flex items-center justify-center py-12">
-            <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-          </div>
-        ) : (
-          <form onSubmit={handleSubmit} className="space-y-6">
-            <section>
-              <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Recognition scope</h3>
-              <div className="mt-3 flex flex-wrap gap-2">
-                {renderScopeButton('peer', 'Peers')}
-                {renderScopeButton('report', 'Direct reports')}
-                {renderScopeButton('global', 'Company-wide')}
-              </div>
-              {activeScope?.description && (
-                <p className="mt-2 text-sm text-gray-500">{activeScope.description}</p>
-              )}
-              {activeScope?.emptyMessage && !recipients.length && (
-                <p className="mt-2 text-sm text-amber-600">{activeScope.emptyMessage}</p>
-              )}
-            </section>
-
-            <section>
-              <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
-                Choose recipient
-              </label>
-              <select
-                id="recognition-recipient"
-                value={selectedRecipient}
-                onChange={(event) => setSelectedRecipient(event.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                disabled={!recipients.length}
-              >
-                <option value="" disabled>
-                  {recipients.length ? 'Select a teammate' : 'No eligible teammates yet'}
-                </option>
-                {recipients.map((recipient) => (
-                  <option key={recipient.id} value={recipient.id}>
-                    {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
-                    {recipient.department ? ` · ${recipient.department}` : ''}
-                  </option>
-                ))}
-              </select>
-              {!recipients.length && (
-                <p className="mt-2 text-sm text-gray-500">
-                  Need to recognise someone outside this list? Reach out to your manager or HR partner so we can enable the right scope.
-                </p>
-              )}
-            </section>
-
-            <section>
-              <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-type">
-                Recognition type
-              </label>
-              <select
-                id="recognition-type"
-                value={recognitionType}
-                onChange={(event) => setRecognitionType(event.target.value)}
-                className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                {RECOGNITION_TYPES.map((type) => (
-                  <option key={type.value} value={type.value}>
-                    {type.label}
-                  </option>
-                ))}
-              </select>
-              {RECOGNITION_TYPES.find((type) => type.value === recognitionType)?.helper && (
-                <p className="mt-2 text-sm text-gray-500">
-                  {RECOGNITION_TYPES.find((type) => type.value === recognitionType)?.helper}
-                </p>
-              )}
-            </section>
-
-            <section>
-              <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-message">
-                Appreciation message
-              </label>
-              <textarea
-                id="recognition-message"
-                value={message}
-                onChange={(event) => setMessage(event.target.value)}
-                rows={4}
-                className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                placeholder="Share what they did brilliantly..."
-              />
-              <p className="mt-2 text-xs text-gray-400">Helpful context makes recognition feel personal and sincere.</p>
-            </section>
-
-            <section>
-              <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-gray-700">Reward points</span>
-                {canConfigurePoints ? (
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="number"
-                      min={10}
-                      max={10000}
-                      value={points}
-                      onChange={(event) => {
-                        const value = Number(event.target.value);
-                        if (!Number.isNaN(value)) {
-                          setPoints(Math.min(10000, Math.max(10, value)));
-                        }
-                      }}
-                      className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-right shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                    <span className="text-sm text-gray-500">points</span>
-                  </div>
-                ) : (
-                  <span className="text-sm text-gray-500">
-                    Peers award a standard 10 points for each recognition. Leaders can request additional points from HR.
-                  </span>
-                )}
-              </div>
-            </section>
-
-            <div className="flex justify-end gap-3 pt-4">
-              <button
-                type="button"
-                className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
-                onClick={onClose}
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={submitting}
-                className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
-              >
-                {submitting && (
-                  <svg className="-ml-1 mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                  </svg>
-                )}
-                Send recognition
-              </button>
+    <Dialog.Root
+      open={isOpen}
+      onOpenChange={(openState) => {
+        if (!openState) {
+          onClose();
+        }
+      }}
+    >
+      <Dialog.Portal>
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black bg-opacity-40" />
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(95vw,40rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl outline-none max-h-[90vh] overflow-y-auto">
+          <div className="flex items-start justify-between mb-4">
+            <div>
+              <Dialog.Title className="text-2xl font-semibold text-gray-900">Celebrate a teammate</Dialog.Title>
+              <Dialog.Description className="text-sm text-gray-500">
+                Send a note of appreciation and reward points in seconds.
+              </Dialog.Description>
             </div>
-          </form>
-        )}
-      </div>
-    </div>
+            <Dialog.Close asChild>
+              <button className="text-gray-400 hover:text-gray-600" aria-label="Close recognition modal">
+                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            </Dialog.Close>
+          </div>
+
+          {error && (
+            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+              {error}
+            </div>
+          )}
+
+          {scopeLoading ? (
+            <div className="flex items-center justify-center py-12">
+              <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+            </div>
+          ) : (
+            <form onSubmit={handleSubmit} className="space-y-6">
+              <section>
+                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Recognition scope</h3>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {renderScopeButton('peer', 'Peers')}
+                  {renderScopeButton('report', 'Direct reports')}
+                  {renderScopeButton('global', 'Company-wide')}
+                </div>
+                {activeScope?.description && (
+                  <p className="mt-2 text-sm text-gray-500">{activeScope.description}</p>
+                )}
+                {activeScope?.emptyMessage && !recipients.length && (
+                  <p className="mt-2 text-sm text-amber-600">{activeScope.emptyMessage}</p>
+                )}
+              </section>
+
+              <section>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
+                  Choose recipient
+                </label>
+                <select
+                  id="recognition-recipient"
+                  value={selectedRecipient}
+                  onChange={(event) => setSelectedRecipient(event.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  disabled={!recipients.length}
+                >
+                  <option value="" disabled>
+                    {recipients.length ? 'Select a teammate' : 'No eligible teammates yet'}
+                  </option>
+                  {recipients.map((recipient) => (
+                    <option key={recipient.id} value={recipient.id}>
+                      {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
+                      {recipient.department ? ` · ${recipient.department}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {!recipients.length && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    Need to recognise someone outside this list? Reach out to your manager or HR partner so we can enable the right scope.
+                  </p>
+                )}
+              </section>
+
+              <section>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-type">
+                  Recognition type
+                </label>
+                <select
+                  id="recognition-type"
+                  value={recognitionType}
+                  onChange={(event) => setRecognitionType(event.target.value)}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                >
+                  {RECOGNITION_TYPES.map((type) => (
+                    <option key={type.value} value={type.value}>
+                      {type.label}
+                    </option>
+                  ))}
+                </select>
+                {RECOGNITION_TYPES.find((type) => type.value === recognitionType)?.helper && (
+                  <p className="mt-2 text-sm text-gray-500">
+                    {RECOGNITION_TYPES.find((type) => type.value === recognitionType)?.helper}
+                  </p>
+                )}
+              </section>
+
+              <section>
+                <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-message">
+                  Appreciation message
+                </label>
+                <textarea
+                  id="recognition-message"
+                  value={message}
+                  onChange={(event) => setMessage(event.target.value)}
+                  rows={4}
+                  className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  placeholder="Share what they did brilliantly..."
+                />
+                <p className="mt-2 text-xs text-gray-400">Helpful context makes recognition feel personal and sincere.</p>
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm font-medium text-gray-700">Reward points</span>
+                  {canConfigurePoints ? (
+                    <div className="flex items-center gap-2">
+                      <input
+                        type="number"
+                        min={10}
+                        max={10000}
+                        value={points}
+                        onChange={(event) => {
+                          const value = Number(event.target.value);
+                          if (!Number.isNaN(value)) {
+                            setPoints(Math.min(10000, Math.max(10, value)));
+                          }
+                        }}
+                        className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-right shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                      <span className="text-sm text-gray-500">points</span>
+                    </div>
+                  ) : (
+                    <span className="text-sm text-gray-500">
+                      Peers award a standard 10 points for each recognition. Leaders can request additional points from HR.
+                    </span>
+                  )}
+                </div>
+              </section>
+
+              <div className="flex justify-end gap-3 pt-4">
+                <Dialog.Close asChild>
+                  <button
+                    type="button"
+                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                  >
+                    Cancel
+                  </button>
+                </Dialog.Close>
+                <button
+                  type="submit"
+                  disabled={submitting}
+                  className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
+                >
+                  {submitting && (
+                    <svg className="-ml-1 mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                    </svg>
+                  )}
+                  Send recognition
+                </button>
+              </div>
+            </form>
+          )}
+        </Dialog.Content>
+      </Dialog.Portal>
+    </Dialog.Root>
   );
 };
 
