@@ -65,6 +65,12 @@ const NavBar: React.FC = () => {
               >
                 Redemptions
               </button>
+              <button
+                onClick={() => navigate('/preferences')}
+                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+              >
+                Preferences
+              </button>
 
               <div className="relative" ref={menuRef}>
                 <button
