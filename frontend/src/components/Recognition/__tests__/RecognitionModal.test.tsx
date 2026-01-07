@@ -5,7 +5,14 @@ import axios from 'axios';
 import * as AuthContext from '../../../contexts/AuthContext';
 import RecognitionModal from '../RecognitionModal';
 
-jest.mock('axios');
+jest.mock('axios', () => ({
+  __esModule: true,
+  default: {
+    get: jest.fn(),
+    post: jest.fn(),
+    put: jest.fn(),
+  },
+}));
 jest.mock('../../../contexts/AuthContext', () => {
   const actual = jest.requireActual('../../../contexts/AuthContext');
   return {
@@ -158,4 +165,3 @@ test('surfaces backend validation errors during submission', async () => {
   expect(onClose).not.toHaveBeenCalled();
   expect(authValue.refreshUser).not.toHaveBeenCalled();
 });
-
