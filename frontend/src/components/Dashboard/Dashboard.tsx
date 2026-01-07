@@ -1,10 +1,11 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import axios from 'axios';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
 import RecognitionModal from '../Recognition/RecognitionModal';
+import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -50,11 +51,30 @@ const Dashboard: React.FC = () => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [loading, setLoading] = useState(true);
   const [showRecognitionModal, setShowRecognitionModal] = useState(false);
+  const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
+  const [showRedeemModal, setShowRedeemModal] = useState(false);
+  const [toastMessage, setToastMessage] = useState<string | null>(null);
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
     fetchData();
   }, [currency]);
+
+  useEffect(() => {
+    if (!toastMessage) {
+      return;
+    }
+
+    const timeout = window.setTimeout(() => setToastMessage(null), 4000);
+    return () => window.clearTimeout(timeout);
+  }, [toastMessage]);
+
+  const rewardsById = useMemo(() => {
+    const map = new Map<string, Reward>();
+    rewards.forEach((reward) => map.set(reward.id, reward));
+    recommendations?.rewards.forEach((reward) => map.set(reward.id, reward));
+    return map;
+  }, [rewards, recommendations]);
 
   const fetchData = async () => {
     try {
@@ -77,15 +97,30 @@ const Dashboard: React.FC = () => {
     void fetchData();
   };
 
-  const redeemReward = async (rewardId: string) => {
-    try {
-      const response = await axios.post(`${API}/rewards/redeem`, { reward_id: rewardId });
-      alert(`Reward redeemed successfully! ${response.data.message}`);
-      // Refresh data to update points and availability
-      fetchData();
-    } catch (error: any) {
-      alert(error.response?.data?.detail || 'Error redeeming reward');
+  const redeemReward = (rewardId: string) => {
+    const reward = rewardsById.get(rewardId) || null;
+    if (!reward) {
+      return;
     }
+    setSelectedReward(reward);
+    setShowRedeemModal(true);
+  };
+
+  const handleRedeemSuccess = (rewardId: string, message?: string) => {
+    const updateAvailability = (items: Reward[]) =>
+      items.map((reward) =>
+        reward.id === rewardId
+          ? { ...reward, availability: Math.max(0, reward.availability - 1) }
+          : reward
+      );
+
+    setRewards((prev) => updateAvailability(prev));
+    setRecommendations((prev) =>
+      prev ? { ...prev, rewards: updateAvailability(prev.rewards) } : prev
+    );
+
+    const suffix = message ? ` ${message}` : '';
+    setToastMessage(`Reward redeemed successfully!${suffix}`);
   };
 
   const handleRecommendGift = () => {
@@ -104,10 +139,24 @@ const Dashboard: React.FC = () => {
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      {toastMessage && (
+        <div className="notification-toast" role="status" aria-live="polite">
+          {toastMessage}
+        </div>
+      )}
       <RecognitionModal
         isOpen={showRecognitionModal}
         onClose={() => setShowRecognitionModal(false)}
         onSuccess={handleRecognitionSuccess}
+      />
+      <RedeemRewardModal
+        isOpen={showRedeemModal}
+        reward={selectedReward}
+        onClose={() => {
+          setShowRedeemModal(false);
+          setSelectedReward(null);
+        }}
+        onSuccess={handleRedeemSuccess}
       />
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-gray-900">
