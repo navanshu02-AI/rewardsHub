@@ -1,9 +1,12 @@
 from typing import List, Optional
 from fastapi import APIRouter, Depends, Query
 from app.models.reward import Reward, RewardCreate, RewardUpdate
+from app.models.recognition import RewardRedemption, RewardRedemptionCreate
 from app.models.enums import PreferenceCategory, RewardType
 from app.services.reward_service import reward_service
-from app.api.dependencies import get_current_admin_user
+from app.services.redemption_service import redemption_service
+from app.api.dependencies import get_current_admin_user, get_current_user
+from app.models.user import User
 
 router = APIRouter()
 
@@ -31,3 +34,16 @@ async def update_reward(reward_id: str, update_data: RewardUpdate):
 async def seed_rewards():
     """Seed sample Indian market rewards (admin only)"""
     return await reward_service.seed_indian_rewards()
+
+@router.post("/redeem", response_model=RewardRedemption)
+async def redeem_reward(
+    payload: RewardRedemptionCreate,
+    current_user: User = Depends(get_current_user),
+):
+    """Redeem a reward for the current user"""
+    return await redemption_service.redeem_reward(current_user, payload)
+
+@router.get("/redemptions/me", response_model=List[RewardRedemption])
+async def get_my_redemptions(current_user: User = Depends(get_current_user)):
+    """Get reward redemptions for the current user"""
+    return await redemption_service.get_user_redemptions(current_user)
