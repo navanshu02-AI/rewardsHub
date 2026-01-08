@@ -60,6 +60,7 @@ class FakeCursor:
 class FakeCollection:
     def __init__(self, documents: Optional[Iterable[Dict[str, Any]]] = None) -> None:
         self._documents: Dict[str, Dict[str, Any]] = {}
+        self.indexes: List[Any] = []
         if documents:
             for document in documents:
                 self._upsert(document)
@@ -124,6 +125,10 @@ class FakeCollection:
     async def insert_one(self, document: Dict[str, Any], **kwargs: Any) -> Dict[str, Any]:
         self._upsert(document)
         return {"inserted_id": document.get("id")}
+
+    async def create_index(self, keys: Any, **kwargs: Any) -> str:
+        self.indexes.append(keys)
+        return kwargs.get("name", str(keys))
 
     def values(self) -> List[Dict[str, Any]]:
         return [deepcopy(doc) for doc in self._documents.values()]
