@@ -11,6 +11,11 @@ type RecognitionTypeOption = {
   helper?: string;
 };
 
+type MessageToneOption = {
+  value: 'warm' | 'formal' | 'short' | 'enthusiastic';
+  label: string;
+};
+
 type RecipientSummary = {
   id: string;
   first_name: string;
@@ -45,6 +50,13 @@ const RECOGNITION_TYPES: RecognitionTypeOption[] = [
   { value: 'spot_award', label: 'Spot Award', helper: 'Instant kudos for above-and-beyond impact.' }
 ];
 
+const MESSAGE_TONES: MessageToneOption[] = [
+  { value: 'warm', label: 'Warm' },
+  { value: 'formal', label: 'Formal' },
+  { value: 'short', label: 'Short' },
+  { value: 'enthusiastic', label: 'Enthusiastic' }
+];
+
 const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -57,8 +69,10 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [recognitionType, setRecognitionType] = useState<string>(RECOGNITION_TYPES[0].value);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<MessageToneOption['value']>('warm');
   const [points, setPoints] = useState<number>(10);
   const [error, setError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const canConfigurePoints = useMemo(() => {
     if (!user) {
@@ -83,6 +97,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setMessage('');
     setSelectedRecipient('');
     setRecognitionType(RECOGNITION_TYPES[0].value);
+    setMessageTone('warm');
     setSelectedScope('peer');
     setPoints(10);
     setError(null);
@@ -141,6 +156,33 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleImproveMessage = async () => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      setError('Add a message before requesting a suggestion.');
+      return;
+    }
+
+    setAiLoading(true);
+    setError(null);
+    try {
+      const response = await api.post<{ suggestion: string }>('/recognitions/assist-message', {
+        message: trimmedMessage,
+        tone: messageTone
+      });
+      if (response.data?.suggestion) {
+        setMessage(response.data.suggestion);
+      } else {
+        setError('No suggestion was returned. Please try again.');
+      }
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || err.response?.data?.error;
+      setError(detail || 'We could not generate a suggestion right now. Please try again later.');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -286,7 +328,37 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Share what they did brilliantly..."
                 />
-                <p className="mt-2 text-xs text-gray-400">Helpful context makes recognition feel personal and sincere.</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="font-medium text-gray-600">Tone</span>
+                    <select
+                      value={messageTone}
+                      onChange={(event) => setMessageTone(event.target.value as MessageToneOption['value'])}
+                      className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      {MESSAGE_TONES.map((tone) => (
+                        <option key={tone.value} value={tone.value}>
+                          {tone.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <button
+                    type="button"
+                    onClick={handleImproveMessage}
+                    disabled={aiLoading || !message.trim()}
+                    className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {aiLoading && (
+                      <svg className="-ml-1 mr-2 h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                    )}
+                    Improve with AI
+                  </button>
+                  <p className="text-xs text-gray-400">AI suggests a rewrite you can edit before sending.</p>
+                </div>
               </section>
 
               <section>
