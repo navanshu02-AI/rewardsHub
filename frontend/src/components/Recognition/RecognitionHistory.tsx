@@ -1,9 +1,6 @@
 import React, { useCallback, useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import { useAuth } from '../../contexts/AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
 
 type RecognitionScope = 'peer' | 'report' | 'global';
 
@@ -58,7 +55,7 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
       if (typeFilter !== 'all') {
         params.recognition_type = typeFilter;
       }
-      const response = await axios.get<RecognitionEntry[]>(`${API}/recognitions`, { params });
+      const response = await api.get<RecognitionEntry[]>('/recognitions', { params });
       setHistory(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load recognition history right now.');

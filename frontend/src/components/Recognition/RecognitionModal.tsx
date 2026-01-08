@@ -1,10 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
 
 type RecognitionScope = 'peer' | 'report' | 'global';
 
@@ -95,7 +92,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setScopeLoading(true);
     setError(null);
     try {
-      const response = await axios.get<RecipientResponse>(`${API}/recognitions/recipients`);
+      const response = await api.get<RecipientResponse>('/recognitions/recipients');
       setScopes(response.data);
       const defaultScope = (['peer', 'report', 'global'] as RecognitionScope[]).find(
         (scopeKey) => response.data[scopeKey]?.enabled
@@ -126,7 +123,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
     setSubmitting(true);
     try {
-      await axios.post(`${API}/recognitions`, {
+      await api.post('/recognitions', {
         to_user_id: selectedRecipient,
         recognition_type: recognitionType,
         message,

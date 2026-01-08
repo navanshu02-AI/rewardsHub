@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import RecommendationsSection from './RecommendationsSection';
@@ -7,9 +7,6 @@ import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
 
 interface Reward {
   id: string;
@@ -70,8 +67,8 @@ const Dashboard: React.FC = () => {
   const fetchData = async () => {
     try {
       const [recommendationsRes, rewardsRes] = await Promise.all([
-        axios.get(`${API}/recommendations`, { params: { currency } }),
-        axios.get(`${API}/rewards`, { params: { currency } })
+        api.get('/recommendations', { params: { currency } }),
+        api.get('/rewards', { params: { currency } })
       ]);
 
       setRecommendations(recommendationsRes.data);
