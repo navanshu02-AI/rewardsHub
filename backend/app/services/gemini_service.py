@@ -84,4 +84,46 @@ class GeminiService:
 
         raise Exception("Failed to get a response from Gemini after several retries.")
 
+    async def rewrite_message(self, system_prompt: str, user_prompt: str) -> str:
+        if not self.enabled:
+            raise ValueError("Gemini API is disabled. Set GEMINI_API_KEY to enable it.")
+
+        headers = {"Content-Type": "application/json"}
+        contents = [
+            {"role": "user", "parts": [{"text": system_prompt}]},
+            {"role": "model", "parts": [{"text": "OK"}]},
+            {"role": "user", "parts": [{"text": user_prompt}]},
+        ]
+        data = {
+            "contents": contents,
+            "generationConfig": {
+                "response_mime_type": "text/plain",
+                "temperature": 0.4,
+                "maxOutputTokens": 512,
+            },
+        }
+
+        retries = 3
+        delay = 1.0
+
+        for i in range(retries):
+            try:
+                async with httpx.AsyncClient() as client:
+                    response = await client.post(self.api_url, headers=headers, json=data, timeout=40.0)
+                    response.raise_for_status()
+
+                    response_json = response.json()
+                    content = response_json["candidates"][0]["content"]["parts"][0]["text"]
+                    return content.strip()
+
+            except httpx.HTTPStatusError as e:
+                if e.response.status_code == 429 and i < retries - 1:
+                    wait_time = delay * (2 ** i) + random.uniform(0, 1)
+                    print(f"Rate limit exceeded. Retrying in {wait_time:.2f} seconds...")
+                    await asyncio.sleep(wait_time)
+                else:
+                    raise e
+
+        raise Exception("Failed to get a response from Gemini after several retries.")
+
 gemini_service = GeminiService()

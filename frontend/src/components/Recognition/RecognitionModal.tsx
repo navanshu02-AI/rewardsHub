@@ -59,6 +59,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [message, setMessage] = useState('');
   const [points, setPoints] = useState<number>(10);
   const [error, setError] = useState<string | null>(null);
+  const [aiLoading, setAiLoading] = useState(false);
 
   const canConfigurePoints = useMemo(() => {
     if (!user) {
@@ -141,6 +142,32 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
       }
     } finally {
       setSubmitting(false);
+    }
+  };
+
+  const handleImproveMessage = async () => {
+    const trimmedMessage = message.trim();
+    if (!trimmedMessage) {
+      setError('Add a message before requesting a suggestion.');
+      return;
+    }
+
+    setAiLoading(true);
+    setError(null);
+    try {
+      const response = await api.post<{ suggestion: string }>('/recognitions/assist-message', {
+        message: trimmedMessage
+      });
+      if (response.data?.suggestion) {
+        setMessage(response.data.suggestion);
+      } else {
+        setError('No suggestion was returned. Please try again.');
+      }
+    } catch (err: any) {
+      const detail = err.response?.data?.detail || err.response?.data?.error;
+      setError(detail || 'We could not generate a suggestion right now. Please try again later.');
+    } finally {
+      setAiLoading(false);
     }
   };
 
@@ -286,7 +313,23 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Share what they did brilliantly..."
                 />
-                <p className="mt-2 text-xs text-gray-400">Helpful context makes recognition feel personal and sincere.</p>
+                <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <button
+                    type="button"
+                    onClick={handleImproveMessage}
+                    disabled={aiLoading || !message.trim()}
+                    className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                  >
+                    {aiLoading && (
+                      <svg className="-ml-1 mr-2 h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                    )}
+                    Improve with AI
+                  </button>
+                  <p className="text-xs text-gray-400">AI suggests a rewrite you can edit before sending.</p>
+                </div>
               </section>
 
               <section>

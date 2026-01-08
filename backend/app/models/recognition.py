@@ -1,6 +1,6 @@
 from datetime import datetime
 import uuid
-from typing import List, Optional
+from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
 from app.models.enums import RecognitionType, AchievementType, RecognitionScope, UserRole
 
@@ -59,6 +59,14 @@ class RecognitionFeedEntry(BaseModel):
     created_at: datetime
     from_user: RecognitionUserSummary
     to_users: List[RecognitionUserSummary]
+
+class RecognitionMessageAssistRequest(BaseModel):
+    message: str
+    tone: Optional[Literal["warm", "formal", "short", "enthusiastic"]] = None
+
+class RecognitionMessageAssistResponse(BaseModel):
+    suggestion: str
+    safety_notes: Optional[List[str]] = None
 
 class Achievement(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
