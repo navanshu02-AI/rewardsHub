@@ -56,6 +56,25 @@ git clone https://github.com/your-username/rewardsHub.git
 cd rewardsHub
 ```
 
+### 🐳 Local dev with Docker
+
+If you prefer containers, the repo includes a developer-friendly Docker Compose setup for MongoDB, the FastAPI backend, and the React dev server.
+
+```bash
+docker compose up --build
+```
+
+Services will be available at:
+
+- Backend API: `http://localhost:8000`
+- Frontend app: `http://localhost:3000`
+
+To stop the stack:
+
+```bash
+docker compose down
+```
+
 ### 3. Backend Setup
 
 The backend is powered by FastAPI.
