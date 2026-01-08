@@ -11,6 +11,11 @@ type RecognitionTypeOption = {
   helper?: string;
 };
 
+type MessageToneOption = {
+  value: 'warm' | 'formal' | 'short' | 'enthusiastic';
+  label: string;
+};
+
 type RecipientSummary = {
   id: string;
   first_name: string;
@@ -45,6 +50,13 @@ const RECOGNITION_TYPES: RecognitionTypeOption[] = [
   { value: 'spot_award', label: 'Spot Award', helper: 'Instant kudos for above-and-beyond impact.' }
 ];
 
+const MESSAGE_TONES: MessageToneOption[] = [
+  { value: 'warm', label: 'Warm' },
+  { value: 'formal', label: 'Formal' },
+  { value: 'short', label: 'Short' },
+  { value: 'enthusiastic', label: 'Enthusiastic' }
+];
+
 const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -57,6 +69,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [selectedRecipient, setSelectedRecipient] = useState<string>('');
   const [recognitionType, setRecognitionType] = useState<string>(RECOGNITION_TYPES[0].value);
   const [message, setMessage] = useState('');
+  const [messageTone, setMessageTone] = useState<MessageToneOption['value']>('warm');
   const [points, setPoints] = useState<number>(10);
   const [error, setError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
@@ -84,6 +97,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setMessage('');
     setSelectedRecipient('');
     setRecognitionType(RECOGNITION_TYPES[0].value);
+    setMessageTone('warm');
     setSelectedScope('peer');
     setPoints(10);
     setError(null);
@@ -156,7 +170,8 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setError(null);
     try {
       const response = await api.post<{ suggestion: string }>('/recognitions/assist-message', {
-        message: trimmedMessage
+        message: trimmedMessage,
+        tone: messageTone
       });
       if (response.data?.suggestion) {
         setMessage(response.data.suggestion);
@@ -314,6 +329,20 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   placeholder="Share what they did brilliantly..."
                 />
                 <div className="mt-2 flex flex-wrap items-center gap-3">
+                  <div className="flex items-center gap-2 text-xs text-gray-500">
+                    <span className="font-medium text-gray-600">Tone</span>
+                    <select
+                      value={messageTone}
+                      onChange={(event) => setMessageTone(event.target.value as MessageToneOption['value'])}
+                      className="rounded-full border border-gray-200 bg-white px-2 py-1 text-xs text-gray-600 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      {MESSAGE_TONES.map((tone) => (
+                        <option key={tone.value} value={tone.value}>
+                          {tone.label}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
                   <button
                     type="button"
                     onClick={handleImproveMessage}
