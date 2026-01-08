@@ -1,8 +1,5 @@
 import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
+import api from '../lib/api';
 
 export type UserRole = 'employee' | 'manager' | 'hr_admin' | 'executive' | 'c_level';
 
@@ -94,7 +91,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       setLoading(true);
     }
     try {
-      const response = await axios.get(`${API}/users/me`);
+      const response = await api.get('/users/me');
       setUser(response.data);
       const preferenceRegion = response.data?.preferences?.region as Region | undefined;
       const preferenceCurrency = response.data?.preferences?.currency as Currency | undefined;
@@ -123,7 +120,6 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
 
     if (token) {
-      axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       fetchUserProfile();
     } else {
       setLoading(false);
@@ -132,11 +128,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const login = async (email: string, password: string) => {
     try {
-      const response = await axios.post(`${API}/auth/login`, { email, password });
+      const response = await api.post('/auth/login', { email, password });
       const { access_token } = response.data;
       localStorage.setItem('token', access_token);
       setToken(access_token);
-      axios.defaults.headers.common['Authorization'] = `Bearer ${access_token}`;
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Login failed' };
@@ -145,7 +140,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const register = async (userData: any) => {
     try {
-      const response = await axios.post(`${API}/auth/register`, userData);
+      const response = await api.post('/auth/register', userData);
       return { success: true, data: response.data };
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Registration failed' };
@@ -156,12 +151,11 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     localStorage.removeItem('token');
     setToken(null);
     setUser(null);
-    delete axios.defaults.headers.common['Authorization'];
   };
 
   const requestPasswordReset = async (email: string) => {
     try {
-      const response = await axios.post(`${API}/auth/forgot-password`, { email });
+      const response = await api.post('/auth/forgot-password', { email });
       return {
         success: true,
         resetToken: response.data?.reset_token,
@@ -175,7 +169,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const resetPassword = async (token: string, newPassword: string) => {
     try {
-      const response = await axios.post(`${API}/auth/reset-password`, {
+      const response = await api.post('/auth/reset-password', {
         token,
         new_password: newPassword
       });
@@ -187,7 +181,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
 
   const updateUserPreferences = async (preferences: any) => {
     try {
-      const response = await axios.put(`${API}/users/me/preferences`, preferences);
+      const response = await api.put('/users/me/preferences', preferences);
       setUser(response.data);
       if (preferences.region && REGION_CONFIG[preferences.region as Region]) {
         const preferredRegion = preferences.region as Region;

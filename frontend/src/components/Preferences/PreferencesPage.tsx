@@ -1,11 +1,8 @@
 import React, { useEffect, useState } from 'react';
-import axios from 'axios';
+import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import RegionCurrencySelector from '../Common/RegionCurrencySelector';
 import { useAuth, REGION_CONFIG, Region, Currency } from '../../contexts/AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
 
 interface Category {
   value: string;
@@ -124,7 +121,7 @@ const PreferencesPage: React.FC = () => {
 
   const fetchCategories = async () => {
     try {
-      const response = await axios.get(`${API}/preferences/categories`);
+      const response = await api.get('/preferences/categories');
       setCategories(response.data || []);
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -133,7 +130,7 @@ const PreferencesPage: React.FC = () => {
 
   const fetchRewardTypes = async () => {
     try {
-      const response = await axios.get(`${API}/preferences/reward-types`);
+      const response = await api.get('/preferences/reward-types');
       setRewardTypes(response.data || []);
     } catch (error) {
       console.error('Error fetching reward types:', error);
