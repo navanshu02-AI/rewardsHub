@@ -45,7 +45,11 @@ class RecognitionService:
 
         peers: List[RecognitionUserSummary] = []
         peer_enabled = True
-        peer_query: Dict[str, object] = {"id": {"$ne": current_user.id}, "is_active": True}
+        peer_query: Dict[str, object] = {
+            "id": {"$ne": current_user.id},
+            "is_active": True,
+            "org_id": current_user.org_id,
+        }
         peer_message: Optional[str] = None
         if current_user.manager_id:
             peer_query["manager_id"] = current_user.manager_id
@@ -65,7 +69,7 @@ class RecognitionService:
         report_docs: List[Dict[str, object]] = []
         if report_enabled:
             report_docs = await db.users.find(
-                {"manager_id": current_user.id, "is_active": True},
+                {"manager_id": current_user.id, "is_active": True, "org_id": current_user.org_id},
                 projection,
             ).to_list(200)
         reports = [self._map_user_summary(doc) for doc in report_docs]
@@ -79,7 +83,7 @@ class RecognitionService:
         global_docs: List[Dict[str, object]] = []
         if global_enabled:
             global_docs = await db.users.find(
-                {"id": {"$ne": current_user.id}, "is_active": True},
+                {"id": {"$ne": current_user.id}, "is_active": True, "org_id": current_user.org_id},
                 projection,
             ).to_list(500)
         globals_list = [self._map_user_summary(doc) for doc in global_docs]
@@ -129,7 +133,7 @@ class RecognitionService:
         if not recipient_ids:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="You must choose someone other than yourself")
 
-        recipients = await self._load_users(recipient_ids)
+        recipients = await self._load_users(recipient_ids, org_id=current_user.org_id)
         if len(recipients) != len(recipient_ids):
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="One or more selected teammates were not found")
 
@@ -138,6 +142,7 @@ class RecognitionService:
         points_awarded = self._determine_points(user_role, payload.points_awarded)
 
         recognition = Recognition(
+            org_id=current_user.org_id,
             from_user_id=current_user.id,
             to_user_id=recipients[0]["id"] if len(recipients) == 1 else None,
             to_user_ids=[recipient["id"] for recipient in recipients],
@@ -168,7 +173,12 @@ class RecognitionService:
         if transaction_started and session:
             try:
                 await db.recognitions.insert_one(recognition.dict(), session=session)
-                await self._reward_recipients(recipients, points_awarded, session=session)
+                await self._reward_recipients(
+                    recipients,
+                    points_awarded,
+                    org_id=current_user.org_id,
+                    session=session,
+                )
                 await session.commit_transaction()
             except Exception:
                 await session.abort_transaction()
@@ -177,7 +187,7 @@ class RecognitionService:
                 await session.end_session()
         else:
             await db.recognitions.insert_one(recognition.dict())
-            await self._reward_recipients(recipients, points_awarded)
+            await self._reward_recipients(recipients, points_awarded, org_id=current_user.org_id)
 
         return recognition
 
@@ -191,6 +201,7 @@ class RecognitionService:
         db = await get_database()
         direction = (direction or "all").lower()
         query: Dict[str, object] = {}
+        query["org_id"] = current_user.org_id
         if direction == "received":
             query["to_user_ids"] = current_user.id
         elif direction == "sent":
@@ -224,7 +235,10 @@ class RecognitionService:
                 "manager_id": 1,
                 "avatar_url": 1,
             }
-            docs = await db.users.find({"id": {"$in": list(user_ids)}}, projection).to_list(len(user_ids))
+            docs = await db.users.find(
+                {"id": {"$in": list(user_ids)}, "org_id": current_user.org_id},
+                projection,
+            ).to_list(len(user_ids))
             user_map = {doc["id"]: self._map_user_summary(doc) for doc in docs}
 
         history: List[RecognitionHistoryEntry] = []
@@ -276,7 +290,7 @@ class RecognitionService:
         skip: int = 0,
     ) -> List[RecognitionFeedEntry]:
         db = await get_database()
-        query: Dict[str, object] = {"is_public": True}
+        query: Dict[str, object] = {"is_public": True, "org_id": current_user.org_id}
         cursor_created_at: Optional[datetime] = None
         cursor_id: Optional[str] = None
 
@@ -319,7 +333,10 @@ class RecognitionService:
                 "manager_id": 1,
                 "avatar_url": 1,
             }
-            docs = await db.users.find({"id": {"$in": list(user_ids)}}, projection).to_list(len(user_ids))
+            docs = await db.users.find(
+                {"id": {"$in": list(user_ids)}, "org_id": current_user.org_id},
+                projection,
+            ).to_list(len(user_ids))
             user_map = {doc["id"]: self._map_user_summary(doc) for doc in docs}
 
         feed: List[RecognitionFeedEntry] = []
@@ -358,7 +375,12 @@ class RecognitionService:
         return feed
 
     async def _reward_recipients(
-        self, recipients: Sequence[Dict[str, object]], points: int, session=None
+        self,
+        recipients: Sequence[Dict[str, object]],
+        points: int,
+        *,
+        org_id: str,
+        session=None,
     ) -> None:
         db = await get_database()
         update = {
@@ -371,11 +393,18 @@ class RecognitionService:
         }
         for recipient in recipients:
             kwargs = {"session": session} if session else {}
-            await db.users.update_one({"id": recipient["id"]}, update, **kwargs)
+            await db.users.update_one(
+                {"id": recipient["id"], "org_id": org_id},
+                update,
+                **kwargs,
+            )
 
-    async def _load_users(self, user_ids: Sequence[str]) -> List[Dict[str, object]]:
+    async def _load_users(self, user_ids: Sequence[str], *, org_id: str) -> List[Dict[str, object]]:
         db = await get_database()
-        docs = await db.users.find({"id": {"$in": list(user_ids)}}, {"_id": 0}).to_list(len(user_ids))
+        docs = await db.users.find(
+            {"id": {"$in": list(user_ids)}, "org_id": org_id},
+            {"_id": 0},
+        ).to_list(len(user_ids))
         docs_map = {doc["id"]: doc for doc in docs}
         return [docs_map[user_id] for user_id in user_ids if user_id in docs_map]
 

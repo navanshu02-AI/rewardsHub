@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from datetime import datetime
 
 import pytest
 from fastapi import HTTPException, status
@@ -14,9 +15,10 @@ from app.services.redemption_service import RedemptionService
 from .fakes import FakeDatabase
 
 
-def _make_user(*, user_id: str, points_balance: int) -> User:
+def _make_user(*, user_id: str, points_balance: int, org_id: str = "org-1") -> User:
     return User(
         id=user_id,
+        org_id=org_id,
         email=f"{user_id}@example.com",
         password_hash="hashed",
         first_name="Test",
@@ -27,9 +29,16 @@ def _make_user(*, user_id: str, points_balance: int) -> User:
     )
 
 
-def _make_reward(*, reward_id: str, points_required: int, availability: int) -> Reward:
+def _make_reward(
+    *,
+    reward_id: str,
+    points_required: int,
+    availability: int,
+    org_id: str = "org-1",
+) -> Reward:
     return Reward(
         id=reward_id,
+        org_id=org_id,
         title="Coffee Voucher",
         description="Redeemable at local cafes",
         category=PreferenceCategory.FOOD,
@@ -102,3 +111,34 @@ def test_redeem_reward_success_updates_balances(monkeypatch: pytest.MonkeyPatch)
     assert record["points_used"] == reward.points_required
     assert record["status"] == "pending"
     assert redemption.id == record["id"]
+
+
+def test_user_redemptions_are_scoped_to_org(monkeypatch: pytest.MonkeyPatch) -> None:
+    user = _make_user(user_id="employee-1", points_balance=500, org_id="org-1")
+    db = FakeDatabase(
+        redemptions=[
+            {
+                "id": "redemption-1",
+                "org_id": "org-1",
+                "user_id": user.id,
+                "reward_id": "reward-1",
+                "points_used": 100,
+                "status": "pending",
+                "redeemed_at": datetime.utcnow(),
+            },
+            {
+                "id": "redemption-2",
+                "org_id": "org-2",
+                "user_id": user.id,
+                "reward_id": "reward-2",
+                "points_used": 120,
+                "status": "pending",
+                "redeemed_at": datetime.utcnow(),
+            },
+        ]
+    )
+    service = _setup_service(monkeypatch, db)
+
+    redemptions = asyncio.run(service.get_user_redemptions(user))
+
+    assert [redemption.id for redemption in redemptions] == ["redemption-1"]

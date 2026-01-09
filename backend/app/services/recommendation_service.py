@@ -47,7 +47,7 @@ class RecommendationService:
         purchase_history = user.purchase_history or []
         
         # Build query based on preferences
-        query = {"is_active": True}
+        query = {"is_active": True, "org_id": user.org_id}
         personalization_factors = []
         
         # Add category filter if preferences exist
@@ -106,12 +106,19 @@ class RecommendationService:
             "personalization_factors": personalization_factors
         }
 
-    async def get_gift_recommendations(self, recipient_id: str, budget_min: float, budget_max: float) -> List[Reward]:
+    async def get_gift_recommendations(
+        self,
+        recipient_id: str,
+        budget_min: float,
+        budget_max: float,
+        *,
+        org_id: str,
+    ) -> List[Reward]:
         """Get gift recommendations for a specific user"""
         db = await get_database()
         
         # Get recipient's preferences
-        recipient = await db.users.find_one({"id": recipient_id})
+        recipient = await db.users.find_one({"id": recipient_id, "org_id": org_id})
         if not recipient:
             return []
         
@@ -122,6 +129,7 @@ class RecommendationService:
         # Build query for gift recommendations
         query = {
             "is_active": True,
+            "org_id": org_id,
             f"prices.{currency}": {
                 "$gte": budget_min if budget_min is not None else min_price,
                 "$lte": budget_max if budget_max is not None else max_price

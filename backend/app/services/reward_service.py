@@ -10,6 +10,7 @@ class RewardService:
     
     async def get_rewards(
         self, 
+        org_id: str,
         category: Optional[PreferenceCategory] = None,
         reward_type: Optional[RewardType] = None,
         limit: int = 20,
@@ -18,7 +19,7 @@ class RewardService:
         """Get rewards with optional filtering"""
         db = await get_database()
         
-        query = {"is_active": True}
+        query = {"is_active": True, "org_id": org_id}
         if category:
             query["category"] = category
         if reward_type:
@@ -27,32 +28,32 @@ class RewardService:
         rewards = await db.rewards.find(query).skip(skip).limit(limit).to_list(limit)
         return [Reward(**reward) for reward in rewards]
     
-    async def create_reward(self, reward_data: RewardCreate) -> Reward:
+    async def create_reward(self, reward_data: RewardCreate, *, org_id: str) -> Reward:
         """Create a new reward"""
         db = await get_database()
         
-        reward = Reward(**reward_data.dict())
+        reward = Reward(org_id=org_id, **reward_data.dict())
         await db.rewards.insert_one(reward.dict())
         return reward
     
-    async def update_reward(self, reward_id: str, update_data: RewardUpdate) -> Reward:
+    async def update_reward(self, reward_id: str, update_data: RewardUpdate, *, org_id: str) -> Reward:
         """Update a reward"""
         db = await get_database()
         
         update_dict = update_data.dict(exclude_none=True)
         
         result = await db.rewards.update_one(
-            {"id": reward_id},
+            {"id": reward_id, "org_id": org_id},
             {"$set": update_dict}
         )
         
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="Reward not found")
         
-        updated_reward = await db.rewards.find_one({"id": reward_id})
+        updated_reward = await db.rewards.find_one({"id": reward_id, "org_id": org_id})
         return Reward(**updated_reward)
     
-    async def seed_indian_rewards(self) -> dict:
+    async def seed_indian_rewards(self, *, org_id: str) -> dict:
         """Seed sample Indian market rewards"""
         db = await get_database()
         
@@ -179,7 +180,7 @@ class RewardService:
         ]
         
         for reward_data in sample_rewards:
-            reward = Reward(**reward_data)
+            reward = Reward(org_id=org_id, **reward_data)
             await db.rewards.insert_one(reward.dict())
         
         return {"message": f"{len(sample_rewards)} Indian market rewards seeded successfully"}

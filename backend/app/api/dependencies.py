@@ -1,4 +1,4 @@
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, Header, HTTPException, status
 from typing import Dict, Iterable, Set, Union
 from fastapi.security import HTTPBearer, HTTPAuthorizationCredentials
 from app.core.security import verify_token
@@ -21,6 +21,12 @@ ROLE_FALLBACKS: Dict[str, UserRole] = {
     "manager": UserRole.MANAGER,
     "employee": UserRole.EMPLOYEE,
 }
+
+async def get_org_id(x_org_id: str = Header(..., alias="X-Org-Id")) -> str:
+    org_id = x_org_id.strip() if isinstance(x_org_id, str) else ""
+    if not org_id:
+        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Org-Id header is required")
+    return org_id
 
 def _normalize_role(role: Union[UserRole, str]) -> UserRole:
     if isinstance(role, UserRole):
@@ -49,7 +55,10 @@ def _ensure_role_membership(user: User, allowed_roles: Iterable[UserRole]) -> Us
         )
     return user
 
-async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(security)) -> User:
+async def get_current_user(
+    credentials: HTTPAuthorizationCredentials = Depends(security),
+    org_id: str = Depends(get_org_id),
+) -> User:
     """Get current authenticated user"""
     payload = verify_token(credentials.credentials)
     user_id: str = payload.get("sub")
@@ -60,7 +69,8 @@ async def get_current_user(credentials: HTTPAuthorizationCredentials = Depends(s
             headers={"WWW-Authenticate": "Bearer"},
         )
     
-    user = await auth_service.get_user_by_id(user_id)
+    user = await auth_service.get_user_by_id(user_id, org_id=org_id)
+    user.org_id = org_id
     return user
 
 async def get_current_admin_user(current_user: User = Depends(get_current_user)) -> User:

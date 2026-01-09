@@ -11,7 +11,7 @@ class UserService:
     def __init__(self):
         pass
     
-    async def update_user(self, user_id: str, update_data: UserUpdate) -> User:
+    async def update_user(self, user_id: str, org_id: str, update_data: UserUpdate) -> User:
         """Update user profile"""
         db = await get_database()
         
@@ -19,19 +19,19 @@ class UserService:
         update_dict["updated_at"] = datetime.utcnow()
         
         await db.users.update_one(
-            {"id": user_id},
+            {"id": user_id, "org_id": org_id},
             {"$set": update_dict}
         )
         
-        updated_user = await db.users.find_one({"id": user_id})
+        updated_user = await db.users.find_one({"id": user_id, "org_id": org_id})
         return User(**updated_user)
     
-    async def update_preferences(self, user_id: str, preferences: dict) -> User:
+    async def update_preferences(self, user_id: str, org_id: str, preferences: dict) -> User:
         """Update user preferences"""
         db = await get_database()
         
         # Get current user
-        user_data = await db.users.find_one({"id": user_id})
+        user_data = await db.users.find_one({"id": user_id, "org_id": org_id})
         if not user_data:
             raise HTTPException(status_code=404, detail="User not found")
         
@@ -43,32 +43,32 @@ class UserService:
                 current_preferences[key] = value
         
         await db.users.update_one(
-            {"id": user_id},
+            {"id": user_id, "org_id": org_id},
             {"$set": {"preferences": current_preferences, "updated_at": datetime.utcnow()}}
         )
         
-        updated_user = await db.users.find_one({"id": user_id})
+        updated_user = await db.users.find_one({"id": user_id, "org_id": org_id})
         return User(**updated_user)
     
-    async def get_all_users(self) -> list:
+    async def get_all_users(self, org_id: str) -> list:
         """Get all users (admin only)"""
         db = await get_database()
-        users = await db.users.find({}, {"password_hash": 0}).to_list(100)
+        users = await db.users.find({"org_id": org_id}, {"password_hash": 0}).to_list(100)
         return users
     
-    async def assign_points(self, user_id: str, points: int) -> dict:
+    async def assign_points(self, user_id: str, org_id: str, points: int) -> dict:
         """Assign points to user (admin only)"""
         db = await get_database()
 
         result = await db.users.update_one(
-            {"id": user_id},
+            {"id": user_id, "org_id": org_id},
             {"$inc": {"points_balance": points}, "$set": {"updated_at": datetime.utcnow()}}
         )
 
         if result.matched_count == 0:
             raise HTTPException(status_code=404, detail="User not found")
 
-        updated_user = await db.users.find_one({"id": user_id})
+        updated_user = await db.users.find_one({"id": user_id, "org_id": org_id})
 
         return {
             "message": f"Successfully assigned {points} points to user",
@@ -76,19 +76,20 @@ class UserService:
             "new_balance": updated_user["points_balance"]
         }
 
-    async def get_users_by_ids(self, user_ids: List[str]) -> List[User]:
+    async def get_users_by_ids(self, user_ids: List[str], org_id: str) -> List[User]:
         """Fetch multiple users by their identifiers."""
         if not user_ids:
             return []
 
         db = await get_database()
-        cursor = db.users.find({"id": {"$in": user_ids}})
+        cursor = db.users.find({"id": {"$in": user_ids}, "org_id": org_id})
         users = await cursor.to_list(length=len(user_ids))
         return [User(**user) for user in users]
 
     async def debit_points(
         self,
         user_id: str,
+        org_id: str,
         points: int,
         *,
         session: Optional[AsyncIOMotorClientSession] = None
@@ -99,7 +100,7 @@ class UserService:
 
         db = await get_database()
         result = await db.users.update_one(
-            {"id": user_id, "points_balance": {"$gte": points}},
+            {"id": user_id, "org_id": org_id, "points_balance": {"$gte": points}},
             {"$inc": {"points_balance": -points}, "$set": {"updated_at": datetime.utcnow()}},
             session=session
         )
@@ -113,6 +114,7 @@ class UserService:
     async def credit_recognition(
         self,
         user_id: str,
+        org_id: str,
         points: int,
         *,
         session: Optional[AsyncIOMotorClientSession] = None
@@ -123,7 +125,7 @@ class UserService:
 
         db = await get_database()
         result = await db.users.update_one(
-            {"id": user_id},
+            {"id": user_id, "org_id": org_id},
             {
                 "$inc": {
                     "points_balance": points,
@@ -138,7 +140,7 @@ class UserService:
         if result.matched_count == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recipient not found")
 
-    async def update_reporting(self, user_id: str, payload: UserReportingUpdate) -> User:
+    async def update_reporting(self, user_id: str, org_id: str, payload: UserReportingUpdate) -> User:
         """Update reporting lines and roles for a user."""
         db = await get_database()
 
@@ -150,18 +152,18 @@ class UserService:
             update_dict["role"] = payload.role
 
         if not update_dict:
-            existing = await db.users.find_one({"id": user_id})
+            existing = await db.users.find_one({"id": user_id, "org_id": org_id})
             if not existing:
                 raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
             return User(**existing)
 
         update_dict["updated_at"] = datetime.utcnow()
 
-        result = await db.users.update_one({"id": user_id}, {"$set": update_dict})
+        result = await db.users.update_one({"id": user_id, "org_id": org_id}, {"$set": update_dict})
         if result.matched_count == 0:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
 
-        updated = await db.users.find_one({"id": user_id})
+        updated = await db.users.find_one({"id": user_id, "org_id": org_id})
         return User(**updated)
 
 user_service = UserService()

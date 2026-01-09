@@ -17,6 +17,7 @@ async def ensure_indexes(database=None) -> None:
         return
 
     rewards = target_db.rewards
+    await rewards.create_index("org_id")
     await rewards.create_index("is_active")
     await rewards.create_index("is_popular")
     await rewards.create_index("rating")
@@ -28,13 +29,18 @@ async def ensure_indexes(database=None) -> None:
     await rewards.create_index("prices.EUR")
 
     recognitions = target_db.recognitions
+    await recognitions.create_index("org_id")
     await recognitions.create_index("created_at")
     await recognitions.create_index("is_public")
     await recognitions.create_index("from_user_id")
     await recognitions.create_index("to_user_ids")
 
     redemptions = target_db.redemptions
+    await redemptions.create_index("org_id")
     await redemptions.create_index([("user_id", 1), ("redeemed_at", 1)])
+
+    users = target_db.users
+    await users.create_index("org_id")
 
 
 async def connect_to_mongo():

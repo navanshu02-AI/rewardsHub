@@ -23,7 +23,9 @@ class RedemptionService:
         payload: RewardRedemptionCreate,
     ) -> RewardRedemption:
         db = await get_database()
-        reward_doc = await db.rewards.find_one({"id": payload.reward_id})
+        reward_doc = await db.rewards.find_one(
+            {"id": payload.reward_id, "org_id": current_user.org_id}
+        )
         if not reward_doc:
             raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Reward not found")
 
@@ -36,6 +38,7 @@ class RedemptionService:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient points to redeem reward")
 
         redemption = RewardRedemption(
+            org_id=current_user.org_id,
             user_id=current_user.id,
             reward_id=reward.id,
             points_used=reward.points_required,
@@ -58,8 +61,17 @@ class RedemptionService:
 
         if transaction_started and session:
             try:
-                await self._decrement_availability(reward.id, session=session)
-                await self._debit_points(current_user.id, reward.points_required, session=session)
+                await self._decrement_availability(
+                    reward.id,
+                    org_id=current_user.org_id,
+                    session=session,
+                )
+                await self._debit_points(
+                    current_user.id,
+                    current_user.org_id,
+                    reward.points_required,
+                    session=session,
+                )
                 await db.redemptions.insert_one(redemption.dict(), session=session)
                 await session.commit_transaction()
             except Exception:
@@ -68,18 +80,18 @@ class RedemptionService:
             finally:
                 await session.end_session()
         else:
-            await self._decrement_availability(reward.id)
+            await self._decrement_availability(reward.id, org_id=current_user.org_id)
             try:
-                await self._debit_points(current_user.id, reward.points_required)
+                await self._debit_points(current_user.id, current_user.org_id, reward.points_required)
             except Exception:
-                await self._increment_availability(reward.id)
+                await self._increment_availability(reward.id, org_id=current_user.org_id)
                 raise
 
             try:
                 await db.redemptions.insert_one(redemption.dict())
             except Exception:
-                await self._credit_points(current_user.id, reward.points_required)
-                await self._increment_availability(reward.id)
+                await self._credit_points(current_user.id, current_user.org_id, reward.points_required)
+                await self._increment_availability(reward.id, org_id=current_user.org_id)
                 raise
 
         return redemption
@@ -90,19 +102,22 @@ class RedemptionService:
         limit: int = 50,
     ) -> List[RewardRedemption]:
         db = await get_database()
-        cursor = db.redemptions.find({"user_id": current_user.id}).sort("redeemed_at", -1).limit(limit)
+        cursor = db.redemptions.find(
+            {"user_id": current_user.id, "org_id": current_user.org_id}
+        ).sort("redeemed_at", -1).limit(limit)
         redemptions = await cursor.to_list(limit)
         return [RewardRedemption(**redemption) for redemption in redemptions]
 
     async def _decrement_availability(
         self,
         reward_id: str,
+        org_id: str,
         *,
         session: Optional[AsyncIOMotorClientSession] = None,
     ) -> None:
         db = await get_database()
         result = await db.rewards.update_one(
-            {"id": reward_id, "availability": {"$gt": 0}},
+            {"id": reward_id, "org_id": org_id, "availability": {"$gt": 0}},
             {"$inc": {"availability": -1}},
             session=session,
         )
@@ -110,13 +125,14 @@ class RedemptionService:
         if matched == 0:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Reward is out of stock")
 
-    async def _increment_availability(self, reward_id: str) -> None:
+    async def _increment_availability(self, reward_id: str, *, org_id: str) -> None:
         db = await get_database()
-        await db.rewards.update_one({"id": reward_id}, {"$inc": {"availability": 1}})
+        await db.rewards.update_one({"id": reward_id, "org_id": org_id}, {"$inc": {"availability": 1}})
 
     async def _debit_points(
         self,
         user_id: str,
+        org_id: str,
         points: int,
         *,
         session: Optional[AsyncIOMotorClientSession] = None,
@@ -126,7 +142,7 @@ class RedemptionService:
 
         db = await get_database()
         result = await db.users.update_one(
-            {"id": user_id, "points_balance": {"$gte": points}},
+            {"id": user_id, "org_id": org_id, "points_balance": {"$gte": points}},
             {"$inc": {"points_balance": -points}, "$set": {"updated_at": datetime.utcnow()}},
             session=session,
         )
@@ -134,13 +150,13 @@ class RedemptionService:
         if matched == 0:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient points to redeem reward")
 
-    async def _credit_points(self, user_id: str, points: int) -> None:
+    async def _credit_points(self, user_id: str, org_id: str, points: int) -> None:
         if points <= 0:
             return
 
         db = await get_database()
         await db.users.update_one(
-            {"id": user_id},
+            {"id": user_id, "org_id": org_id},
             {"$inc": {"points_balance": points}, "$set": {"updated_at": datetime.utcnow()}},
         )
 
