@@ -10,6 +10,7 @@ def test_ensure_indexes_creates_expected_indexes() -> None:
     asyncio.run(ensure_indexes(db))
 
     assert db.rewards.indexes == [
+        "org_id",
         "is_active",
         "is_popular",
         "rating",
@@ -21,9 +22,10 @@ def test_ensure_indexes_creates_expected_indexes() -> None:
         "prices.EUR",
     ]
     assert db.recognitions.indexes == [
+        "org_id",
         "created_at",
         "is_public",
         "from_user_id",
         "to_user_ids",
     ]
-    assert db.redemptions.indexes == [[("user_id", 1), ("redeemed_at", 1)]]
+    assert db.redemptions.indexes == ["org_id", [("user_id", 1), ("redeemed_at", 1)]]

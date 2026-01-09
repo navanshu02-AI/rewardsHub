@@ -28,12 +28,24 @@ class AuthService:
     def __init__(self):
         pass
     
-    async def register_user(self, user_data: UserCreate, created_by: Optional[User] = None) -> User:
+    async def register_user(
+        self,
+        user_data: UserCreate,
+        created_by: Optional[User] = None,
+        *,
+        org_id: Optional[str] = None,
+    ) -> User:
         """Register a new user"""
         db = await get_database()
+        resolved_org_id = org_id or (created_by.org_id if created_by else None)
+        if not resolved_org_id:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Organization is required",
+            )
 
         # Check if user already exists
-        existing_user = await db.users.find_one({"email": user_data.email})
+        existing_user = await db.users.find_one({"email": user_data.email, "org_id": resolved_org_id})
         if existing_user:
             raise HTTPException(
                 status_code=status.HTTP_400_BAD_REQUEST,
@@ -63,6 +75,7 @@ class AuthService:
 
         # Create new user
         user = User(
+            org_id=resolved_org_id,
             email=user_data.email,
             password_hash=hash_password(user_data.password),
             first_name=user_data.first_name,
@@ -76,12 +89,12 @@ class AuthService:
         await db.users.insert_one(user.dict())
         return user
 
-    async def authenticate_user(self, login_data: UserLogin) -> Token:
+    async def authenticate_user(self, login_data: UserLogin, *, org_id: str) -> Token:
         """Authenticate user and return token"""
         db = await get_database()
         
         # Find user by email
-        user_data = await db.users.find_one({"email": login_data.email})
+        user_data = await db.users.find_one({"email": login_data.email, "org_id": org_id})
         if not user_data:
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED,
@@ -109,10 +122,13 @@ class AuthService:
             expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60
         )
 
-    async def request_password_reset(self, email: str) -> PasswordResetResponse:
+    async def request_password_reset(self, email: str, *, org_id: Optional[str] = None) -> PasswordResetResponse:
         """Generate a password reset token for the given email."""
         db = await get_database()
-        user = await db.users.find_one({"email": email})
+        query = {"email": email}
+        if org_id:
+            query["org_id"] = org_id
+        user = await db.users.find_one(query)
 
         # Always generate a token to avoid leaking which emails are registered
         token = secrets.token_urlsafe(32)
@@ -169,10 +185,10 @@ class AuthService:
         )
         return PasswordResetResponse(message="Password has been reset successfully")
     
-    async def get_user_by_id(self, user_id: str) -> User:
+    async def get_user_by_id(self, user_id: str, *, org_id: str) -> User:
         """Get user by ID"""
         db = await get_database()
-        user_data = await db.users.find_one({"id": user_id})
+        user_data = await db.users.find_one({"id": user_id, "org_id": org_id})
         if not user_data:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,

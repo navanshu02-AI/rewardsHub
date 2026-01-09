@@ -15,6 +15,7 @@ class RecognitionUserSummary(BaseModel):
 
 class Recognition(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    org_id: str
     from_user_id: str
     to_user_id: Optional[str] = None
     to_user_ids: List[str] = Field(default_factory=list)
@@ -98,6 +99,7 @@ class GiftRecommendationCreate(BaseModel):
 
 class RewardRedemption(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    org_id: str
     user_id: str
     reward_id: str
     points_used: int

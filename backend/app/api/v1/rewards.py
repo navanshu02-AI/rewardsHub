@@ -15,25 +15,39 @@ async def get_rewards(
     category: Optional[PreferenceCategory] = None,
     reward_type: Optional[RewardType] = None,
     limit: int = Query(20, le=100),
-    skip: int = Query(0, ge=0)
+    skip: int = Query(0, ge=0),
+    current_user: User = Depends(get_current_user),
 ):
     """Get rewards with optional filtering"""
-    return await reward_service.get_rewards(category, reward_type, limit, skip)
+    return await reward_service.get_rewards(
+        current_user.org_id,
+        category,
+        reward_type,
+        limit,
+        skip,
+    )
 
 @router.post("/", response_model=Reward, dependencies=[Depends(get_current_admin_user)])
-async def create_reward(reward_data: RewardCreate):
+async def create_reward(
+    reward_data: RewardCreate,
+    current_user: User = Depends(get_current_admin_user),
+):
     """Create a new reward (admin only)"""
-    return await reward_service.create_reward(reward_data)
+    return await reward_service.create_reward(reward_data, org_id=current_user.org_id)
 
 @router.put("/{reward_id}", response_model=Reward, dependencies=[Depends(get_current_admin_user)])
-async def update_reward(reward_id: str, update_data: RewardUpdate):
+async def update_reward(
+    reward_id: str,
+    update_data: RewardUpdate,
+    current_user: User = Depends(get_current_admin_user),
+):
     """Update a reward (admin only)"""
-    return await reward_service.update_reward(reward_id, update_data)
+    return await reward_service.update_reward(reward_id, update_data, org_id=current_user.org_id)
 
 @router.post("/seed", dependencies=[Depends(get_current_admin_user)])
-async def seed_rewards():
+async def seed_rewards(current_user: User = Depends(get_current_admin_user)):
     """Seed sample Indian market rewards (admin only)"""
-    return await reward_service.seed_indian_rewards()
+    return await reward_service.seed_indian_rewards(org_id=current_user.org_id)
 
 @router.post("/redeem", response_model=RewardRedemption)
 async def redeem_reward(

@@ -29,6 +29,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient, None, None]
 def _make_user(user_id: str = "user-1") -> User:
     return User(
         id=user_id,
+        org_id="org-1",
         email=f"{user_id}@example.com",
         password_hash="hashed",
         first_name="Test",

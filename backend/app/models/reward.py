@@ -6,6 +6,7 @@ from app.models.enums import PreferenceCategory, RewardType
 
 class Reward(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    org_id: str
     title: str
     description: str
     category: PreferenceCategory

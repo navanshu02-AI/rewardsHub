@@ -17,9 +17,11 @@ def _make_user(
     role: UserRole,
     manager_id: str | None = None,
     department: str | None = "Engineering",
+    org_id: str = "org-1",
 ) -> User:
     return User(
         id=user_id,
+        org_id=org_id,
         email=f"{user_id}@example.com",
         password_hash="hashed",
         first_name=user_id.split("-")[0].title(),
@@ -56,4 +58,3 @@ def recognition_service_setup(monkeypatch: pytest.MonkeyPatch) -> Tuple[Recognit
 
     monkeypatch.setattr("app.services.recognition_service.get_database", fake_get_database)
     return RecognitionService(), db, users
-

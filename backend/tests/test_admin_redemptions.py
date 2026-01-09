@@ -32,6 +32,7 @@ def client(monkeypatch: pytest.MonkeyPatch) -> Generator[TestClient, None, None]
 def _make_admin(user_id: str = "admin-1") -> User:
     return User(
         id=user_id,
+        org_id="org-1",
         email=f"{user_id}@example.com",
         password_hash="hashed",
         first_name="Admin",
@@ -58,6 +59,7 @@ def test_admin_redemptions_update_persists(client: TestClient, monkeypatch: pyte
         redemptions=[
             {
                 "id": redemption_id,
+                "org_id": "org-1",
                 "user_id": "user-1",
                 "reward_id": "reward-1",
                 "points_used": 200,

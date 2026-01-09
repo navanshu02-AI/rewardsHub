@@ -18,7 +18,7 @@ async def update_current_user(
     current_user: User = Depends(get_current_user)
 ):
     """Update current user profile"""
-    updated_user = await user_service.update_user(current_user.id, update_data)
+    updated_user = await user_service.update_user(current_user.id, current_user.org_id, update_data)
     return UserResponse(**updated_user.dict())
 
 @router.put("/me/preferences", response_model=UserResponse)
@@ -27,13 +27,13 @@ async def update_user_preferences(
     current_user: User = Depends(get_current_user)
 ):
     """Update user preferences"""
-    updated_user = await user_service.update_preferences(current_user.id, preferences)
+    updated_user = await user_service.update_preferences(current_user.id, current_user.org_id, preferences)
     return UserResponse(**updated_user.dict())
 
 @router.get("/", dependencies=[Depends(get_current_admin_user)])
-async def get_all_users():
+async def get_all_users(current_user: User = Depends(get_current_admin_user)):
     """Get all users (admin only)"""
-    return await user_service.get_all_users()
+    return await user_service.get_all_users(current_user.org_id)
 
 
 @router.post("/provision", response_model=UserResponse)
@@ -42,7 +42,7 @@ async def provision_user(
     current_user: User = Depends(get_current_admin_user)
 ):
     """Provision a user with role/manager assignments (admin only)."""
-    user = await auth_service.register_user(user_data, created_by=current_user)
+    user = await auth_service.register_user(user_data, created_by=current_user, org_id=current_user.org_id)
     return UserResponse(**user.dict())
 
 
@@ -53,11 +53,15 @@ async def update_reporting_line(
     current_user: User = Depends(get_current_admin_user)
 ):
     """Update reporting details like manager or role (admin only)."""
-    updated_user = await user_service.update_reporting(user_id, payload)
+    updated_user = await user_service.update_reporting(user_id, current_user.org_id, payload)
     return UserResponse(**updated_user.dict())
 
 
 @router.post("/assign-points/{user_id}", dependencies=[Depends(get_current_admin_user)])
-async def assign_points(user_id: str, points: int):
+async def assign_points(
+    user_id: str,
+    points: int,
+    current_user: User = Depends(get_current_admin_user),
+):
     """Assign points to user (admin only)"""
-    return await user_service.assign_points(user_id, points)
+    return await user_service.assign_points(user_id, current_user.org_id, points)

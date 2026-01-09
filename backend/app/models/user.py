@@ -31,6 +31,7 @@ class UserPreferences(BaseModel):
 
 class User(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
+    org_id: str
     email: EmailStr
     password_hash: str
     first_name: str

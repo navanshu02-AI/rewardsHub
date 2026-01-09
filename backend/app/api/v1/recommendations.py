@@ -19,6 +19,9 @@ async def get_gift_recommendations(
 ):
     """Get gift recommendations for a specific user"""
     recommendations = await recommendation_service.get_gift_recommendations(
-        recipient_id, budget_min, budget_max
+        recipient_id,
+        budget_min,
+        budget_max,
+        org_id=current_user.org_id,
     )
     return {"recommendations": recommendations}
