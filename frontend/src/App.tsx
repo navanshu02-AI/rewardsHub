@@ -11,6 +11,7 @@ import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
+import OrgChartPage from './pages/OrgChartPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -66,6 +67,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <RedemptionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/org-chart"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <OrgChartPage />
                 </ProtectedRoute>
               }
             />

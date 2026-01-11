@@ -113,6 +113,15 @@ class UserResponse(BaseModel):
             metadata.update(value)
         return metadata
 
+class OrgChartNode(BaseModel):
+    id: str
+    first_name: str
+    last_name: str
+    role: UserRole
+    department: Optional[str] = None
+    manager_id: Optional[str] = None
+    children: List["OrgChartNode"] = Field(default_factory=list)
+
 class UserLogin(BaseModel):
     email: EmailStr
     password: str

@@ -1,10 +1,10 @@
 from datetime import datetime
-from typing import List, Optional
+from typing import Dict, List, Optional
 
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from app.models.user import User, UserUpdate, UserPreferences, UserReportingUpdate
+from app.models.user import User, UserUpdate, UserPreferences, UserReportingUpdate, OrgChartNode
 from app.database.connection import get_database
 
 class UserService:
@@ -113,6 +113,47 @@ class UserService:
             queue.extend(children_by_manager.get(current_id, []))
 
         return descendants
+
+    async def get_org_chart(self, org_id: str) -> List[OrgChartNode]:
+        """Return a hierarchical org chart starting at top-level users."""
+        db = await get_database()
+        projection = {
+            "id": 1,
+            "first_name": 1,
+            "last_name": 1,
+            "role": 1,
+            "department": 1,
+            "manager_id": 1,
+        }
+        users = await db.users.find({"org_id": org_id}, projection).to_list(length=None)
+
+        nodes: Dict[str, OrgChartNode] = {}
+        for user in users:
+            manager_id = user.get("manager_id") or None
+            node = OrgChartNode(
+                id=user["id"],
+                first_name=user.get("first_name", ""),
+                last_name=user.get("last_name", ""),
+                role=user.get("role"),
+                department=user.get("department"),
+                manager_id=manager_id,
+            )
+            nodes[node.id] = node
+
+        roots: List[OrgChartNode] = []
+        for node in nodes.values():
+            if node.manager_id and node.manager_id in nodes:
+                nodes[node.manager_id].children.append(node)
+            else:
+                roots.append(node)
+
+        def sort_nodes(items: List[OrgChartNode]) -> None:
+            items.sort(key=lambda entry: (entry.last_name, entry.first_name, entry.id))
+            for item in items:
+                sort_nodes(item.children)
+
+        sort_nodes(roots)
+        return roots
 
     async def debit_points(
         self,
