@@ -67,6 +67,7 @@ class RecognitionService:
 
         report_enabled = user_role in (MANAGER_ROLES | PRIVILEGED_ROLES)
         report_docs: List[Dict[str, object]] = []
+        downline_user_ids: Optional[set[str]] = None
         if report_enabled:
             if user_role in MANAGER_ROLES:
                 downline_user_ids = await self._get_downline_user_ids(current_user)
@@ -103,6 +104,20 @@ class RecognitionService:
         else:
             global_message = "Appreciation can be sent to anyone; points are fixed to the standard value."
 
+        if user_role in PRIVILEGED_ROLES:
+            points_eligible = globals_list
+            points_eligibility_hint: Optional[str] = None
+        elif user_role in MANAGER_ROLES:
+            if downline_user_ids is None:
+                downline_user_ids = await self._get_downline_user_ids(current_user)
+            points_eligible = [summary for summary in globals_list if summary.id in downline_user_ids]
+            points_eligibility_hint = (
+                "Points can only be awarded to teammates in your reporting line based on role and hierarchy rules."
+            )
+        else:
+            points_eligible = globals_list
+            points_eligibility_hint = None
+
         return {
             "peer": {
                 "enabled": peer_enabled,
@@ -122,6 +137,8 @@ class RecognitionService:
                 "description": global_message,
                 "emptyMessage": global_message if global_enabled and not globals_list else None,
             },
+            "pointsEligibleRecipients": [summary.dict() for summary in points_eligible],
+            "pointsEligibilityHint": points_eligibility_hint,
         }
 
     async def create_recognition(

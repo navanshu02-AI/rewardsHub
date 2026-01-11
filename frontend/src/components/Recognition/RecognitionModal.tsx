@@ -34,6 +34,10 @@ type RecipientScopeResponse = {
 };
 
 type RecipientResponse = Record<RecognitionScope, RecipientScopeResponse>;
+type RecipientResponseWithPoints = RecipientResponse & {
+  pointsEligibleRecipients?: RecipientSummary[];
+  pointsEligibilityHint?: string | null;
+};
 
 interface RecognitionModalProps {
   isOpen: boolean;
@@ -62,7 +66,7 @@ const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshUser } = useAuth();
   const lastFocusedElement = useRef<HTMLElement | null>(null);
-  const [scopes, setScopes] = useState<RecipientResponse | null>(null);
+  const [scopes, setScopes] = useState<RecipientResponseWithPoints | null>(null);
   const [scopeLoading, setScopeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedScope, setSelectedScope] = useState<RecognitionScope>('peer');
@@ -107,14 +111,16 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setScopeLoading(true);
     setError(null);
     try {
-      const response = await api.get<RecipientResponse>('/recognitions/recipients');
+      const response = await api.get<RecipientResponseWithPoints>('/recognitions/recipients');
       setScopes(response.data);
       const defaultScope = (['peer', 'report', 'global'] as RecognitionScope[]).find(
         (scopeKey) => response.data[scopeKey]?.enabled
       ) || 'peer';
       setSelectedScope(defaultScope);
       const recipients = response.data[defaultScope]?.recipients || [];
-      setSelectedRecipient(recipients.length > 0 ? recipients[0].id : '');
+      const pointsEligibleIds = new Set(response.data.pointsEligibleRecipients?.map((recipient) => recipient.id));
+      const defaultRecipient = recipients.find((recipient) => pointsEligibleIds.has(recipient.id)) || recipients[0];
+      setSelectedRecipient(defaultRecipient ? defaultRecipient.id : '');
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load recipients. Please try again later.');
     } finally {
@@ -209,6 +215,13 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
   const activeScope = scopes ? scopes[selectedScope] : null;
   const recipients = activeScope?.recipients || [];
+  const pointsEligibleIds = useMemo(
+    () => new Set(scopes?.pointsEligibleRecipients?.map((recipient) => recipient.id)),
+    [scopes]
+  );
+  const pointsEligibleRecipients = recipients.filter((recipient) => pointsEligibleIds.has(recipient.id));
+  const appreciationRecipients = recipients.filter((recipient) => !pointsEligibleIds.has(recipient.id));
+  const appreciationLabel = selectedScope === 'global' ? 'Appreciation (company-wide)' : 'Appreciation';
 
   return (
     <Dialog.Root
@@ -279,13 +292,30 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   <option value="" disabled>
                     {recipients.length ? 'Select a teammate' : 'No eligible teammates yet'}
                   </option>
-                  {recipients.map((recipient) => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
-                      {recipient.department ? ` · ${recipient.department}` : ''}
-                    </option>
-                  ))}
+                  {pointsEligibleRecipients.length > 0 && (
+                    <optgroup label="Points eligible">
+                      {pointsEligibleRecipients.map((recipient) => (
+                        <option key={recipient.id} value={recipient.id}>
+                          {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
+                          {recipient.department ? ` · ${recipient.department}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
+                  {appreciationRecipients.length > 0 && (
+                    <optgroup label={appreciationLabel}>
+                      {appreciationRecipients.map((recipient) => (
+                        <option key={recipient.id} value={recipient.id}>
+                          {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
+                          {recipient.department ? ` · ${recipient.department}` : ''}
+                        </option>
+                      ))}
+                    </optgroup>
+                  )}
                 </select>
+                {scopes?.pointsEligibilityHint && appreciationRecipients.length > 0 && (
+                  <p className="mt-2 text-xs text-gray-500">{scopes.pointsEligibilityHint}</p>
+                )}
                 {!recipients.length && (
                   <p className="mt-2 text-sm text-gray-500">
                     Need to recognise someone outside this list? Reach out to your manager or HR partner so we can enable the right scope.
