@@ -27,6 +27,12 @@ def _normalize_role(role: Optional[UserRole]) -> UserRole:
     return role if isinstance(role, UserRole) else UserRole(role or UserRole.EMPLOYEE)
 
 
+def _is_transaction_unsupported(error: OperationFailure) -> bool:
+    if error.code == 20:
+        return True
+    return "Transaction numbers are only allowed" in str(error)
+
+
 class RecognitionService:
     def __init__(self) -> None:
         pass
@@ -226,7 +232,8 @@ class RecognitionService:
                     await session.end_session()
                 session = None
 
-        if transaction_started and session:
+        use_transaction = bool(transaction_started and session)
+        if use_transaction:
             try:
                 await db.recognitions.insert_one(recognition.dict(), session=session)
                 if not approval_required:
@@ -244,12 +251,28 @@ class RecognitionService:
                         session=session,
                     )
                 await session.commit_transaction()
+            except OperationFailure as exc:
+                if _is_transaction_unsupported(exc):
+                    try:
+                        await session.abort_transaction()
+                    except Exception:
+                        pass
+                    await session.end_session()
+                    use_transaction = False
+                    session = None
+                else:
+                    await session.abort_transaction()
+                    await session.end_session()
+                    raise
             except Exception:
                 await session.abort_transaction()
-                raise
-            finally:
                 await session.end_session()
-        else:
+                raise
+            else:
+                await session.end_session()
+                return recognition
+
+        if not use_transaction:
             await db.recognitions.insert_one(recognition.dict())
             if not approval_required:
                 await self._reward_recipients(
@@ -309,7 +332,8 @@ class RecognitionService:
             }
         }
 
-        if transaction_started and session:
+        use_transaction = bool(transaction_started and session)
+        if use_transaction:
             try:
                 await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update, session=session)
                 if points_awarded > 0:
@@ -328,12 +352,28 @@ class RecognitionService:
                             session=session,
                         )
                 await session.commit_transaction()
+            except OperationFailure as exc:
+                if _is_transaction_unsupported(exc):
+                    try:
+                        await session.abort_transaction()
+                    except Exception:
+                        pass
+                    await session.end_session()
+                    use_transaction = False
+                    session = None
+                else:
+                    await session.abort_transaction()
+                    await session.end_session()
+                    raise
             except Exception:
                 await session.abort_transaction()
-                raise
-            finally:
                 await session.end_session()
-        else:
+                raise
+            else:
+                await session.end_session()
+                return Recognition(**(await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})))
+
+        if not use_transaction:
             await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
             if points_awarded > 0:
                 await self._reward_recipients(

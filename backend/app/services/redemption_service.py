@@ -15,6 +15,12 @@ from app.models.enums import RewardProvider
 from app.models.user import User
 
 
+def _is_transaction_unsupported(error: OperationFailure) -> bool:
+    if error.code == 20:
+        return True
+    return "Transaction numbers are only allowed" in str(error)
+
+
 class RedemptionProviderHandler:
     provider: RewardProvider
 
@@ -101,7 +107,8 @@ class RedemptionService:
                     await session.end_session()
                 session = None
 
-        if transaction_started and session:
+        use_transaction = bool(transaction_started and session)
+        if use_transaction:
             try:
                 await self._decrement_availability(
                     reward.id,
@@ -121,12 +128,28 @@ class RedemptionService:
                     session=session,
                 )
                 await session.commit_transaction()
+            except OperationFailure as exc:
+                if _is_transaction_unsupported(exc):
+                    try:
+                        await session.abort_transaction()
+                    except Exception:
+                        pass
+                    await session.end_session()
+                    use_transaction = False
+                    session = None
+                else:
+                    await session.abort_transaction()
+                    await session.end_session()
+                    raise
             except Exception:
                 await session.abort_transaction()
-                raise
-            finally:
                 await session.end_session()
-        else:
+                raise
+            else:
+                await session.end_session()
+                return redemption
+
+        if not use_transaction:
             await self._decrement_availability(reward.id, org_id=current_user.org_id)
             try:
                 await self._debit_points(current_user.id, current_user.org_id, reward.points_required)
