@@ -42,6 +42,9 @@ async def ensure_indexes(database=None) -> None:
     users = target_db.users
     await users.create_index("org_id")
 
+    orgs = target_db.orgs
+    await orgs.create_index("domain", unique=True)
+
 
 async def connect_to_mongo():
     """Create database connection"""
