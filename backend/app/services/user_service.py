@@ -86,6 +86,34 @@ class UserService:
         users = await cursor.to_list(length=len(user_ids))
         return [User(**user) for user in users]
 
+    async def get_descendants(self, manager_id: str, org_id: str) -> List[str]:
+        """Fetch all descendant user IDs under a manager."""
+        if not manager_id:
+            return []
+
+        db = await get_database()
+        cursor = db.users.find({"org_id": org_id}, {"id": 1, "manager_id": 1})
+        users = await cursor.to_list(length=None)
+
+        children_by_manager: dict[str, list[str]] = {}
+        for user in users:
+            parent_id = user.get("manager_id")
+            if not parent_id:
+                continue
+            children_by_manager.setdefault(parent_id, []).append(user["id"])
+
+        for children in children_by_manager.values():
+            children.sort()
+
+        descendants: list[str] = []
+        queue = list(children_by_manager.get(manager_id, []))
+        while queue:
+            current_id = queue.pop(0)
+            descendants.append(current_id)
+            queue.extend(children_by_manager.get(current_id, []))
+
+        return descendants
+
     async def debit_points(
         self,
         user_id: str,
