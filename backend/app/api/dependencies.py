@@ -84,6 +84,10 @@ async def get_current_admin_user(current_user: User = Depends(get_current_user))
     """Get current user and verify admin role"""
     return _ensure_role_membership(current_user, PRIVILEGED_ROLES)
 
+async def get_current_hr_admin_user(current_user: User = Depends(get_current_user)) -> User:
+    """Get current user and verify HR admin role"""
+    return _ensure_role_membership(current_user, {UserRole.HR_ADMIN})
+
 async def get_giver_scopes(current_user: User = Depends(get_current_user)) -> Dict[str, Set[UserRole]]:
     """Derive the recognition giver scopes available to the caller."""
     user_role = _normalize_role(current_user.role)

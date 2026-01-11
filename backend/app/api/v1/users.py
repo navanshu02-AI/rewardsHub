@@ -1,8 +1,8 @@
 from fastapi import APIRouter, Depends
 
-from app.models.user import User, UserReportingUpdate, UserResponse, UserUpdate, UserCreate
+from app.models.user import User, UserReportingUpdate, UserResponse, UserUpdate, UserCreate, OrgChartNode
 from app.services.user_service import user_service
-from app.api.dependencies import get_current_user, get_current_admin_user
+from app.api.dependencies import get_current_user, get_current_admin_user, get_current_hr_admin_user
 from app.services.auth_service import auth_service
 
 router = APIRouter()
@@ -34,6 +34,11 @@ async def update_user_preferences(
 async def get_all_users(current_user: User = Depends(get_current_admin_user)):
     """Get all users (admin only)"""
     return await user_service.get_all_users(current_user.org_id)
+
+@router.get("/org-chart", response_model=list[OrgChartNode])
+async def get_org_chart(current_user: User = Depends(get_current_hr_admin_user)):
+    """Get org chart tree (HR admin only)."""
+    return await user_service.get_org_chart(current_user.org_id)
 
 
 @router.post("/provision", response_model=UserResponse)
