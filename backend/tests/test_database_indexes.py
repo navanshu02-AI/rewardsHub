@@ -29,4 +29,5 @@ def test_ensure_indexes_creates_expected_indexes() -> None:
         "to_user_ids",
     ]
     assert db.redemptions.indexes == ["org_id", [("user_id", 1), ("redeemed_at", 1)]]
+    assert db.points_ledger.indexes == ["org_id", [("user_id", 1), ("created_at", -1)]]
     assert db.orgs.indexes == ["domain"]

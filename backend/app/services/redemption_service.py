@@ -8,6 +8,7 @@ from motor.motor_asyncio import AsyncIOMotorClientSession
 from pymongo.errors import OperationFailure
 
 from app.database.connection import get_database
+from app.models.points_ledger import PointsLedgerEntry
 from app.models.recognition import RewardRedemption, RewardRedemptionCreate
 from app.models.reward import Reward
 from app.models.user import User
@@ -73,6 +74,11 @@ class RedemptionService:
                     session=session,
                 )
                 await db.redemptions.insert_one(redemption.dict(), session=session)
+                await self._record_ledger_entry(
+                    redemption,
+                    org_id=current_user.org_id,
+                    session=session,
+                )
                 await session.commit_transaction()
             except Exception:
                 await session.abort_transaction()
@@ -89,6 +95,7 @@ class RedemptionService:
 
             try:
                 await db.redemptions.insert_one(redemption.dict())
+                await self._record_ledger_entry(redemption, org_id=current_user.org_id)
             except Exception:
                 await self._credit_points(current_user.id, current_user.org_id, reward.points_required)
                 await self._increment_availability(reward.id, org_id=current_user.org_id)
@@ -159,6 +166,25 @@ class RedemptionService:
             {"id": user_id, "org_id": org_id},
             {"$inc": {"points_balance": points}, "$set": {"updated_at": datetime.utcnow()}},
         )
+
+    async def _record_ledger_entry(
+        self,
+        redemption: RewardRedemption,
+        *,
+        org_id: str,
+        session: Optional[AsyncIOMotorClientSession] = None,
+    ) -> None:
+        db = await get_database()
+        entry = PointsLedgerEntry(
+            org_id=org_id,
+            user_id=redemption.user_id,
+            delta=-redemption.points_used,
+            reason="reward_redemption",
+            ref_type="redemption",
+            ref_id=redemption.id,
+        )
+        kwargs = {"session": session} if session else {}
+        await db.points_ledger.insert_one(entry.dict(), **kwargs)
 
 
 redemption_service = RedemptionService()

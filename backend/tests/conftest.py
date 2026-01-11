@@ -18,6 +18,8 @@ def _make_user(
     manager_id: str | None = None,
     department: str | None = "Engineering",
     org_id: str = "org-1",
+    monthly_points_allowance: int = 0,
+    monthly_points_spent: int = 0,
 ) -> User:
     return User(
         id=user_id,
@@ -30,12 +32,14 @@ def _make_user(
         manager_id=manager_id,
         department=department,
         company="RewardsHub",
+        monthly_points_allowance=monthly_points_allowance,
+        monthly_points_spent=monthly_points_spent,
     )
 
 
 @pytest.fixture
 def recognition_service_setup(monkeypatch: pytest.MonkeyPatch) -> Tuple[RecognitionService, FakeDatabase, Dict[str, User]]:
-    manager = _make_user(user_id="manager-1", role=UserRole.MANAGER)
+    manager = _make_user(user_id="manager-1", role=UserRole.MANAGER, monthly_points_allowance=500)
     employee = _make_user(user_id="employee-1", role=UserRole.EMPLOYEE, manager_id=manager.id)
     peer = _make_user(user_id="employee-2", role=UserRole.EMPLOYEE, manager_id=manager.id)
     grand_report = _make_user(user_id="employee-4", role=UserRole.EMPLOYEE, manager_id=employee.id)

@@ -30,6 +30,8 @@ async def create_admin(args) -> None:
             "points_balance": existing_user.get("points_balance", 0) if existing_user else 0,
             "total_points_earned": existing_user.get("total_points_earned", 0) if existing_user else 0,
             "recognition_count": existing_user.get("recognition_count", 0) if existing_user else 0,
+            "monthly_points_allowance": existing_user.get("monthly_points_allowance", 0) if existing_user else 0,
+            "monthly_points_spent": existing_user.get("monthly_points_spent", 0) if existing_user else 0,
             "preferences": existing_user.get("preferences", {}) if existing_user else {},
             "created_at": existing_user.get("created_at", now) if existing_user else now,
             "updated_at": now,

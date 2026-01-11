@@ -112,6 +112,14 @@ def test_redeem_reward_success_updates_balances(monkeypatch: pytest.MonkeyPatch)
     assert record["status"] == "pending"
     assert redemption.id == record["id"]
 
+    ledger_entries = db.points_ledger.values()
+    assert len(ledger_entries) == 1
+    ledger_entry = ledger_entries[0]
+    assert ledger_entry["user_id"] == user.id
+    assert ledger_entry["delta"] == -reward.points_required
+    assert ledger_entry["ref_type"] == "redemption"
+    assert ledger_entry["ref_id"] == redemption.id
+
 
 def test_user_redemptions_are_scoped_to_org(monkeypatch: pytest.MonkeyPatch) -> None:
     user = _make_user(user_id="employee-1", points_balance=500, org_id="org-1")

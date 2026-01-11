@@ -5,7 +5,7 @@ from typing import Deque, Dict, List, Optional
 from fastapi import APIRouter, Depends, Query
 from fastapi.responses import JSONResponse
 
-from app.api.dependencies import get_current_user
+from app.api.dependencies import get_current_hr_admin_user, get_current_user
 from app.models.enums import RecognitionType
 from app.models.recognition import (
     Recognition,
@@ -48,6 +48,30 @@ async def send_recognition(
     current_user: User = Depends(get_current_user),
 ) -> Recognition:
     return await recognition_service.create_recognition(current_user, payload)
+
+
+@router.get("/pending", response_model=List[Recognition])
+async def list_pending_recognitions(
+    limit: int = Query(100, ge=1, le=200),
+    current_user: User = Depends(get_current_hr_admin_user),
+) -> List[Recognition]:
+    return await recognition_service.get_pending_recognitions(current_user, limit=limit)
+
+
+@router.post("/{recognition_id}/approve", response_model=Recognition)
+async def approve_recognition(
+    recognition_id: str,
+    current_user: User = Depends(get_current_hr_admin_user),
+) -> Recognition:
+    return await recognition_service.approve_recognition(recognition_id, current_user)
+
+
+@router.post("/{recognition_id}/reject", response_model=Recognition)
+async def reject_recognition(
+    recognition_id: str,
+    current_user: User = Depends(get_current_hr_admin_user),
+) -> Recognition:
+    return await recognition_service.reject_recognition(recognition_id, current_user)
 
 
 @router.get("", response_model=List[RecognitionHistoryEntry])
