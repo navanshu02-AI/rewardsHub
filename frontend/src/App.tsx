@@ -12,6 +12,7 @@ import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
 import OrgChartPage from './pages/OrgChartPage';
+import ApprovalsPage from './pages/ApprovalsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -76,6 +77,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <OrgChartPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/approvals"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <ApprovalsPage />
                 </ProtectedRoute>
               }
             />

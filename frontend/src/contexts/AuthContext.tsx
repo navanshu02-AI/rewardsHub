@@ -26,6 +26,8 @@ interface User {
   points_balance: number;
   total_points_earned: number;
   recognition_count: number;
+  monthly_points_allowance?: number;
+  monthly_points_spent?: number;
   preferences: Record<string, any>;
   created_at: string;
   is_active: boolean;

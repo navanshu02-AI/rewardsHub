@@ -45,6 +45,7 @@ def test_recognition_updates_balances_and_records(
     assert record["to_user_ids"] == [direct_report.id]
     assert record["points_awarded"] == DEFAULT_POINTS
     assert record["scope"] == RecognitionScope.REPORT
+    assert record["status"] == "approved"
 
     from_snapshot = record["from_user_snapshot"]
     assert from_snapshot["id"] == manager.id
@@ -55,3 +56,10 @@ def test_recognition_updates_balances_and_records(
     assert to_snapshots[0]["id"] == direct_report.id
     assert to_snapshots[0]["role"] == direct_report.role
 
+    ledger_entries = db.points_ledger.values()
+    assert len(ledger_entries) == 1
+    ledger_entry = ledger_entries[0]
+    assert ledger_entry["user_id"] == direct_report.id
+    assert ledger_entry["delta"] == DEFAULT_POINTS
+    assert ledger_entry["ref_type"] == "recognition"
+    assert ledger_entry["ref_id"] == record["id"]

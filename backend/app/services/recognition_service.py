@@ -6,6 +6,7 @@ from pymongo.errors import OperationFailure
 
 from app.database.connection import get_database
 from app.models.enums import RecognitionScope, RecognitionType, UserRole
+from app.models.points_ledger import PointsLedgerEntry
 from app.models.recognition import (
     Recognition,
     RecognitionCreate,
@@ -17,6 +18,7 @@ from app.models.user import User
 
 DEFAULT_POINTS = 10
 MAX_POINTS = 10000
+APPROVAL_THRESHOLD = 200
 PRIVILEGED_ROLES = {UserRole.HR_ADMIN, UserRole.EXECUTIVE, UserRole.C_LEVEL}
 MANAGER_ROLES = {UserRole.MANAGER}
 
@@ -175,6 +177,23 @@ class RecognitionService:
         can_award_points = self._can_award_points(user_role, recipients, downline_user_ids)
         points_awarded = self._determine_points(user_role, payload.points_awarded, allow_points=can_award_points)
 
+        approval_required = points_awarded > APPROVAL_THRESHOLD
+        status_value = "pending" if approval_required else "approved"
+        approved_at = None if approval_required else datetime.utcnow()
+        approved_by = None if approval_required else current_user.id
+
+        if (
+            user_role in MANAGER_ROLES
+            and points_awarded > 0
+            and current_user.monthly_points_allowance is not None
+        ):
+            remaining = current_user.monthly_points_allowance - (current_user.monthly_points_spent or 0)
+            if points_awarded > remaining:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Monthly points allowance exceeded.",
+                )
+
         recognition = Recognition(
             org_id=current_user.org_id,
             from_user_id=current_user.id,
@@ -188,6 +207,9 @@ class RecognitionService:
             scope=scope,
             from_user_snapshot=self._map_user_summary(current_user.dict()).dict(),
             to_user_snapshots=[self._map_user_summary(recipient).dict() for recipient in recipients],
+            status=status_value,
+            approved_at=approved_at,
+            approved_by=approved_by,
         )
 
         client = getattr(db, "client", None)
@@ -207,12 +229,20 @@ class RecognitionService:
         if transaction_started and session:
             try:
                 await db.recognitions.insert_one(recognition.dict(), session=session)
-                await self._reward_recipients(
-                    recipients,
-                    points_awarded,
-                    org_id=current_user.org_id,
-                    session=session,
-                )
+                if not approval_required:
+                    await self._reward_recipients(
+                        recipients,
+                        points_awarded,
+                        org_id=current_user.org_id,
+                        recognition_id=recognition.id,
+                        session=session,
+                    )
+                    await self._update_manager_allowance(
+                        current_user,
+                        points_awarded,
+                        org_id=current_user.org_id,
+                        session=session,
+                    )
                 await session.commit_transaction()
             except Exception:
                 await session.abort_transaction()
@@ -221,9 +251,132 @@ class RecognitionService:
                 await session.end_session()
         else:
             await db.recognitions.insert_one(recognition.dict())
-            await self._reward_recipients(recipients, points_awarded, org_id=current_user.org_id)
+            if not approval_required:
+                await self._reward_recipients(
+                    recipients,
+                    points_awarded,
+                    org_id=current_user.org_id,
+                    recognition_id=recognition.id,
+                )
+                await self._update_manager_allowance(current_user, points_awarded, org_id=current_user.org_id)
 
         return recognition
+
+    async def approve_recognition(self, recognition_id: str, current_user: User) -> Recognition:
+        db = await get_database()
+        record = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+        if not record:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recognition not found")
+
+        if record.get("status") != "pending":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recognition is not pending approval")
+
+        recipients = await self._load_users(record.get("to_user_ids", []), org_id=current_user.org_id)
+        if len(recipients) != len(record.get("to_user_ids", [])):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="One or more recipients not found")
+
+        points_awarded = int(record.get("points_awarded") or 0)
+        from_user = await db.users.find_one({"id": record["from_user_id"], "org_id": current_user.org_id})
+        if from_user and _normalize_role(from_user.get("role")) in MANAGER_ROLES and points_awarded > 0:
+            allowance = from_user.get("monthly_points_allowance")
+            if allowance is not None:
+                remaining = allowance - (from_user.get("monthly_points_spent") or 0)
+                if points_awarded > remaining:
+                    raise HTTPException(
+                        status_code=status.HTTP_400_BAD_REQUEST,
+                        detail="Monthly points allowance exceeded.",
+                    )
+
+        client = getattr(db, "client", None)
+        session = None
+        transaction_started = False
+
+        if client:
+            try:
+                session = await client.start_session()
+                session.start_transaction()
+                transaction_started = True
+            except (OperationFailure, AttributeError):
+                if session:
+                    await session.end_session()
+                session = None
+
+        update = {
+            "$set": {
+                "status": "approved",
+                "approved_by": current_user.id,
+                "approved_at": datetime.utcnow(),
+            }
+        }
+
+        if transaction_started and session:
+            try:
+                await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update, session=session)
+                if points_awarded > 0:
+                    await self._reward_recipients(
+                        recipients,
+                        points_awarded,
+                        org_id=current_user.org_id,
+                        recognition_id=recognition_id,
+                        session=session,
+                    )
+                    if from_user:
+                        await self._update_manager_allowance(
+                            User(**from_user),
+                            points_awarded,
+                            org_id=current_user.org_id,
+                            session=session,
+                        )
+                await session.commit_transaction()
+            except Exception:
+                await session.abort_transaction()
+                raise
+            finally:
+                await session.end_session()
+        else:
+            await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
+            if points_awarded > 0:
+                await self._reward_recipients(
+                    recipients,
+                    points_awarded,
+                    org_id=current_user.org_id,
+                    recognition_id=recognition_id,
+                )
+                if from_user:
+                    await self._update_manager_allowance(
+                        User(**from_user),
+                        points_awarded,
+                        org_id=current_user.org_id,
+                    )
+
+        updated = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+        return Recognition(**updated)
+
+    async def reject_recognition(self, recognition_id: str, current_user: User) -> Recognition:
+        db = await get_database()
+        record = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+        if not record:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recognition not found")
+        if record.get("status") != "pending":
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recognition is not pending approval")
+
+        update = {
+            "$set": {
+                "status": "rejected",
+                "approved_by": current_user.id,
+                "approved_at": datetime.utcnow(),
+            }
+        }
+        await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
+        updated = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+        return Recognition(**updated)
+
+    async def get_pending_recognitions(self, current_user: User, limit: int = 100) -> List[Recognition]:
+        db = await get_database()
+        records = await db.recognitions.find(
+            {"org_id": current_user.org_id, "status": "pending"}
+        ).sort("created_at", -1).limit(limit).to_list(limit)
+        return [Recognition(**record) for record in records]
 
     async def get_history(
         self,
@@ -414,6 +567,7 @@ class RecognitionService:
         points: int,
         *,
         org_id: str,
+        recognition_id: Optional[str] = None,
         session=None,
     ) -> None:
         db = await get_database()
@@ -432,6 +586,36 @@ class RecognitionService:
                 update,
                 **kwargs,
             )
+            if points > 0 and recognition_id:
+                ledger_entry = PointsLedgerEntry(
+                    org_id=org_id,
+                    user_id=str(recipient["id"]),
+                    delta=points,
+                    reason="recognition_award",
+                    ref_type="recognition",
+                    ref_id=recognition_id,
+                )
+                await db.points_ledger.insert_one(ledger_entry.dict(), **kwargs)
+
+    async def _update_manager_allowance(
+        self,
+        current_user: User,
+        points: int,
+        *,
+        org_id: str,
+        session=None,
+    ) -> None:
+        if points <= 0:
+            return
+        if _normalize_role(current_user.role) not in MANAGER_ROLES:
+            return
+        db = await get_database()
+        kwargs = {"session": session} if session else {}
+        await db.users.update_one(
+            {"id": current_user.id, "org_id": org_id},
+            {"$inc": {"monthly_points_spent": points}, "$set": {"updated_at": datetime.utcnow()}},
+            **kwargs,
+        )
 
     async def _load_users(self, user_ids: Sequence[str], *, org_id: str) -> List[Dict[str, object]]:
         db = await get_database()

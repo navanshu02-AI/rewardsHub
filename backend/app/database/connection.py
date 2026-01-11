@@ -42,6 +42,10 @@ async def ensure_indexes(database=None) -> None:
     await redemptions.create_index("org_id")
     await redemptions.create_index([("user_id", 1), ("redeemed_at", 1)])
 
+    points_ledger = target_db.points_ledger
+    await points_ledger.create_index("org_id")
+    await points_ledger.create_index([("user_id", 1), ("created_at", -1)])
+
     users = target_db.users
     await users.create_index("org_id")
 

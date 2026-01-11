@@ -49,6 +49,8 @@ class User(BaseModel):
     points_balance: int = 0
     total_points_earned: int = 0
     recognition_count: int = 0
+    monthly_points_allowance: Optional[int] = None
+    monthly_points_spent: int = 0
     preferences: Dict[str, Any] = Field(default_factory=dict)
     purchase_history: List[str] = Field(default_factory=list)
     created_at: datetime = Field(default_factory=datetime.utcnow)
@@ -94,6 +96,8 @@ class UserResponse(BaseModel):
     points_balance: int
     total_points_earned: int
     recognition_count: int
+    monthly_points_allowance: Optional[int]
+    monthly_points_spent: int
     preferences: Dict[str, Any]
     created_at: datetime
     is_active: bool
