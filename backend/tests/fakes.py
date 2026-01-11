@@ -144,8 +144,10 @@ class FakeDatabase:
         recognitions: Optional[Iterable[Dict[str, Any]]] = None,
         rewards: Optional[Iterable[Dict[str, Any]]] = None,
         redemptions: Optional[Iterable[Dict[str, Any]]] = None,
+        orgs: Optional[Iterable[Dict[str, Any]]] = None,
     ) -> None:
         self.users = FakeCollection(users)
         self.recognitions = FakeCollection(recognitions)
         self.rewards = FakeCollection(rewards)
         self.redemptions = FakeCollection(redemptions)
+        self.orgs = FakeCollection(orgs)

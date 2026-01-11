@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1 import admin_redemptions, auth, users, rewards, recommendations, preferences, recognitions
+from app.api.v1 import admin_redemptions, auth, users, rewards, recommendations, preferences, recognitions, orgs
 
 api_router = APIRouter()
 
@@ -10,3 +10,4 @@ api_router.include_router(recommendations.router, prefix="/recommendations", tag
 api_router.include_router(preferences.router, prefix="/preferences", tags=["preferences"])
 api_router.include_router(recognitions.router, prefix="/recognitions", tags=["recognitions"])
 api_router.include_router(admin_redemptions.router, prefix="/admin", tags=["admin-redemptions"])
+api_router.include_router(orgs.router, prefix="/orgs", tags=["orgs"])
