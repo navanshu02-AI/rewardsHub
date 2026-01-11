@@ -38,6 +38,7 @@ def recognition_service_setup(monkeypatch: pytest.MonkeyPatch) -> Tuple[Recognit
     manager = _make_user(user_id="manager-1", role=UserRole.MANAGER)
     employee = _make_user(user_id="employee-1", role=UserRole.EMPLOYEE, manager_id=manager.id)
     peer = _make_user(user_id="employee-2", role=UserRole.EMPLOYEE, manager_id=manager.id)
+    grand_report = _make_user(user_id="employee-4", role=UserRole.EMPLOYEE, manager_id=employee.id)
     unrelated = _make_user(user_id="employee-3", role=UserRole.EMPLOYEE, manager_id="manager-2")
     hr_admin = _make_user(user_id="hr-1", role=UserRole.HR_ADMIN)
     executive = _make_user(user_id="exec-1", role=UserRole.EXECUTIVE)
@@ -46,6 +47,7 @@ def recognition_service_setup(monkeypatch: pytest.MonkeyPatch) -> Tuple[Recognit
         "manager": manager,
         "employee": employee,
         "peer": peer,
+        "grand_report": grand_report,
         "unrelated": unrelated,
         "hr": hr_admin,
         "executive": executive,
