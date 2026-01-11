@@ -1,7 +1,7 @@
 from typing import List, Optional
 from fastapi import HTTPException
 from app.models.reward import Reward, RewardCreate, RewardUpdate
-from app.models.enums import PreferenceCategory, RewardType
+from app.models.enums import PreferenceCategory, RewardProvider, RewardType
 from app.database.connection import get_database
 
 class RewardService:
@@ -81,6 +81,7 @@ class RewardService:
                 "description": "Digital gift card for Amazon India - instant delivery",
                 "category": PreferenceCategory.GIFT_CARDS,
                 "reward_type": RewardType.GIFT_CARD,
+                "provider": RewardProvider.AMAZON_GIFTCARD,
                 "points_required": 500,
                 "prices": {"INR": 5000.00, "USD": 60.00, "EUR": 55.00},
                 "brand": "Amazon",

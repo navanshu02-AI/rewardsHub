@@ -33,6 +33,11 @@ class RewardType(str, Enum):
     VOUCHER = "voucher"
     CASH_REWARD = "cash_reward"
 
+class RewardProvider(str, Enum):
+    INTERNAL = "internal"
+    AMAZON_GIFTCARD = "amazon_giftcard"
+    MANUAL_VENDOR = "manual_vendor"
+
 class AchievementType(str, Enum):
     PERFORMANCE_EXCELLENCE = "performance_excellence"
     INNOVATION = "innovation"

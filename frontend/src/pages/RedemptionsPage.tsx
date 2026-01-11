@@ -7,6 +7,8 @@ const API = `${BACKEND_URL}/api/v1`;
 interface RewardSummary {
   id: string;
   title: string;
+  reward_type: string;
+  provider?: string;
 }
 
 interface Redemption {
@@ -15,10 +17,14 @@ interface Redemption {
   points_used: number;
   status: string;
   redeemed_at: string;
+  fulfillment_code?: string | null;
+  fulfilled_at?: string | null;
 }
 
 const statusStyles: Record<string, string> = {
   pending: 'bg-amber-100 text-amber-700',
+  pending_fulfillment: 'bg-amber-100 text-amber-700',
+  pending_code: 'bg-amber-100 text-amber-700',
   approved: 'bg-emerald-100 text-emerald-700',
   fulfilled: 'bg-emerald-100 text-emerald-700',
   cancelled: 'bg-rose-100 text-rose-700',
@@ -106,6 +112,11 @@ const RedemptionsPage: React.FC = () => {
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-gray-600">Reward ID: {redemption.reward_id}</p>
+                      {redemption.status === 'fulfilled' && redemption.fulfillment_code && (
+                        <div className="mt-3 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
+                          <span className="font-semibold">Gift card code:</span> {redemption.fulfillment_code}
+                        </div>
+                      )}
                     </div>
                     <div className="flex items-center gap-2 self-start rounded-full bg-blue-100 px-3 py-1 text-sm font-semibold text-blue-700">
                       <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
