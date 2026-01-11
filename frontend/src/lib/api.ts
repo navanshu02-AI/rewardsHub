@@ -9,10 +9,12 @@ const api = axios.create({
 export const attachAuthToken = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
   if (token) {
-    config.headers = {
+    // Merge existing headers and ensure the type matches Axios expectations.
+    // Casting to `any` avoids TypeScript errors with `AxiosHeaders` methods.
+    config.headers = ({
       ...(config.headers ?? {}),
       Authorization: `Bearer ${token}`
-    };
+    } as any);
   }
   return config;
 };

@@ -26,12 +26,33 @@ class RequestIdFilter(logging.Filter):
         return True
 
 
-# Configure logging
-logging.basicConfig(
-    level=logging.INFO,
-    format="%(asctime)s - %(name)s - %(levelname)s - %(request_id)s - %(message)s",
-)
-logging.getLogger().addFilter(RequestIdFilter())
+class SafeRequestFormatter(logging.Formatter):
+    """Formatter that guarantees `request_id` exists on the record to avoid
+    KeyError during formatting (useful for logs emitted before middleware runs
+    or from subprocesses where the filter might not be attached).
+    """
+    def format(self, record: logging.LogRecord) -> str:
+        if not hasattr(record, "request_id"):
+            try:
+                record.request_id = request_id_context.get()
+            except Exception:
+                record.request_id = "-"
+        return super().format(record)
+
+
+# Configure logging with a safe formatter that injects `request_id` when missing
+logging.basicConfig(level=logging.INFO)
+root_logger = logging.getLogger()
+root_logger.setLevel(logging.INFO)
+fmt = "%(asctime)s - %(name)s - %(levelname)s - %(request_id)s - %(message)s"
+safe_formatter = SafeRequestFormatter(fmt)
+
+# Replace formatters on existing handlers so formatting won't raise when
+# `request_id` is absent on a LogRecord.
+for h in root_logger.handlers:
+    h.setFormatter(safe_formatter)
+
+root_logger.addFilter(RequestIdFilter())
 logger = logging.getLogger(__name__)
 
 
@@ -64,6 +85,7 @@ async def request_id_middleware(request: Request, call_next):
         "request started method=%s path=%s",
         request.method,
         request.url.path,
+        extra={"request_id": request_id},
     )
     try:
         response = await call_next(request)
@@ -73,6 +95,7 @@ async def request_id_middleware(request: Request, call_next):
             "request completed status_code=%s latency_ms=%.2f",
             response.status_code,
             duration_ms,
+            extra={"request_id": request_id},
         )
         return response
     finally:

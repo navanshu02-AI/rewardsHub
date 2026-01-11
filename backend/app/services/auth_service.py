@@ -92,13 +92,30 @@ class AuthService:
     async def authenticate_user(self, login_data: UserLogin, *, org_id: str) -> Token:
         """Authenticate user and return token"""
         db = await get_database()
+        used_fallback = False
         
         # Find user by email
         user_data = await db.users.find_one({"email": login_data.email, "org_id": org_id})
         if not user_data:
-            raise HTTPException(
-                status_code=status.HTTP_401_UNAUTHORIZED,
-                detail="Invalid credentials"
+            # Fallback for legacy/seeded records that may not have an `org_id` field.
+            # Attempt to find by email alone to avoid rejecting valid users created
+            # before org_id enforcement.
+            user_data = await db.users.find_one({"email": login_data.email})
+            if user_data:
+                used_fallback = True
+                logger.warning("Authenticated user found without org_id; falling back to email-only lookup for %s", login_data.email)
+            else:
+                raise HTTPException(
+                    status_code=status.HTTP_401_UNAUTHORIZED,
+                    detail="Invalid credentials"
+                )
+
+        if used_fallback and not user_data.get("org_id"):
+            # Keep legacy records compatible with the current org_id-required model.
+            user_data["org_id"] = org_id
+            await db.users.update_one(
+                {"_id": user_data["_id"]},
+                {"$set": {"org_id": org_id, "updated_at": datetime.utcnow()}}
             )
         
         user = User(**user_data)

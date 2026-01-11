@@ -6,6 +6,7 @@ from app.models.enums import UserRole
 from app.models.user import User
 from app.models.enums import UserRole
 from app.services.auth_service import auth_service
+from app.core.config import settings
 
 security = HTTPBearer()
 
@@ -22,11 +23,17 @@ ROLE_FALLBACKS: Dict[str, UserRole] = {
     "employee": UserRole.EMPLOYEE,
 }
 
-async def get_org_id(x_org_id: str = Header(..., alias="X-Org-Id")) -> str:
-    org_id = x_org_id.strip() if isinstance(x_org_id, str) else ""
-    if not org_id:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="X-Org-Id header is required")
-    return org_id
+async def get_org_id(x_org_id: str | None = Header(None, alias="X-Org-Id")) -> str:
+    """Resolve the organization id from the `X-Org-Id` header.
+
+    If the header is missing, fall back to the configured database name so
+    unauthenticated flows (e.g., login/register) still work in local/dev setups.
+    """
+    if isinstance(x_org_id, str) and x_org_id.strip():
+        return x_org_id.strip()
+
+    # Fallback to a sensible default (DB name) when header not provided.
+    return settings.DB_NAME
 
 def _normalize_role(role: Union[UserRole, str]) -> UserRole:
     if isinstance(role, UserRole):

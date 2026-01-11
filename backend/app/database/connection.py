@@ -12,7 +12,10 @@ async def get_database():
 
 async def ensure_indexes(database=None) -> None:
     """Ensure required indexes exist for core collections."""
-    target_db = database or db.database
+    # Avoid truth-value testing of pymongo Database objects (they raise
+    # NotImplementedError when used in boolean contexts). Compare explicitly
+    # against None instead.
+    target_db = database if database is not None else db.database
     if target_db is None:
         return
 
