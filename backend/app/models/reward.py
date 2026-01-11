@@ -2,7 +2,7 @@ from pydantic import BaseModel, Field
 from typing import Dict, List, Optional
 from datetime import datetime
 import uuid
-from app.models.enums import PreferenceCategory, RewardType
+from app.models.enums import PreferenceCategory, RewardProvider, RewardType
 
 class Reward(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
@@ -11,6 +11,7 @@ class Reward(BaseModel):
     description: str
     category: PreferenceCategory
     reward_type: RewardType
+    provider: RewardProvider = RewardProvider.INTERNAL
     points_required: int
     prices: Dict[str, float] = Field(default_factory=lambda: {"INR": 0.0, "USD": 0.0, "EUR": 0.0})
     original_prices: Optional[Dict[str, float]] = None
@@ -31,6 +32,7 @@ class RewardCreate(BaseModel):
     description: str
     category: PreferenceCategory
     reward_type: RewardType
+    provider: RewardProvider = RewardProvider.INTERNAL
     points_required: int
     prices: Dict[str, float]
     original_prices: Optional[Dict[str, float]] = None
@@ -55,3 +57,4 @@ class RewardUpdate(BaseModel):
     rating: Optional[float] = None
     review_count: Optional[int] = None
     is_active: Optional[bool] = None
+    provider: Optional[RewardProvider] = None

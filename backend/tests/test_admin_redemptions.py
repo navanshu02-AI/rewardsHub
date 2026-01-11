@@ -90,9 +90,53 @@ def test_admin_redemptions_update_persists(client: TestClient, monkeypatch: pyte
     body = response.json()
     assert body["status"] == "shipped"
     assert body["tracking_number"] == "TRACK123"
-    assert body["delivered_at"] == delivered_at.isoformat()
+    response_delivered_at = datetime.fromisoformat(body["delivered_at"].replace("Z", "+00:00"))
+    assert response_delivered_at == delivered_at
 
     updated = db.redemptions.get(redemption_id)
     assert updated["status"] == "shipped"
     assert updated["tracking_number"] == "TRACK123"
     assert updated["delivered_at"] == delivered_at
+
+
+def test_admin_redemptions_update_adds_fulfillment_code(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
+    redemption_id = "redemption-2"
+    db = FakeDatabase(
+        redemptions=[
+            {
+                "id": redemption_id,
+                "org_id": "org-1",
+                "user_id": "user-1",
+                "reward_id": "reward-2",
+                "points_used": 150,
+                "status": "pending_code",
+                "tracking_number": None,
+                "redeemed_at": datetime(2024, 1, 2, tzinfo=timezone.utc),
+                "delivered_at": None,
+            }
+        ]
+    )
+
+    async def fake_get_database() -> FakeDatabase:
+        return db
+
+    monkeypatch.setattr("app.api.v1.admin_redemptions.get_database", fake_get_database)
+    client.app.dependency_overrides[get_current_admin_user] = lambda: _make_admin()
+
+    payload = {
+        "status": "fulfilled",
+        "fulfillment_code": "GIFT-123",
+    }
+
+    response = client.patch(f"/api/v1/admin/redemptions/{redemption_id}", json=payload)
+
+    assert response.status_code == status.HTTP_200_OK
+    body = response.json()
+    assert body["status"] == "fulfilled"
+    assert body["fulfillment_code"] == "GIFT-123"
+    assert body["fulfilled_at"] is not None
+
+    updated = db.redemptions.get(redemption_id)
+    assert updated["status"] == "fulfilled"
+    assert updated["fulfillment_code"] == "GIFT-123"
+    assert updated["fulfilled_at"] is not None

@@ -109,7 +109,7 @@ def test_redeem_reward_success_updates_balances(monkeypatch: pytest.MonkeyPatch)
     assert record["user_id"] == user.id
     assert record["reward_id"] == reward.id
     assert record["points_used"] == reward.points_required
-    assert record["status"] == "pending"
+    assert record["status"] == "pending_fulfillment"
     assert redemption.id == record["id"]
 
     ledger_entries = db.points_ledger.values()
@@ -150,3 +150,27 @@ def test_user_redemptions_are_scoped_to_org(monkeypatch: pytest.MonkeyPatch) -> 
     redemptions = asyncio.run(service.get_user_redemptions(user))
 
     assert [redemption.id for redemption in redemptions] == ["redemption-1"]
+
+
+def test_user_redemptions_include_fulfillment_code(monkeypatch: pytest.MonkeyPatch) -> None:
+    user = _make_user(user_id="employee-1", points_balance=500, org_id="org-1")
+    db = FakeDatabase(
+        redemptions=[
+            {
+                "id": "redemption-1",
+                "org_id": "org-1",
+                "user_id": user.id,
+                "reward_id": "reward-1",
+                "points_used": 100,
+                "status": "fulfilled",
+                "fulfillment_code": "AMAZON-123",
+                "redeemed_at": datetime.utcnow(),
+                "fulfilled_at": datetime.utcnow(),
+            }
+        ]
+    )
+    service = _setup_service(monkeypatch, db)
+
+    redemptions = asyncio.run(service.get_user_redemptions(user))
+
+    assert redemptions[0].fulfillment_code == "AMAZON-123"

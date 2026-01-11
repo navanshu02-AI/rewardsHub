@@ -17,6 +17,8 @@ class RewardRedemptionUpdate(BaseModel):
     status: Optional[str] = None
     tracking_number: Optional[str] = None
     delivered_at: Optional[datetime] = None
+    fulfillment_code: Optional[str] = None
+    fulfilled_at: Optional[datetime] = None
 
 
 @router.get("/redemptions", response_model=List[RewardRedemption], dependencies=[Depends(get_current_admin_user)])
@@ -51,6 +53,8 @@ async def update_redemption(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Redemption not found")
 
     update_data = payload.dict(exclude_unset=True)
+    if update_data.get("status") == "fulfilled" and update_data.get("fulfilled_at") is None:
+        update_data["fulfilled_at"] = datetime.utcnow()
     if update_data:
         await db.redemptions.update_one(
             {"id": redemption_id, "org_id": current_user.org_id},

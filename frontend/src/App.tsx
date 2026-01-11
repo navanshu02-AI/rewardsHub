@@ -11,6 +11,7 @@ import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
+import AllRedemptionsPage from './pages/AllRedemptionsPage';
 import OrgChartPage from './pages/OrgChartPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
@@ -68,6 +69,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <RedemptionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/redemptions"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <AllRedemptionsPage />
                 </ProtectedRoute>
               }
             />

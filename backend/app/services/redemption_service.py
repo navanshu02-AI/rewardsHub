@@ -11,12 +11,48 @@ from app.database.connection import get_database
 from app.models.points_ledger import PointsLedgerEntry
 from app.models.recognition import RewardRedemption, RewardRedemptionCreate
 from app.models.reward import Reward
+from app.models.enums import RewardProvider
 from app.models.user import User
+
+
+class RedemptionProviderHandler:
+    provider: RewardProvider
+
+    def initial_status(self, reward: Reward) -> str:
+        raise NotImplementedError
+
+
+class InternalProviderHandler(RedemptionProviderHandler):
+    provider = RewardProvider.INTERNAL
+
+    def initial_status(self, reward: Reward) -> str:
+        return "pending_fulfillment"
+
+
+class AmazonGiftCardProviderHandler(RedemptionProviderHandler):
+    provider = RewardProvider.AMAZON_GIFTCARD
+
+    def initial_status(self, reward: Reward) -> str:
+        return "pending_code"
+
+
+class ManualVendorProviderHandler(RedemptionProviderHandler):
+    provider = RewardProvider.MANUAL_VENDOR
+
+    def initial_status(self, reward: Reward) -> str:
+        return "pending_fulfillment"
 
 
 class RedemptionService:
     def __init__(self) -> None:
-        pass
+        self._provider_handlers = {
+            handler.provider: handler
+            for handler in (
+                InternalProviderHandler(),
+                AmazonGiftCardProviderHandler(),
+                ManualVendorProviderHandler(),
+            )
+        }
 
     async def redeem_reward(
         self,
@@ -38,12 +74,17 @@ class RedemptionService:
         if current_user.points_balance < reward.points_required:
             raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Insufficient points to redeem reward")
 
+        handler = self._provider_handlers.get(reward.provider, self._provider_handlers[RewardProvider.INTERNAL])
+        initial_status = handler.initial_status(reward)
+
         redemption = RewardRedemption(
             org_id=current_user.org_id,
             user_id=current_user.id,
             reward_id=reward.id,
+            provider=reward.provider,
             points_used=reward.points_required,
             delivery_address=payload.delivery_address,
+            status=initial_status,
         )
 
         client = getattr(db, "client", None)
