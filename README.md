@@ -34,6 +34,10 @@ RewardsHub is a modern, full-stack application designed to manage employee rewar
 
 If you are exploring a specific feature, start in the corresponding folder above; most domain logic lives under `backend/app` and `frontend/src`.
 
+## 🤖 Agent Instructions
+
+Automation helpers should read `AGENTS.md` in the repo root for concise workflow expectations (tests, style, and tooling pointers). If you add nested agent guidance, keep it close to the code it applies to so its scope is clear.
+
 
 ## ⚙️ Getting Started
 
