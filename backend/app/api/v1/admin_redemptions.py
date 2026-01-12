@@ -10,6 +10,7 @@ from app.api.dependencies import get_current_admin_user
 from app.database.connection import get_database
 from app.models.recognition import RewardRedemption
 from app.services.email_service import email_notification_service
+from app.services.audit_log_service import audit_log_service
 
 router = APIRouter()
 
@@ -68,6 +69,14 @@ async def update_redemption(
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Redemption not found")
 
     if updated.get("status") != previous_status:
+        await audit_log_service.log_event(
+            actor_id=current_user.id,
+            org_id=current_user.org_id,
+            action="redemption_status_updated",
+            entity_type="redemption",
+            entity_id=redemption_id,
+            diff_summary={"status": {"from": previous_status, "to": updated.get("status")}},
+        )
         recipient = await db.users.find_one({"id": updated["user_id"], "org_id": current_user.org_id}) or {}
         email_notification_service.queue_redemption_status_change(
             redemption=RewardRedemption(**updated),
