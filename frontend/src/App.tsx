@@ -11,6 +11,7 @@ import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
 import AllRedemptionsPage from './pages/AllRedemptionsPage';
+import PointsLedgerPage from './pages/PointsLedgerPage';
 import OrgChartPage from './pages/OrgChartPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import ProfilePage from './pages/ProfilePage';
@@ -78,6 +79,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <RedemptionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/points"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <PointsLedgerPage />
                 </ProtectedRoute>
               }
             />

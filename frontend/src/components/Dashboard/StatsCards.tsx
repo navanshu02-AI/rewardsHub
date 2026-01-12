@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 interface User {
   points_balance: number;
@@ -21,7 +22,8 @@ const StatsCards: React.FC<StatsCardsProps> = ({ user, rewardsCount }) => {
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
         </svg>
       ),
-      bgColor: 'bg-blue-100'
+      bgColor: 'bg-blue-100',
+      link: '/points'
     },
     {
       title: 'Total Earned',
@@ -57,8 +59,8 @@ const StatsCards: React.FC<StatsCardsProps> = ({ user, rewardsCount }) => {
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-      {stats.map((stat, index) => (
-        <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+      {stats.map((stat, index) => {
+        const cardContent = (
           <div className="flex items-center">
             <div className={`${stat.bgColor} rounded-full p-3`}>
               {stat.icon}
@@ -68,8 +70,21 @@ const StatsCards: React.FC<StatsCardsProps> = ({ user, rewardsCount }) => {
               <p className="text-gray-600 text-sm">{stat.title}</p>
             </div>
           </div>
-        </div>
-      ))}
+        );
+
+        const cardClassName =
+          'bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-shadow hover:shadow-md';
+
+        return stat.link ? (
+          <Link key={index} to={stat.link} className={cardClassName}>
+            {cardContent}
+          </Link>
+        ) : (
+          <div key={index} className="bg-white p-6 rounded-lg shadow-sm border border-gray-200">
+            {cardContent}
+          </div>
+        );
+      })}
     </div>
   );
 };
