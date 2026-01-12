@@ -73,6 +73,7 @@ const AuthPage: React.FC = () => {
                 required
                 value={formData.email}
                 onChange={handleChange}
+                data-testid="auth-email"
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Email address"
               />
@@ -84,6 +85,7 @@ const AuthPage: React.FC = () => {
                 required
                 value={formData.password}
                 onChange={handleChange}
+                data-testid="auth-password"
                 className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Password"
               />
@@ -108,6 +110,7 @@ const AuthPage: React.FC = () => {
                     required
                     value={formData.first_name}
                     onChange={handleChange}
+                    data-testid="auth-first-name"
                     className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="First name"
                   />
@@ -117,6 +120,7 @@ const AuthPage: React.FC = () => {
                     required
                     value={formData.last_name}
                     onChange={handleChange}
+                    data-testid="auth-last-name"
                     className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Last name"
                   />
@@ -127,6 +131,7 @@ const AuthPage: React.FC = () => {
                     type="text"
                     value={formData.department}
                     onChange={handleChange}
+                    data-testid="auth-department"
                     className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Department (optional)"
                   />
@@ -137,6 +142,7 @@ const AuthPage: React.FC = () => {
                     type="text"
                     value={formData.company}
                     onChange={handleChange}
+                    data-testid="auth-company"
                     className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
                     placeholder="Company (optional)"
                   />
@@ -155,6 +161,7 @@ const AuthPage: React.FC = () => {
             <button
               type="submit"
               disabled={loading}
+              data-testid={isLogin ? 'auth-submit-login' : 'auth-submit-register'}
               className="group relative w-full flex justify-center py-3 px-4 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
             >
               {loading ? (

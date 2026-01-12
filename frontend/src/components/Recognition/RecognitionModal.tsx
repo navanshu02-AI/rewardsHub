@@ -234,6 +234,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
         key={scopeKey}
         type="button"
         disabled={!enabled}
+        data-testid={`recognition-scope-${scopeKey}`}
         className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
         onClick={() => enabled && setSelectedScope(scopeKey)}
       >
@@ -315,6 +316,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   id="recognition-recipient"
                   value={selectedRecipient}
                   onChange={(event) => setSelectedRecipient(event.target.value)}
+                  data-testid="recognition-recipient"
                   className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   disabled={!recipients.length}
                 >
@@ -414,6 +416,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   id="recognition-message"
                   value={message}
                   onChange={(event) => setMessage(event.target.value)}
+                  data-testid="recognition-message"
                   rows={4}
                   className="mt-1 block w-full rounded-lg border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   placeholder="Share what they did brilliantly..."
@@ -467,6 +470,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                             setPoints(Math.min(10000, Math.max(10, value)));
                           }
                         }}
+                        data-testid="recognition-points"
                         className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-right shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                       />
                       <span className="text-sm text-gray-500">points</span>
@@ -491,6 +495,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                 <button
                   type="submit"
                   disabled={submitting}
+                  data-testid="recognition-submit"
                   className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
                 >
                   {submitting && (

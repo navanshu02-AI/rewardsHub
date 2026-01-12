@@ -49,30 +49,35 @@ const NavBar: React.FC = () => {
             <>
               <button
                 onClick={() => navigate('/dashboard')}
+                data-testid="nav-dashboard"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Dashboard
               </button>
               <button
                 onClick={() => navigate('/recognitions')}
+                data-testid="nav-recognitions"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Recognitions
               </button>
               <button
                 onClick={() => navigate('/feed')}
+                data-testid="nav-feed"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Feed
               </button>
               <button
                 onClick={() => navigate('/redemptions')}
+                data-testid="nav-redemptions"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Redemptions
               </button>
               <button
                 onClick={() => navigate('/preferences')}
+                data-testid="nav-preferences"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
                 Preferences
@@ -80,6 +85,7 @@ const NavBar: React.FC = () => {
               {(user.role === 'hr_admin' || user.role === 'executive') && (
                 <button
                   onClick={() => navigate('/admin/redemptions')}
+                  data-testid="nav-all-redemptions"
                   className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                 >
                   All Redemptions
@@ -89,12 +95,14 @@ const NavBar: React.FC = () => {
                 <>
                   <button
                     onClick={() => navigate('/approvals')}
+                    data-testid="nav-approvals"
                     className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Approvals
                   </button>
                   <button
                     onClick={() => navigate('/org-chart')}
+                    data-testid="nav-org-chart"
                     className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   >
                     Org Chart
