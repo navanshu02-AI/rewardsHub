@@ -11,6 +11,7 @@ jest.mock('../../lib/api', () => ({
     get: jest.fn(),
     post: jest.fn(),
     put: jest.fn(),
+    patch: jest.fn(),
   },
 }));
 
@@ -151,4 +152,45 @@ test('updates reporting via the API', async () => {
       manager_id: null,
     })
   );
+});
+
+test('deactivates a user via the API', async () => {
+  mockedUseAuth.mockReturnValue({
+    user: mockAdminUser,
+    login: jest.fn(),
+    register: jest.fn(),
+    logout: jest.fn(),
+    updateUserPreferences: jest.fn(),
+    loading: false,
+    isAuthenticated: true,
+    refreshUser: jest.fn(),
+  });
+
+  mockedApi.get.mockResolvedValueOnce({
+    data: [
+      {
+        id: 'user-2',
+        first_name: 'Jamie',
+        last_name: 'Lee',
+        email: 'jamie@example.com',
+        role: 'employee',
+        manager_id: null,
+        is_active: true,
+      },
+    ],
+  });
+  mockedApi.patch.mockResolvedValue({ data: { id: 'user-2' } });
+  mockedApi.get.mockResolvedValueOnce({ data: [] });
+
+  const user = userEvent.setup();
+
+  render(<AdminUsersPage />);
+
+  await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+
+  await user.click(screen.getByRole('button', { name: /deactivate/i }));
+  const dialog = screen.getByRole('dialog', { name: /deactivate user/i });
+  await user.click(within(dialog).getByRole('button', { name: /^deactivate$/i }));
+
+  await waitFor(() => expect(mockedApi.patch).toHaveBeenCalledWith('/users/user-2/deactivate'));
 });

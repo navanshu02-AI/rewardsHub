@@ -114,6 +114,42 @@ async def update_reporting_line(
     return UserResponse(**updated_user.dict())
 
 
+@router.patch("/{user_id}/deactivate", response_model=UserResponse)
+async def deactivate_user(
+    user_id: str,
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Deactivate a user (admin only)."""
+    updated_user = await user_service.set_active_status(user_id, current_user.org_id, False)
+    await audit_log_service.log_event(
+        actor_id=current_user.id,
+        org_id=current_user.org_id,
+        action="user_deactivated",
+        entity_type="user",
+        entity_id=updated_user.id,
+        diff_summary={"is_active": False},
+    )
+    return UserResponse(**updated_user.dict())
+
+
+@router.patch("/{user_id}/activate", response_model=UserResponse)
+async def activate_user(
+    user_id: str,
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Activate a user (admin only)."""
+    updated_user = await user_service.set_active_status(user_id, current_user.org_id, True)
+    await audit_log_service.log_event(
+        actor_id=current_user.id,
+        org_id=current_user.org_id,
+        action="user_activated",
+        entity_type="user",
+        entity_id=updated_user.id,
+        diff_summary={"is_active": True},
+    )
+    return UserResponse(**updated_user.dict())
+
+
 @router.post("/assign-points/{user_id}", dependencies=[Depends(get_current_admin_user)])
 async def assign_points(
     user_id: str,
