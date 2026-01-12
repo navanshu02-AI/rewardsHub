@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import * as AuthContext from '../../../contexts/AuthContext';
+import * as SettingsContext from '../../../contexts/SettingsContext';
 import Dashboard from '../../Dashboard/Dashboard';
 
 jest.mock('axios', () => ({
@@ -20,9 +21,19 @@ jest.mock('../../../contexts/AuthContext', () => {
     useAuth: jest.fn(),
   };
 });
+jest.mock('../../../contexts/SettingsContext', () => {
+  const actual = jest.requireActual('../../../contexts/SettingsContext');
+  return {
+    ...actual,
+    useSettings: jest.fn(),
+  };
+});
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedUseAuth = AuthContext.useAuth as jest.MockedFunction<typeof AuthContext.useAuth>;
+const mockedUseSettings = SettingsContext.useSettings as jest.MockedFunction<
+  typeof SettingsContext.useSettings
+>;
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -63,6 +74,7 @@ const createAuthContextValue = () => {
 test('opens redeem modal, submits, shows success, and refreshes user profile', async () => {
   const authValue = createAuthContextValue();
   mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: true, loading: false });
 
   mockedAxios.get
     .mockResolvedValueOnce({

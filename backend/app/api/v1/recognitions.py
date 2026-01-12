@@ -17,6 +17,7 @@ from app.models.recognition import (
     RecognitionReactionToggleRequest,
 )
 from app.models.user import User
+from app.core.config import settings
 from app.services.gemini_service import gemini_service
 from app.services.recognition_service import recognition_service
 
@@ -126,6 +127,8 @@ async def assist_message(
     payload: RecognitionMessageAssistRequest,
     current_user: User = Depends(get_current_user),
 ) -> RecognitionMessageAssistResponse:
+    if not settings.AI_FEATURES_ENABLED:
+        return JSONResponse(status_code=501, content={"error": "AI features are disabled."})
     message = payload.message.strip()
     if len(message) < 3 or len(message) > 1000:
         return JSONResponse(

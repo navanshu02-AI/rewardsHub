@@ -1,6 +1,7 @@
 import React from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider } from './contexts/AuthContext';
+import { SettingsProvider } from './contexts/SettingsContext';
 import NavBar from './components/Layout/NavBar';
 import HomePage from './pages/HomePage';
 import AuthPage from './components/Auth/AuthPage';
@@ -22,126 +23,128 @@ import './App.css';
 
 function App() {
   return (
-    <AuthProvider>
-      <Router>
-        <div className="min-h-screen bg-gray-50">
-          <Routes>
-            <Route path="/" element={<HomePage />} />
-            <Route path="/auth" element={<AuthPage />} />
-            <Route path="/forgot-password" element={<ForgotPasswordPage />} />
-            <Route path="/reset-password" element={<ResetPasswordPage />} />
-            <Route
-              path="/dashboard"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <Dashboard />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/profile"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <ProfilePage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/preferences"
-              element={
-                <ProtectedRoute>
-                  <Navigate to="/profile?tab=preferences" replace />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/recognitions"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <RecognitionHistoryPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/feed"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <RecognitionFeedPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/redemptions"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <RedemptionsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/points"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <PointsLedgerPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/redemptions"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <AllRedemptionsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/users"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <AdminUsersPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/admin/rewards"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <AdminRewardsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/org-chart"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <OrgChartPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/approvals"
-              element={
-                <ProtectedRoute>
-                  <NavBar />
-                  <ApprovalsPage />
-                </ProtectedRoute>
-              }
-            />
-            <Route path="*" element={<Navigate to="/" replace />} />
-          </Routes>
-        </div>
-      </Router>
-    </AuthProvider>
+    <SettingsProvider>
+      <AuthProvider>
+        <Router>
+          <div className="min-h-screen bg-gray-50">
+            <Routes>
+              <Route path="/" element={<HomePage />} />
+              <Route path="/auth" element={<AuthPage />} />
+              <Route path="/forgot-password" element={<ForgotPasswordPage />} />
+              <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route
+                path="/dashboard"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <Dashboard />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/profile"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <ProfilePage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/preferences"
+                element={
+                  <ProtectedRoute>
+                    <Navigate to="/profile?tab=preferences" replace />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/recognitions"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <RecognitionHistoryPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/feed"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <RecognitionFeedPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/redemptions"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <RedemptionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/points"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <PointsLedgerPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/redemptions"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <AllRedemptionsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/users"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <AdminUsersPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/rewards"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <AdminRewardsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/org-chart"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <OrgChartPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/approvals"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <ApprovalsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route path="*" element={<Navigate to="/" replace />} />
+            </Routes>
+          </div>
+        </Router>
+      </AuthProvider>
+    </SettingsProvider>
   );
 }
 

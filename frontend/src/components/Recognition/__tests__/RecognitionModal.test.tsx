@@ -3,6 +3,7 @@ import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import axios from 'axios';
 import * as AuthContext from '../../../contexts/AuthContext';
+import * as SettingsContext from '../../../contexts/SettingsContext';
 import RecognitionModal from '../RecognitionModal';
 
 jest.mock('axios', () => ({
@@ -20,9 +21,19 @@ jest.mock('../../../contexts/AuthContext', () => {
     useAuth: jest.fn(),
   };
 });
+jest.mock('../../../contexts/SettingsContext', () => {
+  const actual = jest.requireActual('../../../contexts/SettingsContext');
+  return {
+    ...actual,
+    useSettings: jest.fn(),
+  };
+});
 
 const mockedAxios = axios as jest.Mocked<typeof axios>;
 const mockedUseAuth = AuthContext.useAuth as jest.MockedFunction<typeof AuthContext.useAuth>;
+const mockedUseSettings = SettingsContext.useSettings as jest.MockedFunction<
+  typeof SettingsContext.useSettings
+>;
 
 afterEach(() => {
   jest.clearAllMocks();
@@ -57,6 +68,7 @@ const createAuthContextValue = (role: AuthContext.UserRole) => {
 test('disables restricted scopes for employees and defaults to peer recipients', async () => {
   const authValue = createAuthContextValue('employee');
   mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
 
   mockedAxios.get.mockResolvedValue({
     data: {
@@ -108,6 +120,7 @@ test('disables restricted scopes for employees and defaults to peer recipients',
 test('surfaces backend validation errors during submission', async () => {
   const authValue = createAuthContextValue('hr_admin');
   mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
 
   mockedAxios.get.mockResolvedValue({
     data: {
