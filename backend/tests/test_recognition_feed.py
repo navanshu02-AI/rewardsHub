@@ -160,3 +160,50 @@ def test_public_feed_excludes_other_orgs(
     feed = asyncio.run(service.get_public_feed(users["employee"], limit=10))
 
     assert [entry.id for entry in feed] == ["rec-org-1"]
+
+
+def test_public_feed_filters_by_search_and_value_tag(
+    recognition_service_setup: tuple[RecognitionService, object, dict],
+) -> None:
+    service, db, users = recognition_service_setup
+    now = datetime(2024, 1, 1, 12, 0, 0)
+
+    recognitions = [
+        {
+            "id": "rec-search-1",
+            "org_id": users["manager"].org_id,
+            "from_user_id": users["manager"].id,
+            "to_user_ids": [users["employee"].id],
+            "message": "Amazing teamwork on the launch!",
+            "points_awarded": 10,
+            "recognition_type": RecognitionType.PEER_TO_PEER,
+            "created_at": now,
+            "is_public": True,
+            "values_tags": ["teamwork"],
+            "from_user_snapshot": _summary(users["manager"]),
+            "to_user_snapshots": [_summary(users["employee"])],
+        },
+        {
+            "id": "rec-search-2",
+            "org_id": users["manager"].org_id,
+            "from_user_id": users["manager"].id,
+            "to_user_ids": [users["peer"].id],
+            "message": "Leadership on the project was outstanding.",
+            "points_awarded": 10,
+            "recognition_type": RecognitionType.PEER_TO_PEER,
+            "created_at": now + timedelta(minutes=1),
+            "is_public": True,
+            "values_tags": ["leadership"],
+            "from_user_snapshot": _summary(users["manager"]),
+            "to_user_snapshots": [_summary(users["peer"])],
+        },
+    ]
+
+    for record in recognitions:
+        asyncio.run(db.recognitions.insert_one(record))
+
+    feed = asyncio.run(service.get_public_feed(users["employee"], limit=10, search="teamwork"))
+    assert [entry.id for entry in feed] == ["rec-search-1"]
+
+    tagged = asyncio.run(service.get_public_feed(users["employee"], limit=10, value_tag="leadership"))
+    assert [entry.id for entry in tagged] == ["rec-search-2"]

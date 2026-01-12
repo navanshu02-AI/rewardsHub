@@ -12,6 +12,9 @@ router = APIRouter()
 
 @router.get("/", response_model=List[Reward])
 async def get_rewards(
+    search: Optional[str] = None,
+    min_points: Optional[int] = Query(None, ge=0),
+    max_points: Optional[int] = Query(None, ge=0),
     category: Optional[PreferenceCategory] = None,
     reward_type: Optional[RewardType] = None,
     limit: int = Query(20, le=100),
@@ -21,8 +24,11 @@ async def get_rewards(
     """Get rewards with optional filtering"""
     return await reward_service.get_rewards(
         current_user.org_id,
+        search,
         category,
         reward_type,
+        min_points,
+        max_points,
         limit,
         skip,
     )
