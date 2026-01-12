@@ -8,13 +8,13 @@ const api = axios.create({
 
 export const attachAuthToken = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
-  const orgId = localStorage.getItem('orgId');
+  const orgId = localStorage.getItem('orgId')?.trim();
   const headers = { ...(config.headers ?? {}) } as any;
   if (token) {
     headers.Authorization = `Bearer ${token}`;
   }
-  if (orgId && orgId.trim()) {
-    headers['X-Org-Id'] = orgId.trim();
+  if (orgId) {
+    headers['X-Org-Id'] = orgId;
   }
   // Casting to `any` avoids TypeScript errors with `AxiosHeaders` methods.
   config.headers = headers;
