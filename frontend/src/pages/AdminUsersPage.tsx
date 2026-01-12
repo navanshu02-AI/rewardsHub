@@ -58,8 +58,11 @@ const AdminUsersPage: React.FC = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [isProvisionOpen, setIsProvisionOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isStatusOpen, setIsStatusOpen] = useState(false);
+  const [statusAction, setStatusAction] = useState<'activate' | 'deactivate'>('deactivate');
   const [saving, setSaving] = useState(false);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
+  const [statusTarget, setStatusTarget] = useState<UserRecord | null>(null);
   const [provisionForm, setProvisionForm] = useState<ProvisionPayload>({
     email: '',
     password: '',
@@ -133,6 +136,18 @@ const AdminUsersPage: React.FC = () => {
     setIsEditOpen(true);
   };
 
+  const openStatusModal = (userItem: UserRecord, action: 'activate' | 'deactivate') => {
+    setStatusTarget(userItem);
+    setStatusAction(action);
+    setActionError(null);
+    setIsStatusOpen(true);
+  };
+
+  const closeStatusModal = () => {
+    setIsStatusOpen(false);
+    setStatusTarget(null);
+  };
+
   const handleProvisionSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setSaving(true);
@@ -171,6 +186,23 @@ const AdminUsersPage: React.FC = () => {
       await loadUsers();
     } catch (err: any) {
       setActionError(err.response?.data?.detail || 'Unable to update reporting.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const handleStatusSubmit = async () => {
+    if (!statusTarget) {
+      return;
+    }
+    setSaving(true);
+    setActionError(null);
+    try {
+      await api.patch(`/users/${statusTarget.id}/${statusAction}`);
+      closeStatusModal();
+      await loadUsers();
+    } catch (err: any) {
+      setActionError(err.response?.data?.detail || 'Unable to update user status.');
     } finally {
       setSaving(false);
     }
@@ -256,6 +288,7 @@ const AdminUsersPage: React.FC = () => {
                   <th className="px-4 py-3">Email</th>
                   <th className="px-4 py-3">Role</th>
                   <th className="px-4 py-3">Manager</th>
+                  <th className="px-4 py-3">Status</th>
                   <th className="px-4 py-3">Actions</th>
                 </tr>
               </thead>
@@ -270,13 +303,25 @@ const AdminUsersPage: React.FC = () => {
                     <td className="px-4 py-3 text-slate-600">
                       {userItem.manager_id ? managerLookup.get(userItem.manager_id) || userItem.manager_id : 'Unassigned'}
                     </td>
+                    <td className="px-4 py-3 text-slate-600">{userItem.is_active === false ? 'Inactive' : 'Active'}</td>
                     <td className="px-4 py-3">
-                      <button
-                        onClick={() => openEditModal(userItem)}
-                        className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
-                      >
-                        Edit reporting
-                      </button>
+                      <div className="flex flex-wrap gap-2">
+                        <button
+                          onClick={() => openEditModal(userItem)}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          Edit reporting
+                        </button>
+                        <button
+                          onClick={() =>
+                            openStatusModal(userItem, userItem.is_active === false ? 'activate' : 'deactivate')
+                          }
+                          data-testid={`toggle-user-status-${userItem.id}`}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                        >
+                          {userItem.is_active === false ? 'Activate' : 'Deactivate'}
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}
@@ -564,6 +609,71 @@ const AdminUsersPage: React.FC = () => {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {isStatusOpen && statusTarget && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4"
+          role="dialog"
+          aria-modal="true"
+          aria-label={statusAction === 'deactivate' ? 'Deactivate user' : 'Activate user'}
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              closeStatusModal();
+            }
+          }}
+        >
+          <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
+            <div className="flex items-start justify-between">
+              <div>
+                <h2 className="text-lg font-semibold text-slate-900">
+                  {statusAction === 'deactivate' ? 'Deactivate user' : 'Activate user'}
+                </h2>
+                <p className="text-sm text-slate-600">
+                  {statusAction === 'deactivate'
+                    ? `Deactivate ${statusTarget.first_name} ${statusTarget.last_name}? They will no longer appear as an active teammate.`
+                    : `Activate ${statusTarget.first_name} ${statusTarget.last_name} and restore access.`}
+                </p>
+              </div>
+              <button
+                onClick={closeStatusModal}
+                className="text-sm font-semibold text-slate-500 hover:text-slate-700"
+              >
+                Close
+              </button>
+            </div>
+
+            {actionError && (
+              <div className="mt-4 rounded-lg border border-rose-200 bg-rose-50 px-3 py-2 text-xs text-rose-700">
+                {actionError}
+              </div>
+            )}
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={closeStatusModal}
+                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={handleStatusSubmit}
+                disabled={saving}
+                className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              >
+                {saving
+                  ? statusAction === 'deactivate'
+                    ? 'Deactivating...'
+                    : 'Activating...'
+                  : statusAction === 'deactivate'
+                    ? 'Deactivate'
+                    : 'Activate'}
+              </button>
+            </div>
           </div>
         </div>
       )}

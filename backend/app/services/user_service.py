@@ -235,4 +235,18 @@ class UserService:
         updated = await db.users.find_one({"id": user_id, "org_id": org_id})
         return User(**updated)
 
+    async def set_active_status(self, user_id: str, org_id: str, is_active: bool) -> User:
+        """Activate or deactivate a user account."""
+        db = await get_database()
+
+        result = await db.users.update_one(
+            {"id": user_id, "org_id": org_id},
+            {"$set": {"is_active": is_active, "updated_at": datetime.utcnow()}},
+        )
+        if result.matched_count == 0:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="User not found")
+
+        updated = await db.users.find_one({"id": user_id, "org_id": org_id})
+        return User(**updated)
+
 user_service = UserService()

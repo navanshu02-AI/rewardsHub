@@ -8,7 +8,7 @@ const storageState = path.join(authDir, 'hr.json');
 test.describe('Admin users', () => {
   test.use({ storageState });
 
-  test('hr admin can provision a user', async ({ page }) => {
+  test('hr admin can provision and deactivate a user', async ({ page }) => {
     await page.goto('/dashboard');
 
     await page.getByTestId('nav-admin-menu').click();
@@ -30,6 +30,14 @@ test.describe('Admin users', () => {
     await dialog.getByRole('button', { name: /provision/i }).click();
 
     await expect(page.getByText(email)).toBeVisible();
+
+    const row = page.getByRole('row', { name: new RegExp(email, 'i') });
+    await row.getByRole('button', { name: /deactivate/i }).click();
+
+    const statusDialog = page.getByRole('dialog', { name: /deactivate user/i });
+    await statusDialog.getByRole('button', { name: /^deactivate$/i }).click();
+
+    await expect(row.getByText(/inactive/i)).toBeVisible();
   });
 
   test('hr admin can import users via CSV', async ({ page }) => {
