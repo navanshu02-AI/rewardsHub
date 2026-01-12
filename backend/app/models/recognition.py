@@ -2,7 +2,7 @@ from datetime import datetime
 import uuid
 from typing import List, Optional, Literal
 from pydantic import BaseModel, Field
-from app.models.enums import RecognitionType, AchievementType, RecognitionScope, RewardProvider, UserRole
+from app.models.enums import RecognitionType, AchievementType, RecognitionScope, RewardProvider, UserRole, RedemptionStatus
 
 class RecognitionUserSummary(BaseModel):
     id: str
@@ -118,7 +118,7 @@ class RewardRedemption(BaseModel):
     reward_id: str
     provider: RewardProvider = RewardProvider.INTERNAL
     points_used: int
-    status: str = "pending"
+    status: RedemptionStatus = RedemptionStatus.REQUESTED
     delivery_address: Optional[dict] = None
     tracking_number: Optional[str] = None
     fulfillment_code: Optional[str] = None

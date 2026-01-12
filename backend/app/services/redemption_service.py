@@ -11,7 +11,7 @@ from app.database.connection import get_database
 from app.models.points_ledger import PointsLedgerEntry
 from app.models.recognition import RewardRedemption, RewardRedemptionCreate
 from app.models.reward import Reward
-from app.models.enums import RewardProvider
+from app.models.enums import RewardProvider, RedemptionStatus
 from app.models.user import User
 
 
@@ -24,29 +24,29 @@ def _is_transaction_unsupported(error: OperationFailure) -> bool:
 class RedemptionProviderHandler:
     provider: RewardProvider
 
-    def initial_status(self, reward: Reward) -> str:
+    def initial_status(self, reward: Reward) -> RedemptionStatus:
         raise NotImplementedError
 
 
 class InternalProviderHandler(RedemptionProviderHandler):
     provider = RewardProvider.INTERNAL
 
-    def initial_status(self, reward: Reward) -> str:
-        return "pending_fulfillment"
+    def initial_status(self, reward: Reward) -> RedemptionStatus:
+        return RedemptionStatus.REQUESTED
 
 
 class AmazonGiftCardProviderHandler(RedemptionProviderHandler):
     provider = RewardProvider.AMAZON_GIFTCARD
 
-    def initial_status(self, reward: Reward) -> str:
-        return "pending_code"
+    def initial_status(self, reward: Reward) -> RedemptionStatus:
+        return RedemptionStatus.REQUESTED
 
 
 class ManualVendorProviderHandler(RedemptionProviderHandler):
     provider = RewardProvider.MANUAL_VENDOR
 
-    def initial_status(self, reward: Reward) -> str:
-        return "pending_fulfillment"
+    def initial_status(self, reward: Reward) -> RedemptionStatus:
+        return RedemptionStatus.REQUESTED
 
 
 class RedemptionService:
