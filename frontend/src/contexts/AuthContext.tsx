@@ -37,6 +37,7 @@ interface AuthContextType {
   user: User | null;
   login: (email: string, password: string) => Promise<{ success: boolean; error?: string }>;
   register: (userData: any) => Promise<{ success: boolean; error?: string }>;
+  setAuthSession: (accessToken: string, orgId?: string) => void;
   requestPasswordReset: (email: string) => Promise<{ success: boolean; resetToken?: string; message?: string; expiresAt?: string; error?: string }>;
   resetPassword: (token: string, newPassword: string) => Promise<{ success: boolean; message?: string; error?: string }>;
   logout: () => void;
@@ -128,12 +129,19 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }, [token, fetchUserProfile]);
 
+  const setAuthSession = React.useCallback((accessToken: string, orgId?: string) => {
+    localStorage.setItem('token', accessToken);
+    if (orgId) {
+      localStorage.setItem('orgId', orgId);
+    }
+    setToken(accessToken);
+  }, []);
+
   const login = async (email: string, password: string) => {
     try {
       const response = await api.post('/auth/login', { email, password });
       const { access_token } = response.data;
-      localStorage.setItem('token', access_token);
-      setToken(access_token);
+      setAuthSession(access_token);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Login failed' };
@@ -201,6 +209,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       user,
       login,
       register,
+      setAuthSession,
       requestPasswordReset,
       resetPassword,
       logout,

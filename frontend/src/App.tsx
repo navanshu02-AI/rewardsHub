@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import AuthPage from './components/Auth/AuthPage';
 import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
+import SetupOrgPage from './pages/SetupOrgPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
@@ -29,6 +30,7 @@ function App() {
           <div className="min-h-screen bg-gray-50">
             <Routes>
               <Route path="/" element={<HomePage />} />
+              <Route path="/setup" element={<SetupOrgPage />} />
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
