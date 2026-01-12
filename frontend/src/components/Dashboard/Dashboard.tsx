@@ -36,6 +36,11 @@ interface Reward {
   tags: string[];
 }
 
+interface FilterOption {
+  value: string;
+  label: string;
+}
+
 interface Recommendations {
   rewards: Reward[];
   reason: string;
@@ -62,14 +67,31 @@ const Dashboard: React.FC = () => {
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
+  const [search, setSearch] = useState('');
+  const [minPoints, setMinPoints] = useState('');
+  const [maxPoints, setMaxPoints] = useState('');
+  const [category, setCategory] = useState('');
+  const [rewardType, setRewardType] = useState('');
+  const [categories, setCategories] = useState<FilterOption[]>([]);
+  const [rewardTypes, setRewardTypes] = useState<FilterOption[]>([]);
   const [showRecognitionModal, setShowRecognitionModal] = useState(false);
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    fetchData();
+    void fetchDashboardData();
   }, [currency, user?.role]);
+
+  useEffect(() => {
+    void fetchFilterOptions();
+  }, []);
+
+  useEffect(() => {
+    if (!loading) {
+      void fetchRewards();
+    }
+  }, [search, minPoints, maxPoints, category, rewardType]);
 
   const rewardsById = useMemo(() => {
     const map = new Map<string, Reward>();
@@ -78,24 +100,35 @@ const Dashboard: React.FC = () => {
     return map;
   }, [rewards, recommendations]);
 
-  const fetchData = async () => {
+  const fetchFilterOptions = async () => {
     try {
-      const requests = [
-        api.get('/recommendations', { params: { currency } }),
-        api.get('/rewards', { params: { currency } })
-      ];
+      const [categoriesRes, rewardTypesRes] = await Promise.all([
+        api.get('/preferences/categories'),
+        api.get('/preferences/reward-types')
+      ]);
+      setCategories(categoriesRes.data || []);
+      setRewardTypes(rewardTypesRes.data || []);
+    } catch (error) {
+      console.error('Error fetching filter options:', error);
+    }
+  };
+
+  const fetchDashboardData = async () => {
+    try {
+      setLoading(true);
+      const requests = [api.get('/recommendations', { params: { currency } })];
       if (user?.role === 'hr_admin') {
         requests.push(api.get('/admin/analytics/overview'));
       }
-      const [recommendationsRes, rewardsRes, analyticsRes] = await Promise.all(requests);
+      const [recommendationsRes, analyticsRes] = await Promise.all(requests);
 
       setRecommendations(recommendationsRes.data);
-      setRewards(rewardsRes.data);
       if (analyticsRes) {
         setAnalytics(analyticsRes.data);
       } else {
         setAnalytics(null);
       }
+      await fetchRewards();
     } catch (error) {
       console.error('Error fetching data:', error);
     } finally {
@@ -103,9 +136,37 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchRewards = async () => {
+    try {
+      const params: Record<string, string | number> = { currency };
+      const trimmedSearch = search.trim();
+      if (trimmedSearch) {
+        params.search = trimmedSearch;
+      }
+      if (category) {
+        params.category = category;
+      }
+      if (rewardType) {
+        params.reward_type = rewardType;
+      }
+      const minValue = Number(minPoints);
+      if (minPoints && !Number.isNaN(minValue)) {
+        params.min_points = minValue;
+      }
+      const maxValue = Number(maxPoints);
+      if (maxPoints && !Number.isNaN(maxValue)) {
+        params.max_points = maxValue;
+      }
+      const rewardsRes = await api.get('/rewards', { params });
+      setRewards(rewardsRes.data);
+    } catch (error) {
+      console.error('Error fetching rewards:', error);
+    }
+  };
+
   const handleRecognitionSuccess = () => {
     setShowRecognitionModal(false);
-    void fetchData();
+    void fetchDashboardData();
   };
 
   const redeemReward = (rewardId: string) => {
@@ -233,6 +294,92 @@ const Dashboard: React.FC = () => {
           />
         </div>
       )}
+
+      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
+          <div className="flex-1">
+            <label className="text-sm font-medium text-slate-700" htmlFor="reward-search">
+              Search rewards
+            </label>
+            <input
+              id="reward-search"
+              type="text"
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+              placeholder="Search by title, brand, or description"
+              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+          <div className="flex flex-1 flex-wrap gap-4">
+            <div className="min-w-[180px] flex-1">
+              <label className="text-sm font-medium text-slate-700" htmlFor="reward-category">
+                Category
+              </label>
+              <select
+                id="reward-category"
+                value={category}
+                onChange={(event) => setCategory(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All categories</option>
+                {categories.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div className="min-w-[180px] flex-1">
+              <label className="text-sm font-medium text-slate-700" htmlFor="reward-type">
+                Reward type
+              </label>
+              <select
+                id="reward-type"
+                value={rewardType}
+                onChange={(event) => setRewardType(event.target.value)}
+                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                <option value="">All types</option>
+                {rewardTypes.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </div>
+          </div>
+          <div className="flex flex-1 flex-wrap gap-4">
+            <div className="min-w-[140px] flex-1">
+              <label className="text-sm font-medium text-slate-700" htmlFor="min-points">
+                Min points
+              </label>
+              <input
+                id="min-points"
+                type="number"
+                min={0}
+                value={minPoints}
+                onChange={(event) => setMinPoints(event.target.value)}
+                placeholder="0"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+            <div className="min-w-[140px] flex-1">
+              <label className="text-sm font-medium text-slate-700" htmlFor="max-points">
+                Max points
+              </label>
+              <input
+                id="max-points"
+                type="number"
+                min={0}
+                value={maxPoints}
+                onChange={(event) => setMaxPoints(event.target.value)}
+                placeholder="1000"
+                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
 
       <RewardsCatalog
         rewards={rewards}

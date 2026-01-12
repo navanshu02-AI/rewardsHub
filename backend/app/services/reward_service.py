@@ -11,8 +11,11 @@ class RewardService:
     async def get_rewards(
         self, 
         org_id: str,
+        search: Optional[str] = None,
         category: Optional[PreferenceCategory] = None,
         reward_type: Optional[RewardType] = None,
+        min_points: Optional[int] = None,
+        max_points: Optional[int] = None,
         limit: int = 20,
         skip: int = 0
     ) -> List[Reward]:
@@ -20,10 +23,25 @@ class RewardService:
         db = await get_database()
         
         query = {"is_active": True, "org_id": org_id}
+        if search:
+            query["$or"] = [
+                {"title": {"$regex": search, "$options": "i"}},
+                {"description": {"$regex": search, "$options": "i"}},
+                {"brand": {"$regex": search, "$options": "i"}},
+                {"vendor": {"$regex": search, "$options": "i"}},
+                {"tags": {"$regex": search, "$options": "i"}},
+            ]
         if category:
             query["category"] = category
         if reward_type:
             query["reward_type"] = reward_type
+        if min_points is not None or max_points is not None:
+            points_filter = {}
+            if min_points is not None:
+                points_filter["$gte"] = min_points
+            if max_points is not None:
+                points_filter["$lte"] = max_points
+            query["points_required"] = points_filter
         
         rewards = await db.rewards.find(query).skip(skip).limit(limit).to_list(limit)
         return [Reward(**reward) for reward in rewards]

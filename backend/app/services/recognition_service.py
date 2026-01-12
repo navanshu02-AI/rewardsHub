@@ -549,12 +549,15 @@ class RecognitionService:
     async def get_public_feed(
         self,
         current_user: User,
+        search: Optional[str] = None,
+        value_tag: Optional[str] = None,
         limit: int = 50,
         cursor: Optional[str] = None,
         skip: int = 0,
     ) -> List[RecognitionFeedEntry]:
         db = await get_database()
         query: Dict[str, object] = {"is_public": True, "org_id": current_user.org_id}
+        and_filters: List[Dict[str, object]] = []
         cursor_created_at: Optional[datetime] = None
         cursor_id: Optional[str] = None
 
@@ -569,10 +572,33 @@ class RecognitionService:
                 ) from exc
 
         if cursor_created_at and cursor_id:
-            query["$or"] = [
-                {"created_at": {"$lt": cursor_created_at}},
-                {"created_at": cursor_created_at, "id": {"$lt": cursor_id}},
-            ]
+            and_filters.append(
+                {
+                    "$or": [
+                        {"created_at": {"$lt": cursor_created_at}},
+                        {"created_at": cursor_created_at, "id": {"$lt": cursor_id}},
+                    ]
+                }
+            )
+
+        if search:
+            and_filters.append(
+                {
+                    "$or": [
+                        {"message": {"$regex": search, "$options": "i"}},
+                        {"from_user_snapshot.first_name": {"$regex": search, "$options": "i"}},
+                        {"from_user_snapshot.last_name": {"$regex": search, "$options": "i"}},
+                        {"to_user_snapshots.first_name": {"$regex": search, "$options": "i"}},
+                        {"to_user_snapshots.last_name": {"$regex": search, "$options": "i"}},
+                    ]
+                }
+            )
+
+        if value_tag:
+            query["values_tags"] = value_tag
+
+        if and_filters:
+            query["$and"] = and_filters
 
         cursor_query = db.recognitions.find(query).sort([("created_at", -1), ("id", -1)])
         if not cursor and skip:

@@ -2,6 +2,7 @@ from __future__ import annotations
 
 from copy import deepcopy
 from datetime import datetime
+import re
 from typing import Any, Dict, Iterable, List, Optional, Sequence
 
 
@@ -77,25 +78,79 @@ class FakeCollection:
             return True
         for key, value in query.items():
             if key == "$or":
-                return any(self._matches(document, clause) for clause in value)
-            doc_value = document.get(key)
+                if not any(self._matches(document, clause) for clause in value):
+                    return False
+                continue
+            if key == "$and":
+                if not all(self._matches(document, clause) for clause in value):
+                    return False
+                continue
+            doc_values = self._extract_values(document, key)
             if isinstance(value, dict):
-                if "$ne" in value and doc_value == value["$ne"]:
+                if "$ne" in value and any(doc_value == value["$ne"] for doc_value in doc_values):
                     return False
-                if "$in" in value and doc_value not in value["$in"]:
+                if "$in" in value and not any(doc_value in value["$in"] for doc_value in doc_values):
                     return False
-                if "$gte" in value and (doc_value is None or doc_value < value["$gte"]):
+                if "$regex" in value:
+                    pattern = value["$regex"]
+                    options = value.get("$options", "")
+                    flags = re.IGNORECASE if "i" in options else 0
+                    regex = re.compile(pattern, flags)
+                    if not any(
+                        isinstance(doc_value, str) and regex.search(doc_value) for doc_value in doc_values
+                    ):
+                        return False
+                if "$gte" in value and not any(
+                    doc_value is not None and doc_value >= value["$gte"] for doc_value in doc_values
+                ):
                     return False
-                if "$gt" in value and (doc_value is None or doc_value <= value["$gt"]):
+                if "$gt" in value and not any(
+                    doc_value is not None and doc_value > value["$gt"] for doc_value in doc_values
+                ):
                     return False
-                if "$lte" in value and (doc_value is None or doc_value > value["$lte"]):
+                if "$lte" in value and not any(
+                    doc_value is not None and doc_value <= value["$lte"] for doc_value in doc_values
+                ):
                     return False
-                if "$lt" in value and (doc_value is None or doc_value >= value["$lt"]):
+                if "$lt" in value and not any(
+                    doc_value is not None and doc_value < value["$lt"] for doc_value in doc_values
+                ):
                     return False
             else:
-                if doc_value != value:
+                if not any(doc_value == value for doc_value in doc_values):
                     return False
         return True
+
+    def _extract_values(self, document: Dict[str, Any], key: str) -> List[Any]:
+        if "." not in key:
+            value = document.get(key)
+            if isinstance(value, list):
+                return value
+            return [value]
+
+        parts = key.split(".")
+        values: List[Any] = [document]
+        for part in parts:
+            next_values: List[Any] = []
+            for current in values:
+                if isinstance(current, dict):
+                    if part in current:
+                        next_values.append(current[part])
+                elif isinstance(current, list):
+                    for item in current:
+                        if isinstance(item, dict) and part in item:
+                            next_values.append(item[part])
+            values = next_values
+            if not values:
+                break
+
+        flattened: List[Any] = []
+        for value in values:
+            if isinstance(value, list):
+                flattened.extend(value)
+            else:
+                flattened.append(value)
+        return flattened or [None]
 
     def find(self, query: Optional[Dict[str, Any]] = None, projection: Optional[Dict[str, int]] = None) -> FakeCursor:
         matching = [doc for doc in self._documents.values() if self._matches(doc, query)]

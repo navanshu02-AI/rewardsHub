@@ -104,6 +104,8 @@ async def get_history(
 
 @router.get("/feed", response_model=List[RecognitionFeedEntry])
 async def get_public_feed(
+    search: Optional[str] = Query(None, description="Search recognitions by message or participant"),
+    value_tag: Optional[str] = Query(None, description="Filter by a values tag"),
     limit: int = Query(50, ge=1, le=50),
     cursor: Optional[str] = Query(None, description="Pagination cursor in '<created_at>|<id>' format"),
     skip: int = Query(0, ge=0),
@@ -111,6 +113,8 @@ async def get_public_feed(
 ) -> List[RecognitionFeedEntry]:
     return await recognition_service.get_public_feed(
         current_user,
+        search=search,
+        value_tag=value_tag,
         limit=limit,
         cursor=cursor,
         skip=skip,
