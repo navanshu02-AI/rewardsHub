@@ -68,10 +68,27 @@ async def lifespan(app: FastAPI):
 
 
 # Create FastAPI app
+openapi_tags = [
+    {"name": "authentication", "description": "Account registration, login, and password resets."},
+    {"name": "users", "description": "User profiles and directory operations."},
+    {"name": "rewards", "description": "Reward catalog and redemption options."},
+    {"name": "recommendations", "description": "Reward recommendations and suggestions."},
+    {"name": "preferences", "description": "User preference management."},
+    {"name": "recognitions", "description": "Peer recognition and kudos."},
+    {"name": "points", "description": "Points balance and transaction history."},
+    {"name": "admin-redemptions", "description": "Admin workflows for redemption approvals."},
+    {"name": "admin-analytics", "description": "Admin reporting and analytics endpoints."},
+    {"name": "orgs", "description": "Organization configuration and metadata."},
+]
+
 app = FastAPI(
     title=settings.PROJECT_NAME,
     version=settings.VERSION,
     openapi_url=f"{settings.API_V1_STR}/openapi.json",
+    docs_url=f"{settings.API_V1_STR}/docs",
+    redoc_url=f"{settings.API_V1_STR}/redoc",
+    openapi_tags=openapi_tags,
+    swagger_ui_parameters={"persistAuthorization": True},
     lifespan=lifespan,
 )
 
