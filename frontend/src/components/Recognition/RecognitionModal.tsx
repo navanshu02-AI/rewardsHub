@@ -387,12 +387,14 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   {VALUES_TAGS.map((tag) => {
                     const isSelected = valuesTags.includes(tag);
                     const isDisabled = !isSelected && valuesTags.length >= 3;
+                    const tagSlug = tag.toLowerCase().replace(/\s+/g, '-');
                     return (
                       <button
                         key={tag}
                         type="button"
                         onClick={() => toggleValueTag(tag)}
                         disabled={isDisabled}
+                        data-testid={`recognition-value-${tagSlug}`}
                         className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
                           isSelected
                             ? 'border-blue-600 bg-blue-50 text-blue-700'

@@ -95,6 +95,7 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
               key={item}
               type="button"
               onClick={() => setDirection(item)}
+              data-testid={`recognition-history-direction-${item}`}
               className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 direction === item ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'
               }`}
@@ -135,7 +136,7 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
       ) : history.length === 0 ? (
         <div className="mt-6">{renderEmptyState()}</div>
       ) : (
-        <ul className="mt-6 space-y-4">
+        <ul className="mt-6 space-y-4" data-testid="recognition-history-list">
           {history.map((entry) => {
             const isSender = entry.from_user?.id === user?.id;
             const recipients = entry.to_users
@@ -143,7 +144,7 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
               .join(', ');
             const displayType = RECOGNITION_TYPE_LABELS[entry.recognition_type] || entry.recognition_type;
             return (
-              <li key={entry.id} className="rounded-lg border border-gray-200 p-4 shadow-sm">
+              <li key={entry.id} className="rounded-lg border border-gray-200 p-4 shadow-sm" data-testid="recognition-history-item">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
                   <div>
                     <div className="flex items-center gap-2">
