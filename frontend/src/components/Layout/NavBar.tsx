@@ -113,6 +113,7 @@ const NavBar: React.FC = () => {
               <div className="relative" ref={menuRef}>
                 <button
                   onClick={() => setIsMenuOpen((open) => !open)}
+                  data-testid="nav-user-menu"
                   className="inline-flex h-10 w-10 items-center justify-center rounded-full border border-slate-200 bg-slate-50 text-sm font-semibold uppercase text-slate-700 transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                   aria-haspopup="menu"
                   aria-expanded={isMenuOpen}
@@ -135,6 +136,7 @@ const NavBar: React.FC = () => {
                         setIsMenuOpen(false);
                         logout();
                       }}
+                      data-testid="nav-logout"
                       className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-rose-50 hover:text-rose-700 focus-visible:outline-none focus-visible:bg-rose-50 focus-visible:text-rose-700"
                       role="menuitem"
                     >
