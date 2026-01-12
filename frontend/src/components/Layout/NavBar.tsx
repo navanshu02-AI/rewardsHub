@@ -9,6 +9,8 @@ const NavBar: React.FC = () => {
   const [isAdminMenuOpen, setIsAdminMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
   const adminMenuRef = React.useRef<HTMLDivElement>(null);
+  const adminButtonRef = React.useRef<HTMLButtonElement>(null);
+  const adminFirstItemRef = React.useRef<HTMLButtonElement>(null);
 
   const isAdminUser = user?.role === 'hr_admin' || user?.role === 'executive' || user?.role === 'c_level';
 
@@ -35,6 +37,12 @@ const NavBar: React.FC = () => {
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
+
+  React.useEffect(() => {
+    if (isAdminMenuOpen) {
+      adminFirstItemRef.current?.focus();
+    }
+  }, [isAdminMenuOpen]);
 
   return (
     <nav className="bg-white/90 text-slate-900 border-b border-slate-200 backdrop-blur">
@@ -69,41 +77,51 @@ const NavBar: React.FC = () => {
                 data-testid="nav-recognitions"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
-                Recognitions
-              </button>
-              <button
-                onClick={() => navigate('/feed')}
-                data-testid="nav-feed"
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                Feed
+                Recognition
               </button>
               <button
                 onClick={() => navigate('/redemptions')}
-                data-testid="nav-redemptions"
+                data-testid="nav-rewards"
                 className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
               >
-                Redemptions
+                Rewards
               </button>
               {isAdminUser && (
                 <div className="relative" ref={adminMenuRef}>
                   <button
+                    ref={adminButtonRef}
                     onClick={() => setIsAdminMenuOpen((open) => !open)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'ArrowDown') {
+                        event.preventDefault();
+                        setIsAdminMenuOpen(true);
+                      }
+                    }}
                     data-testid="nav-admin-menu"
                     className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
                     aria-haspopup="menu"
                     aria-expanded={isAdminMenuOpen}
+                    aria-controls="admin-menu"
                   >
                     Admin
                   </button>
 
                   {isAdminMenuOpen && (
                     <div
+                      id="admin-menu"
                       className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
                       role="menu"
                       aria-label="Admin menu"
+                      onKeyDown={(event) => {
+                        if (event.key === 'Escape') {
+                          event.preventDefault();
+                          setIsAdminMenuOpen(false);
+                          adminButtonRef.current?.focus();
+                        }
+                      }}
                     >
                       <button
+                        ref={adminFirstItemRef}
                         onClick={() => {
                           setIsAdminMenuOpen(false);
                           navigate('/admin/users');
@@ -112,7 +130,7 @@ const NavBar: React.FC = () => {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
                         role="menuitem"
                       >
-                        Manage users
+                        Users
                       </button>
                       <button
                         onClick={() => {
@@ -123,7 +141,7 @@ const NavBar: React.FC = () => {
                         className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
                         role="menuitem"
                       >
-                        Manage rewards
+                        Rewards
                       </button>
                       <button
                         onClick={() => {
