@@ -11,7 +11,7 @@ export const TEST_USERS = {
     company: 'Acme'
   },
   executive: {
-    email: 'exec@acme.test',
+    email: 'executive@acme.test',
     password: TEST_PASSWORD,
     firstName: 'Elliot',
     lastName: 'Grant',
