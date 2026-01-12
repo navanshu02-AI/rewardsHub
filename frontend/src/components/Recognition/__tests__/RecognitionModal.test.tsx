@@ -239,6 +239,59 @@ test('submits multiple recipients using to_user_ids', async () => {
     '/recognitions',
     expect.objectContaining({
       to_user_ids: ['global-1', 'global-2'],
+      is_public: true,
+    })
+  );
+});
+
+test('submits recognition as private when show on feed is unchecked', async () => {
+  const authValue = createAuthContextValue('employee');
+  mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
+
+  mockedAxios.get.mockResolvedValue({
+    data: {
+      peer: {
+        enabled: true,
+        recipients: [
+          {
+            id: 'peer-1',
+            first_name: 'Pat',
+            last_name: 'Peer',
+            role: 'employee',
+          },
+        ],
+      },
+      report: { enabled: false, recipients: [] },
+      global: { enabled: false, recipients: [] },
+    },
+  });
+
+  mockedAxios.post.mockResolvedValue({ data: {} });
+
+  const user = userEvent.setup();
+
+  render(
+    <RecognitionModal
+      isOpen
+      onClose={jest.fn()}
+      onSuccess={jest.fn()}
+    />
+  );
+
+  await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
+
+  await user.type(screen.getByLabelText('Appreciation message'), 'Thanks for helping with the deployment.');
+  await user.click(screen.getByRole('button', { name: 'Customer focus' }));
+  await user.click(screen.getByTestId('recognition-public-toggle'));
+
+  await user.click(screen.getByRole('button', { name: /Send recognition/i }));
+
+  await waitFor(() => expect(mockedAxios.post).toHaveBeenCalled());
+  expect(mockedAxios.post).toHaveBeenCalledWith(
+    '/recognitions',
+    expect.objectContaining({
+      is_public: false,
     })
   );
 });

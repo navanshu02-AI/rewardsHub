@@ -89,6 +89,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [messageTone, setMessageTone] = useState<MessageToneOption['value']>('warm');
   const [points, setPoints] = useState<number>(10);
   const [valuesTags, setValuesTags] = useState<string[]>([]);
+  const [isPublic, setIsPublic] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -119,6 +120,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setSelectedScope('peer');
     setPoints(10);
     setValuesTags([]);
+    setIsPublic(true);
     setError(null);
   };
 
@@ -206,6 +208,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
         scope: selectedScope,
         points_awarded: canConfigurePoints ? points : undefined,
         values_tags: valuesTags,
+        is_public: isPublic,
       });
       await refreshUser();
       onSuccess();
@@ -501,6 +504,27 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                       <p className="text-xs text-gray-400">AI suggests a rewrite you can edit before sending.</p>
                     </>
                   )}
+                </div>
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700" htmlFor="recognition-public">
+                      Show on feed
+                    </label>
+                    <p className="text-xs text-gray-500">
+                      Public recognitions appear in the company feed.
+                    </p>
+                  </div>
+                  <input
+                    id="recognition-public"
+                    type="checkbox"
+                    checked={isPublic}
+                    onChange={(event) => setIsPublic(event.target.checked)}
+                    data-testid="recognition-public-toggle"
+                    className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+                  />
                 </div>
               </section>
 
