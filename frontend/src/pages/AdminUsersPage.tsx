@@ -38,6 +38,10 @@ type ImportSummary = {
   }>;
 };
 
+type InviteResponse = {
+  invite_url: string;
+};
+
 const ADMIN_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
@@ -56,11 +60,14 @@ const AdminUsersPage: React.FC = () => {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [actionError, setActionError] = useState<string | null>(null);
+  const [inviteMessage, setInviteMessage] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const [isProvisionOpen, setIsProvisionOpen] = useState(false);
   const [isEditOpen, setIsEditOpen] = useState(false);
   const [isStatusOpen, setIsStatusOpen] = useState(false);
   const [statusAction, setStatusAction] = useState<'activate' | 'deactivate'>('deactivate');
   const [saving, setSaving] = useState(false);
+  const [inviteLoadingId, setInviteLoadingId] = useState<string | null>(null);
   const [selectedUser, setSelectedUser] = useState<UserRecord | null>(null);
   const [statusTarget, setStatusTarget] = useState<UserRecord | null>(null);
   const [provisionForm, setProvisionForm] = useState<ProvisionPayload>({
@@ -124,6 +131,37 @@ const AdminUsersPage: React.FC = () => {
     });
     setActionError(null);
     setIsProvisionOpen(true);
+  };
+
+  const copyInviteLink = async (inviteUrl: string) => {
+    if (navigator.clipboard?.writeText) {
+      await navigator.clipboard.writeText(inviteUrl);
+      return;
+    }
+    const tempInput = document.createElement('textarea');
+    tempInput.value = inviteUrl;
+    tempInput.style.position = 'fixed';
+    tempInput.style.left = '-9999px';
+    document.body.appendChild(tempInput);
+    tempInput.focus();
+    tempInput.select();
+    document.execCommand('copy');
+    document.body.removeChild(tempInput);
+  };
+
+  const handleCopyInviteLink = async (userItem: UserRecord) => {
+    setInviteMessage(null);
+    setInviteError(null);
+    setInviteLoadingId(userItem.id);
+    try {
+      const response = await api.post<InviteResponse>(`/users/${userItem.id}/invite`);
+      await copyInviteLink(response.data.invite_url);
+      setInviteMessage(`Invite link copied for ${userItem.email}.`);
+    } catch (err: any) {
+      setInviteError(err.response?.data?.detail || 'Unable to create invite link.');
+    } finally {
+      setInviteLoadingId(null);
+    }
   };
 
   const openEditModal = (userItem: UserRecord) => {
@@ -273,6 +311,18 @@ const AdminUsersPage: React.FC = () => {
           </div>
         )}
 
+        {inviteMessage && (
+          <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+            {inviteMessage}
+          </div>
+        )}
+
+        {inviteError && (
+          <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+            {inviteError}
+          </div>
+        )}
+
         {loading ? (
           <div className="py-10 text-sm text-slate-500">Loading users...</div>
         ) : users.length === 0 ? (
@@ -320,6 +370,13 @@ const AdminUsersPage: React.FC = () => {
                           className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                         >
                           {userItem.is_active === false ? 'Activate' : 'Deactivate'}
+                        </button>
+                        <button
+                          onClick={() => handleCopyInviteLink(userItem)}
+                          disabled={inviteLoadingId === userItem.id}
+                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                        >
+                          {inviteLoadingId === userItem.id ? 'Copying...' : 'Copy invite link'}
                         </button>
                       </div>
                     </td>

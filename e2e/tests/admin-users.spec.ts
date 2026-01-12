@@ -63,4 +63,50 @@ test.describe('Admin users', () => {
     await expect(page.getByText(/Created 1/i)).toBeVisible();
     await expect(page.getByText(email)).toBeVisible();
   });
+
+  test('invite link lets a user set their password', async ({ page, request }) => {
+    const loginResponse = await request.post('/api/v1/auth/login', {
+      data: {
+        email: TEST_USERS.hrAdmin.email,
+        password: TEST_USERS.hrAdmin.password,
+      },
+    });
+    const { access_token: accessToken } = await loginResponse.json();
+
+    const email = `invite-${Date.now()}@acme.test`;
+    const provisionResponse = await request.post('/api/v1/users/provision', {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+      data: {
+        email,
+        password: 'TempPass123!',
+        first_name: 'Invite',
+        last_name: 'User',
+        role: 'employee',
+      },
+    });
+    const { id: userId } = await provisionResponse.json();
+
+    const inviteResponse = await request.post(`/api/v1/users/${userId}/invite`, {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    });
+    const { invite_url: inviteUrl } = await inviteResponse.json();
+
+    await page.goto(inviteUrl);
+
+    await page.getByLabel(/new password/i).fill('Welcome123!');
+    await page.getByLabel(/confirm new password/i).fill('Welcome123!');
+    await page.getByRole('button', { name: /set password/i }).click();
+
+    await expect(page).toHaveURL(/\/auth/, { timeout: 5000 });
+
+    await page.getByTestId('auth-email').fill(email);
+    await page.getByTestId('auth-password').fill('Welcome123!');
+    await page.getByTestId('auth-submit-login').click();
+
+    await expect(page).toHaveURL(/\/dashboard/);
+  });
 });

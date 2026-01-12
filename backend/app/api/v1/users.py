@@ -2,11 +2,13 @@ import csv
 import io
 import secrets
 from datetime import datetime
+from urllib.parse import quote
 
 from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 
 from app.models.enums import UserRole
 from app.models.user import User, UserReportingUpdate, UserResponse, UserUpdate, UserCreate, OrgChartNode
+from app.models.auth import InviteResponse
 from app.services.user_service import user_service
 from app.api.dependencies import ROLE_FALLBACKS, get_current_user, get_current_admin_user, get_current_hr_admin_user
 from app.services.auth_service import auth_service
@@ -84,6 +86,24 @@ async def provision_user(
         },
     )
     return UserResponse(**user.dict())
+
+
+@router.post("/{user_id}/invite", response_model=InviteResponse)
+async def invite_user(
+    user_id: str,
+    current_user: User = Depends(get_current_admin_user),
+):
+    """Create an invite link for a user (admin only)."""
+    db = await get_database()
+    user_data = await db.users.find_one({"id": user_id, "org_id": current_user.org_id})
+    if not user_data:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    token, _expires_at = await auth_service.create_invite_token(user_id)
+    invite_url = f"/accept-invite?token={quote(token)}&email={quote(user_data['email'])}"
+    return InviteResponse(invite_url=invite_url)
 
 
 @router.put("/{user_id}/reporting", response_model=UserResponse)

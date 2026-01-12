@@ -7,6 +7,7 @@ import HomePage from './pages/HomePage';
 import AuthPage from './components/Auth/AuthPage';
 import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
+import AcceptInvitePage from './components/Auth/AcceptInvitePage';
 import SetupOrgPage from './pages/SetupOrgPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
@@ -34,6 +35,7 @@ function App() {
               <Route path="/auth" element={<AuthPage />} />
               <Route path="/forgot-password" element={<ForgotPasswordPage />} />
               <Route path="/reset-password" element={<ResetPasswordPage />} />
+              <Route path="/accept-invite" element={<AcceptInvitePage />} />
               <Route
                 path="/dashboard"
                 element={

@@ -27,6 +27,24 @@ def _coerce_role(role: Optional[Union[UserRole, str]]) -> Optional[UserRole]:
 class AuthService:
     def __init__(self):
         pass
+
+    def _build_reset_token(self) -> tuple[str, str, datetime]:
+        token = secrets.token_urlsafe(32)
+        token_hash = hashlib.sha256(token.encode()).hexdigest()
+        expires_at = datetime.utcnow() + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+        return token, token_hash, expires_at
+
+    async def _persist_reset_token(self, db, user_id: str, token_hash: str, expires_at: datetime) -> None:
+        await db.users.update_one(
+            {"id": user_id},
+            {
+                "$set": {
+                    "reset_token_hash": token_hash,
+                    "reset_token_expires_at": expires_at,
+                    "updated_at": datetime.utcnow(),
+                }
+            },
+        )
     
     async def register_user(
         self,
@@ -148,22 +166,11 @@ class AuthService:
         user = await db.users.find_one(query)
 
         # Always generate a token to avoid leaking which emails are registered
-        token = secrets.token_urlsafe(32)
-        token_hash = hashlib.sha256(token.encode()).hexdigest()
-        expires_at = datetime.utcnow() + timedelta(minutes=settings.PASSWORD_RESET_TOKEN_EXPIRE_MINUTES)
+        token, token_hash, expires_at = self._build_reset_token()
 
         reset_token_to_return = None
         if user:
-            await db.users.update_one(
-                {"email": email},
-                {
-                    "$set": {
-                        "reset_token_hash": token_hash,
-                        "reset_token_expires_at": expires_at,
-                        "updated_at": datetime.utcnow()
-                    }
-                }
-            )
+            await self._persist_reset_token(db, user["id"], token_hash, expires_at)
             if settings.EXPOSE_RESET_TOKEN_IN_RESPONSE:
                 reset_token_to_return = token
                 logger.info("Generated password reset token for %s: %s", email, token)
@@ -172,6 +179,12 @@ class AuthService:
             reset_token=reset_token_to_return,
             expires_at=expires_at if reset_token_to_return else None
         )
+
+    async def create_invite_token(self, user_id: str) -> tuple[str, datetime]:
+        db = await get_database()
+        token, token_hash, expires_at = self._build_reset_token()
+        await self._persist_reset_token(db, user_id, token_hash, expires_at)
+        return token, expires_at
 
     async def reset_password(self, token: str, new_password: str) -> dict:
         """Reset the user's password using a valid reset token."""
