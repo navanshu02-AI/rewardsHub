@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import api from '../../lib/api';
 import * as Dialog from '@radix-ui/react-dialog';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 
 type RecognitionScope = 'peer' | 'report' | 'global';
 
@@ -74,6 +75,7 @@ const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshUser } = useAuth();
+  const { aiEnabled } = useSettings();
   const lastFocusedElement = useRef<HTMLElement | null>(null);
   const [scopes, setScopes] = useState<RecipientResponseWithPoints | null>(null);
   const [scopeLoading, setScopeLoading] = useState(false);
@@ -438,21 +440,25 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                       ))}
                     </select>
                   </div>
-                  <button
-                    type="button"
-                    onClick={handleImproveMessage}
-                    disabled={aiLoading || !message.trim()}
-                    className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
-                  >
-                    {aiLoading && (
-                      <svg className="-ml-1 mr-2 h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                      </svg>
-                    )}
-                    Improve with AI
-                  </button>
-                  <p className="text-xs text-gray-400">AI suggests a rewrite you can edit before sending.</p>
+                  {aiEnabled && (
+                    <>
+                      <button
+                        type="button"
+                        onClick={handleImproveMessage}
+                        disabled={aiLoading || !message.trim()}
+                        className="inline-flex items-center rounded-full border border-blue-200 px-3 py-1 text-xs font-semibold text-blue-700 transition-colors hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                      >
+                        {aiLoading && (
+                          <svg className="-ml-1 mr-2 h-3 w-3 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                          </svg>
+                        )}
+                        Improve with AI
+                      </button>
+                      <p className="text-xs text-gray-400">AI suggests a rewrite you can edit before sending.</p>
+                    </>
+                  )}
                 </div>
               </section>
 

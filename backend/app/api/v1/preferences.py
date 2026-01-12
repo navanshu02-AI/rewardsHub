@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, Request
 from app.models.enums import PreferenceCategory, RewardType
 from app.models.user import User
 from app.api.dependencies import get_current_user
+from app.core.config import settings
 from app.services.gemini_service import gemini_service
 from fastapi.responses import JSONResponse
 
@@ -40,6 +41,8 @@ async def get_reward_types():
 
 @router.post("/smart-filter/ask")
 async def smart_filter_ask(request: Request, current_user: User = Depends(get_current_user)):
+    if not settings.AI_FEATURES_ENABLED:
+        return JSONResponse(status_code=501, content={"error": "AI features are disabled."})
     data = await request.json()
     user_query = data.get("query", "")
     conversation = data.get("conversation", None)

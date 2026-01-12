@@ -1,8 +1,9 @@
 from fastapi import APIRouter
-from app.api.v1 import admin_analytics, admin_redemptions, auth, users, rewards, recommendations, preferences, recognitions, orgs, points
+from app.api.v1 import admin_analytics, admin_redemptions, auth, users, rewards, recommendations, preferences, recognitions, orgs, points, settings
 
 api_router = APIRouter()
 
+api_router.include_router(settings.router, tags=["settings"])
 api_router.include_router(auth.router, prefix="/auth", tags=["authentication"])
 api_router.include_router(users.router, prefix="/users", tags=["users"])
 api_router.include_router(rewards.router, prefix="/rewards", tags=["rewards"])

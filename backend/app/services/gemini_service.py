@@ -1,6 +1,6 @@
+import asyncio
 import httpx
 import json
-import asyncio
 import random
 from app.core.config import Settings
 from app.models.reward import Reward
@@ -10,7 +10,7 @@ settings = Settings()
 class GeminiService:
     def __init__(self):
         self.api_key = settings.GEMINI_API_KEY
-        self.enabled = bool(self.api_key)
+        self.enabled = bool(settings.AI_FEATURES_ENABLED)
         self.api_url = None
         if self.enabled:
             self.api_url = (

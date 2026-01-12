@@ -26,6 +26,7 @@ class Settings(BaseSettings):
     
     # Gemini API Key
     GEMINI_API_KEY: Optional[str] = None
+    AI_FEATURES_ENABLED: Optional[bool] = None
 
     # Notifications
     EMAIL_NOTIFICATIONS_ENABLED: bool = False
@@ -48,6 +49,11 @@ class Settings(BaseSettings):
 
         if isinstance(self.GEMINI_API_KEY, str) and not self.GEMINI_API_KEY.strip():
             self.GEMINI_API_KEY = None
+
+        if self.AI_FEATURES_ENABLED is None:
+            self.AI_FEATURES_ENABLED = bool(self.GEMINI_API_KEY)
+        else:
+            self.AI_FEATURES_ENABLED = bool(self.AI_FEATURES_ENABLED and self.GEMINI_API_KEY)
 
         cors_env = os.getenv("BACKEND_CORS_ORIGINS")
         if cors_env:

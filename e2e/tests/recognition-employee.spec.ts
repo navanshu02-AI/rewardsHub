@@ -11,6 +11,16 @@ test.describe('employee recognition flow', () => {
       password: TEST_USERS.employee1.password
     });
 
+    const apiBaseUrl = process.env.REACT_APP_BACKEND_URL ?? 'http://localhost:8000';
+    const settingsResponse = await page.request.get(`${apiBaseUrl}/api/v1/settings`);
+    expect(settingsResponse.ok()).toBeTruthy();
+    const settingsData = await settingsResponse.json();
+    const aiEnabled = Boolean(settingsData?.ai_enabled);
+
+    if (!aiEnabled) {
+      await expect(page.getByRole('heading', { name: /recommended for you/i })).toHaveCount(0);
+    }
+
     const recipientsResponsePromise = page.waitForResponse(
       (response) =>
         response.url().includes('/api/v1/recognitions/recipients') &&
@@ -20,6 +30,10 @@ test.describe('employee recognition flow', () => {
     await page.getByTestId('recognition-open').click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
+
+    if (!aiEnabled) {
+      await expect(page.getByRole('button', { name: /improve with ai/i })).toHaveCount(0);
+    }
 
     const recipientsResponse = await recipientsResponsePromise;
     const recipientsData = await recipientsResponse.json();

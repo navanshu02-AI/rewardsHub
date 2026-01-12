@@ -2,6 +2,7 @@ import React, { useState, useEffect, useMemo, useRef } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
+import { useSettings } from '../../contexts/SettingsContext';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
@@ -63,6 +64,7 @@ interface AnalyticsOverview {
 
 const Dashboard: React.FC = () => {
   const { user, currency, region } = useAuth();
+  const { aiEnabled, loading: settingsLoading } = useSettings();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
@@ -80,8 +82,10 @@ const Dashboard: React.FC = () => {
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
 
   useEffect(() => {
-    void fetchDashboardData();
-  }, [currency, user?.role]);
+    if (!settingsLoading) {
+      void fetchDashboardData();
+    }
+  }, [currency, user?.role, aiEnabled, settingsLoading]);
 
   useEffect(() => {
     void fetchFilterOptions();
@@ -116,18 +120,23 @@ const Dashboard: React.FC = () => {
   const fetchDashboardData = async () => {
     try {
       setLoading(true);
-      const requests = [api.get('/recommendations', { params: { currency } })];
-      if (user?.role === 'hr_admin') {
-        requests.push(api.get('/admin/analytics/overview'));
-      }
-      const [recommendationsRes, analyticsRes] = await Promise.all(requests);
+      const recommendationsPromise = aiEnabled
+        ? api.get('/recommendations', { params: { currency } })
+        : Promise.resolve(null);
+      const analyticsPromise =
+        user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
 
-      setRecommendations(recommendationsRes.data);
-      if (analyticsRes) {
-        setAnalytics(analyticsRes.data);
+      const [recommendationsRes, analyticsRes] = await Promise.all([
+        recommendationsPromise,
+        analyticsPromise
+      ]);
+
+      if (recommendationsRes) {
+        setRecommendations(recommendationsRes.data);
       } else {
-        setAnalytics(null);
+        setRecommendations(null);
       }
+      setAnalytics(analyticsRes ? analyticsRes.data : null);
       await fetchRewards();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -285,7 +294,7 @@ const Dashboard: React.FC = () => {
         </section>
       )}
 
-      {recommendations && (
+      {aiEnabled && recommendations && (
         <div ref={recommendationsRef}>
           <RecommendationsSection
             recommendations={recommendations}

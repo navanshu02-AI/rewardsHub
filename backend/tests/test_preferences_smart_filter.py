@@ -7,6 +7,7 @@ from fastapi.testclient import TestClient
 
 from app.api.dependencies import get_current_user
 from app.api.v1 import preferences as preferences_api
+from app.core.config import settings
 from app.models.enums import UserRole
 from app.models.user import User
 
@@ -49,6 +50,7 @@ def test_smart_filter_requires_auth(client: TestClient) -> None:
 
 def test_smart_filter_rate_limit(client: TestClient, monkeypatch: pytest.MonkeyPatch) -> None:
     preferences_api._rate_limit_state.clear()
+    monkeypatch.setattr(settings, "AI_FEATURES_ENABLED", True)
 
     async def fake_ask_gemini(user_query: str, conversation: list | None = None) -> dict:
         return {"response": "{}", "rewards": []}
