@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     # Gemini API Key
     GEMINI_API_KEY: Optional[str] = None
 
+    # Notifications
+    EMAIL_NOTIFICATIONS_ENABLED: bool = False
+
     def __init__(self, **values):
         super().__init__(**values)
         if self.ENV == "development":

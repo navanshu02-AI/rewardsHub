@@ -16,6 +16,8 @@ from app.models.recognition import (
     RecognitionUserSummary,
 )
 from app.models.user import User
+from app.services.email_service import email_notification_service
+from app.services.webhook_service import webhook_notifier
 
 DEFAULT_POINTS = 10
 MAX_POINTS = 10000
@@ -281,6 +283,7 @@ class RecognitionService:
                 raise
             else:
                 await session.end_session()
+                await self._dispatch_recognition_notifications(recognition, current_user, recipients)
                 return recognition
 
         if not use_transaction:
@@ -294,6 +297,7 @@ class RecognitionService:
                 )
                 await self._update_manager_allowance(current_user, points_awarded, org_id=current_user.org_id)
 
+        await self._dispatch_recognition_notifications(recognition, current_user, recipients)
         return recognition
 
     async def approve_recognition(self, recognition_id: str, current_user: User) -> Recognition:
@@ -421,6 +425,26 @@ class RecognitionService:
         await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
         updated = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
         return Recognition(**updated)
+
+    async def _dispatch_recognition_notifications(
+        self,
+        recognition: Recognition,
+        current_user: User,
+        recipients: Sequence[dict],
+    ) -> None:
+        db = await get_database()
+        org = await db.orgs.find_one({"id": current_user.org_id}) or {}
+        webhook_notifier.queue_public_recognition(
+            org=org,
+            recognition=recognition,
+            from_user=current_user.dict(),
+            to_users=recipients,
+        )
+        email_notification_service.queue_recognition_received(
+            recognition=recognition,
+            from_user=current_user.dict(),
+            recipients=recipients,
+        )
 
     async def get_pending_recognitions(self, current_user: User, limit: int = 100) -> List[Recognition]:
         db = await get_database()
