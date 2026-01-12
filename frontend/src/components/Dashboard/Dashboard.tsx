@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useMemo, useRef } from 'react';
+import { Link } from 'react-router-dom';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
@@ -63,6 +64,8 @@ interface AnalyticsOverview {
   };
 }
 
+const GETTING_STARTED_DISMISS_KEY = 'getting-started-dismissed';
+
 const Dashboard: React.FC = () => {
   const { user, currency, region } = useAuth();
   const { aiEnabled, loading: settingsLoading } = useSettings();
@@ -81,12 +84,18 @@ const Dashboard: React.FC = () => {
   const [selectedReward, setSelectedReward] = useState<Reward | null>(null);
   const [showRedeemModal, setShowRedeemModal] = useState(false);
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
+  const [gettingStartedEligible, setGettingStartedEligible] = useState(false);
+  const [gettingStartedDismissed, setGettingStartedDismissed] = useState(false);
 
   useEffect(() => {
     if (!settingsLoading) {
       void fetchDashboardData();
     }
   }, [currency, user?.role, aiEnabled, settingsLoading]);
+
+  useEffect(() => {
+    setGettingStartedDismissed(localStorage.getItem(GETTING_STARTED_DISMISS_KEY) === 'true');
+  }, []);
 
   useEffect(() => {
     void fetchFilterOptions();
@@ -126,10 +135,15 @@ const Dashboard: React.FC = () => {
         : Promise.resolve(null);
       const analyticsPromise =
         user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
+      const usersPromise = user?.role === 'hr_admin' ? api.get('/users') : Promise.resolve(null);
+      const rewardsSummaryPromise =
+        user?.role === 'hr_admin' ? api.get('/rewards', { params: { currency } }) : Promise.resolve(null);
 
-      const [recommendationsRes, analyticsRes] = await Promise.all([
+      const [recommendationsRes, analyticsRes, usersRes, rewardsSummaryRes] = await Promise.all([
         recommendationsPromise,
-        analyticsPromise
+        analyticsPromise,
+        usersPromise,
+        rewardsSummaryPromise
       ]);
 
       if (recommendationsRes) {
@@ -138,6 +152,13 @@ const Dashboard: React.FC = () => {
         setRecommendations(null);
       }
       setAnalytics(analyticsRes ? analyticsRes.data : null);
+      if (user?.role === 'hr_admin') {
+        const userCount = usersRes?.data?.length ?? 0;
+        const rewardsCount = rewardsSummaryRes?.data?.length ?? 0;
+        setGettingStartedEligible(userCount <= 1 || rewardsCount === 0);
+      } else {
+        setGettingStartedEligible(false);
+      }
       await fetchRewards();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -211,6 +232,14 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleDismissGettingStarted = () => {
+    localStorage.setItem(GETTING_STARTED_DISMISS_KEY, 'true');
+    setGettingStartedDismissed(true);
+  };
+
+  const showGettingStarted =
+    user?.role === 'hr_admin' && gettingStartedEligible && !gettingStartedDismissed;
+
   if (loading) {
     return (
       <div className="flex justify-center items-center h-64">
@@ -248,6 +277,77 @@ const Dashboard: React.FC = () => {
         onGiveRecognition={() => setShowRecognitionModal(true)}
         onRecommendGift={handleRecommendGift}
       />
+
+      {showGettingStarted && (
+        <section
+          className="mt-6 rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"
+          data-testid="getting-started-card"
+        >
+          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+            <div>
+              <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+                Getting started
+              </p>
+              <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                Set up your rewards program in minutes
+              </h2>
+              <p className="mt-1 text-sm text-slate-600">
+                Add your first teammates, build a reward catalog, and send recognition to kick things off.
+              </p>
+            </div>
+            <button
+              type="button"
+              onClick={handleDismissGettingStarted}
+              className="self-start text-sm font-medium text-slate-500 hover:text-slate-700"
+              data-testid="getting-started-dismiss"
+            >
+              Dismiss
+            </button>
+          </div>
+          <ul className="mt-6 space-y-3 text-sm text-slate-700">
+            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+              <span className="flex items-center gap-2">
+                <span className="text-emerald-500">✓</span>
+                Add Users
+              </span>
+              <Link
+                to="/admin/users"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                data-testid="getting-started-add-users"
+              >
+                Go to Users →
+              </Link>
+            </li>
+            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+              <span className="flex items-center gap-2">
+                <span className="text-emerald-500">✓</span>
+                Add Rewards
+              </span>
+              <Link
+                to="/admin/rewards"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                data-testid="getting-started-add-rewards"
+              >
+                Go to Rewards →
+              </Link>
+            </li>
+            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+              <span className="flex items-center gap-2">
+                <span className="text-emerald-500">✓</span>
+                Send Recognition
+              </span>
+              <button
+                type="button"
+                onClick={() => setShowRecognitionModal(true)}
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                data-testid="getting-started-send-recognition"
+              >
+                Open recognition →
+              </button>
+            </li>
+          </ul>
+        </section>
+      )}
 
       <StatsCards user={user} rewardsCount={rewards.length} />
 
