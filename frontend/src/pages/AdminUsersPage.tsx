@@ -27,6 +27,17 @@ type ReportingPayload = {
   manager_id?: string | null;
 };
 
+type ImportSummary = {
+  created: number;
+  updated: number;
+  failed: number;
+  failures?: Array<{
+    row: number;
+    email?: string | null;
+    error: string;
+  }>;
+};
+
 const ADMIN_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const ROLE_OPTIONS: Array<{ value: UserRole; label: string }> = [
@@ -61,6 +72,10 @@ const AdminUsersPage: React.FC = () => {
     role: 'employee',
     manager_id: ''
   });
+  const [importFile, setImportFile] = useState<File | null>(null);
+  const [importing, setImporting] = useState(false);
+  const [importSummary, setImportSummary] = useState<ImportSummary | null>(null);
+  const [importError, setImportError] = useState<string | null>(null);
 
   const canAccess = user?.role ? ADMIN_ROLES.includes(user.role) : false;
 
@@ -161,6 +176,31 @@ const AdminUsersPage: React.FC = () => {
     }
   };
 
+  const handleImportSubmit = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!importFile) {
+      setImportError('Please select a CSV file to import.');
+      return;
+    }
+    setImporting(true);
+    setImportError(null);
+    setImportSummary(null);
+    try {
+      const formData = new FormData();
+      formData.append('file', importFile);
+      const response = await api.post<ImportSummary>('/users/import', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setImportSummary(response.data);
+      setImportFile(null);
+      await loadUsers();
+    } catch (err: any) {
+      setImportError(err.response?.data?.detail || 'Unable to import users right now.');
+    } finally {
+      setImporting(false);
+    }
+  };
+
   if (!canAccess) {
     return (
       <div className="mx-auto max-w-5xl px-4 py-10 sm:px-6">
@@ -244,6 +284,60 @@ const AdminUsersPage: React.FC = () => {
             </table>
           </div>
         )}
+      </div>
+
+      <div className="mt-6 rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <div>
+          <h2 className="text-lg font-semibold text-slate-900">Import CSV</h2>
+          <p className="text-sm text-slate-600">
+            Upload a CSV with columns: email, first_name, last_name, role, manager_email, department.
+          </p>
+        </div>
+        <form className="mt-4 space-y-4" onSubmit={handleImportSubmit}>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
+            <input
+              type="file"
+              accept=".csv"
+              data-testid="import-csv-input"
+              onChange={(event) => {
+                const nextFile = event.target.files?.[0] ?? null;
+                setImportFile(nextFile);
+              }}
+              className="w-full text-sm text-slate-600"
+            />
+            <button
+              type="submit"
+              data-testid="import-csv-submit"
+              disabled={importing}
+              className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+            >
+              {importing ? 'Importing...' : 'Import CSV'}
+            </button>
+          </div>
+
+          {importError && (
+            <div className="rounded-lg border border-rose-200 bg-rose-50 px-4 py-3 text-sm text-rose-700">
+              {importError}
+            </div>
+          )}
+
+          {importSummary && (
+            <div className="rounded-lg border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-700">
+              <p className="font-semibold">
+                Created {importSummary.created}, Updated {importSummary.updated}, Failed {importSummary.failed}
+              </p>
+              {importSummary.failures && importSummary.failures.length > 0 && (
+                <ul className="mt-2 list-disc pl-5">
+                  {importSummary.failures.map((failure) => (
+                    <li key={`${failure.row}-${failure.email ?? 'unknown'}`}>
+                      Row {failure.row}: {failure.email ?? 'Unknown email'} - {failure.error}
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          )}
+        </form>
       </div>
 
       {isProvisionOpen && (
