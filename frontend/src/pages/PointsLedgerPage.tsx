@@ -1,6 +1,5 @@
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import api from '../lib/api';
-import { useAuth } from '../contexts/AuthContext';
 
 interface PointsLedgerEntry {
   id: string;
@@ -11,12 +10,7 @@ interface PointsLedgerEntry {
   created_at: string;
 }
 
-interface PointsLedgerRow extends PointsLedgerEntry {
-  running_balance: number | null;
-}
-
 const PointsLedgerPage: React.FC = () => {
-  const { user } = useAuth();
   const [entries, setEntries] = useState<PointsLedgerEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -39,20 +33,6 @@ const PointsLedgerPage: React.FC = () => {
     void fetchLedger();
   }, []);
 
-  const rows: PointsLedgerRow[] = useMemo(() => {
-    let runningBalance = user?.points_balance ?? null;
-    return entries.map((entry) => {
-      const row: PointsLedgerRow = {
-        ...entry,
-        running_balance: runningBalance
-      };
-      if (runningBalance !== null) {
-        runningBalance -= entry.delta;
-      }
-      return row;
-    });
-  }, [entries, user?.points_balance]);
-
   const formatDelta = (delta: number) => `${delta > 0 ? '+' : ''}${delta}`;
 
   const formatReason = (reason: string) => reason.replace(/_/g, ' ');
@@ -64,7 +44,7 @@ const PointsLedgerPage: React.FC = () => {
     if (refType === 'redemption') {
       return 'Redemption ID';
     }
-    return `${refType.replace(/_/g, ' ')} ID`;
+    return 'Reference ID';
   };
 
   return (
@@ -85,7 +65,7 @@ const PointsLedgerPage: React.FC = () => {
           <div className="flex items-center justify-center py-12">
             <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
           </div>
-        ) : rows.length === 0 ? (
+        ) : entries.length === 0 ? (
           <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
             <p>No points activity yet. Send or redeem recognitions to build your ledger.</p>
           </div>
@@ -97,14 +77,13 @@ const PointsLedgerPage: React.FC = () => {
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Date</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Delta</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Reason / type</th>
-                  <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">Reference</th>
                   <th className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500">
-                    Running balance
+                    Recognition ID / Redemption ID
                   </th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-100 bg-white">
-                {rows.map((entry) => (
+                {entries.map((entry) => (
                   <tr key={entry.id} data-testid="points-ledger-row">
                     <td className="px-4 py-3 text-sm text-gray-700">
                       {new Date(entry.created_at).toLocaleString()}
@@ -123,9 +102,6 @@ const PointsLedgerPage: React.FC = () => {
                         {formatReferenceLabel(entry.ref_type)}
                       </div>
                       <div className="font-mono text-xs text-gray-600 break-all">{entry.ref_id}</div>
-                    </td>
-                    <td className="px-4 py-3 text-sm text-gray-700">
-                      {entry.running_balance === null ? '—' : `${entry.running_balance.toLocaleString()} pts`}
                     </td>
                   </tr>
                 ))}
