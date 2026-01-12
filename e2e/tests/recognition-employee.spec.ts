@@ -88,6 +88,8 @@ test.describe('employee recognition flow', () => {
 
     await page.getByTestId('recognition-value-customer-focus').click();
     await page.getByTestId('recognition-value-ownership').click();
+    await expect(page.getByTestId('recognition-public-toggle')).toBeChecked();
+    await page.getByTestId('recognition-public-toggle').uncheck();
 
     const submitResponsePromise = page.waitForResponse(
       (response) =>
@@ -110,5 +112,15 @@ test.describe('employee recognition flow', () => {
     await sentResponsePromise;
 
     await expect(page.getByTestId('recognition-history-list')).toContainText(message);
+
+    const feedResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions/feed') && response.request().method() === 'GET'
+    );
+
+    await page.goto('/feed');
+    await feedResponsePromise;
+
+    await expect(page.getByText(message)).toHaveCount(0);
   });
 });
