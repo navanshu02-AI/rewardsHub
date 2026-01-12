@@ -28,6 +28,12 @@ export default defineConfig({
       }
     },
     {
+      name: 'executive',
+      use: {
+        storageState: path.join(authDir, 'executive.json')
+      }
+    },
+    {
       name: 'hr',
       use: {
         storageState: path.join(authDir, 'hr.json')

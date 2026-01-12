@@ -29,6 +29,12 @@ const personas: PersonaConfig[] = [
     password: TEST_USERS.manager.password
   },
   {
+    name: 'executive',
+    storageStatePath: path.join(authDir, 'executive.json'),
+    email: TEST_USERS.executive.email,
+    password: TEST_USERS.executive.password
+  },
+  {
     name: 'hr',
     storageStatePath: path.join(authDir, 'hr.json'),
     email: TEST_USERS.hrAdmin.email,
