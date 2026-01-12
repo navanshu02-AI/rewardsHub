@@ -74,7 +74,7 @@ test.describe('manager recognition flow', () => {
     const normalizeOptions = (options: string[]) =>
       options
         .map((option) => option.trim())
-        .filter((option) => option && !option.toLowerCase().includes('select a teammate'));
+        .filter((option) => option && !option.toLowerCase().includes('select teammates'));
 
     expect(normalizeOptions(peerOptions)).not.toEqual(normalizeOptions(reportOptions));
 
@@ -107,5 +107,62 @@ test.describe('manager recognition flow', () => {
     await sentResponsePromise;
 
     await expect(page.getByTestId('recognition-history-list')).toContainText(message);
+  });
+
+  test('manager sends recognition to multiple direct reports', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'manager', 'manager-only flow');
+
+    await loginAs(page, {
+      email: TEST_USERS.manager.email,
+      password: TEST_USERS.manager.password
+    });
+
+    const recipientsResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions/recipients') &&
+        response.request().method() === 'GET'
+    );
+
+    await page.getByTestId('recognition-open').click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const recipientsResponse = await recipientsResponsePromise;
+    const recipientsData = await recipientsResponse.json();
+
+    const reportScope = recipientsData?.report;
+    if (!reportScope?.enabled) {
+      throw new Error('Expected direct reports scope to be enabled for manager.');
+    }
+
+    const reportRecipients = reportScope.recipients ?? [];
+    if (reportRecipients.length < 2) {
+      throw new Error('Expected at least two direct reports to run multi-select test.');
+    }
+
+    await page.getByTestId('recognition-scope-report').click();
+
+    const recipientSelect = page.getByTestId('recognition-recipient');
+    const selectedIds = reportRecipients.slice(0, 2).map((recipient: { id: string }) => recipient.id);
+
+    await recipientSelect.selectOption(selectedIds);
+
+    const message = `Multi-recipient recognition ${Date.now()}`;
+    await page.getByTestId('recognition-message').fill(message);
+
+    await page.getByTestId('recognition-value-customer-focus').click();
+    await page.getByTestId('recognition-value-ownership').click();
+
+    const submitResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions') && response.request().method() === 'POST'
+    );
+
+    await page.getByTestId('recognition-submit').click();
+    const submitResponse = await submitResponsePromise;
+    const payload = submitResponse.request().postDataJSON();
+
+    expect(payload.to_user_ids).toEqual(selectedIds);
+    expect(payload).not.toHaveProperty('to_user_id');
   });
 });

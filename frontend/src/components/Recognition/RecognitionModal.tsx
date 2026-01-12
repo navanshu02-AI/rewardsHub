@@ -72,6 +72,8 @@ const VALUES_TAGS = [
 ];
 
 const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
+const MAX_RECIPIENTS = 5;
+const MAX_RECIPIENTS_ERROR = `Select up to ${MAX_RECIPIENTS} recipients.`;
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
   const { user, refreshUser } = useAuth();
@@ -81,7 +83,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [scopeLoading, setScopeLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [selectedScope, setSelectedScope] = useState<RecognitionScope>('peer');
-  const [selectedRecipient, setSelectedRecipient] = useState<string>('');
+  const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [recognitionType, setRecognitionType] = useState<string>(RECOGNITION_TYPES[0].value);
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<MessageToneOption['value']>('warm');
@@ -111,7 +113,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
   const resetForm = () => {
     setMessage('');
-    setSelectedRecipient('');
+    setSelectedRecipients([]);
     setRecognitionType(RECOGNITION_TYPES[0].value);
     setMessageTone('warm');
     setSelectedScope('peer');
@@ -133,7 +135,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
       const recipients = response.data[defaultScope]?.recipients || [];
       const pointsEligibleIds = new Set(response.data.pointsEligibleRecipients?.map((recipient) => recipient.id));
       const defaultRecipient = recipients.find((recipient) => pointsEligibleIds.has(recipient.id)) || recipients[0];
-      setSelectedRecipient(defaultRecipient ? defaultRecipient.id : '');
+      setSelectedRecipients(defaultRecipient ? [defaultRecipient.id] : []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load recipients. Please try again later.');
     } finally {
@@ -141,12 +143,43 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     }
   };
 
+  useEffect(() => {
+    if (!scopes) {
+      return;
+    }
+    const scopeRecipients = scopes[selectedScope]?.recipients || [];
+    const availableIds = new Set(scopeRecipients.map((recipient) => recipient.id));
+    const pointsEligible = new Set(scopes.pointsEligibleRecipients?.map((recipient) => recipient.id));
+    const defaultRecipient = scopeRecipients.find((recipient) => pointsEligible.has(recipient.id)) || scopeRecipients[0];
+
+    setSelectedRecipients((prev) => {
+      const filtered = prev.filter((recipientId) => availableIds.has(recipientId));
+      if (filtered.length > 0) {
+        return filtered.slice(0, MAX_RECIPIENTS);
+      }
+      return defaultRecipient ? [defaultRecipient.id] : [];
+    });
+  }, [scopes, selectedScope]);
+
+  const handleRecipientsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
+    const selections = Array.from(event.target.selectedOptions).map((option) => option.value);
+    if (selections.length > MAX_RECIPIENTS) {
+      setError(MAX_RECIPIENTS_ERROR);
+      setSelectedRecipients(selections.slice(0, MAX_RECIPIENTS));
+      return;
+    }
+    if (error === MAX_RECIPIENTS_ERROR) {
+      setError(null);
+    }
+    setSelectedRecipients(selections);
+  };
+
   const handleSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
     setError(null);
 
-    if (!selectedRecipient) {
-      setError('Please select a teammate to recognise.');
+    if (selectedRecipients.length === 0) {
+      setError('Please select at least one teammate to recognise.');
       return;
     }
 
@@ -162,8 +195,12 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
     setSubmitting(true);
     try {
+      const recipientPayload =
+        selectedRecipients.length > 1
+          ? { to_user_ids: selectedRecipients }
+          : { to_user_id: selectedRecipients[0] };
       await api.post('/recognitions', {
-        to_user_id: selectedRecipient,
+        ...recipientPayload,
         recognition_type: recognitionType,
         message,
         scope: selectedScope,
@@ -311,19 +348,24 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
               </section>
 
               <section>
-                <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
-                  Choose recipient
-                </label>
+                <div className="flex items-center justify-between">
+                  <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
+                    Choose recipients
+                  </label>
+                  <span className="text-xs text-gray-500">{selectedRecipients.length}/{MAX_RECIPIENTS} selected</span>
+                </div>
                 <select
                   id="recognition-recipient"
-                  value={selectedRecipient}
-                  onChange={(event) => setSelectedRecipient(event.target.value)}
+                  value={selectedRecipients}
+                  onChange={handleRecipientsChange}
                   data-testid="recognition-recipient"
                   className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
                   disabled={!recipients.length}
+                  multiple
+                  size={Math.min(6, Math.max(3, recipients.length))}
                 >
                   <option value="" disabled>
-                    {recipients.length ? 'Select a teammate' : 'No eligible teammates yet'}
+                    {recipients.length ? 'Select teammates' : 'No eligible teammates yet'}
                   </option>
                   {pointsEligibleRecipients.length > 0 && (
                     <optgroup label="Points eligible">
