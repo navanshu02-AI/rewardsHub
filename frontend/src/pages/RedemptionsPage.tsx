@@ -1,8 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
+import api from '../lib/api';
 
 interface RewardSummary {
   id: string;
@@ -51,8 +48,8 @@ const RedemptionsPage: React.FC = () => {
 
       try {
         const [redemptionsResponse, rewardsResponse] = await Promise.all([
-          axios.get<Redemption[]>(`${API}/rewards/redemptions/me`),
-          axios.get<RewardSummary[]>(`${API}/rewards`, { params: { limit: 100 } })
+          api.get<Redemption[]>('/rewards/redemptions/me'),
+          api.get<RewardSummary[]>('/rewards', { params: { limit: 100 } })
         ]);
         setRedemptions(redemptionsResponse.data);
         setRewards(rewardsResponse.data);
