@@ -17,3 +17,7 @@ class PasswordResetResponse(BaseModel):
     message: str
     reset_token: Optional[str] = None
     expires_at: Optional[datetime] = None
+
+
+class InviteResponse(BaseModel):
+    invite_url: str

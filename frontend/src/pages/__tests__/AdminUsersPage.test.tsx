@@ -194,3 +194,49 @@ test('deactivates a user via the API', async () => {
 
   await waitFor(() => expect(mockedApi.patch).toHaveBeenCalledWith('/users/user-2/deactivate'));
 });
+
+test('copies invite link for a user', async () => {
+  mockedUseAuth.mockReturnValue({
+    user: mockAdminUser,
+    login: jest.fn(),
+    register: jest.fn(),
+    logout: jest.fn(),
+    updateUserPreferences: jest.fn(),
+    loading: false,
+    isAuthenticated: true,
+    refreshUser: jest.fn(),
+  });
+
+  mockedApi.get.mockResolvedValueOnce({
+    data: [
+      {
+        id: 'user-3',
+        first_name: 'Alex',
+        last_name: 'Kim',
+        email: 'alex@example.com',
+        role: 'employee',
+        manager_id: null,
+      },
+    ],
+  });
+  mockedApi.post.mockResolvedValueOnce({ data: { invite_url: '/accept-invite?token=abc&email=alex%40example.com' } });
+
+  const clipboardWrite = jest.fn().mockResolvedValue(undefined);
+  Object.assign(navigator, {
+    clipboard: {
+      writeText: clipboardWrite,
+    },
+  });
+
+  const user = userEvent.setup();
+
+  render(<AdminUsersPage />);
+
+  await waitFor(() => expect(mockedApi.get).toHaveBeenCalled());
+
+  await user.click(screen.getByRole('button', { name: /copy invite link/i }));
+
+  await waitFor(() => expect(mockedApi.post).toHaveBeenCalledWith('/users/user-3/invite'));
+  expect(clipboardWrite).toHaveBeenCalledWith('/accept-invite?token=abc&email=alex%40example.com');
+  expect(screen.getByText(/invite link copied/i)).toBeInTheDocument();
+});
