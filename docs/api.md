@@ -27,6 +27,10 @@ Requests support an `X-Org-Id` header to scope data to a specific organization.
 If omitted, the API defaults to the configured database name for development
 setups.
 
+In the web UI, the login form includes an optional **Organization ID** input.
+When provided, the value is stored in `localStorage` and sent as the `X-Org-Id`
+header for login, registration, and password reset requests.
+
 ## API Groups
 Swagger organizes endpoints into the following tags:
 - authentication

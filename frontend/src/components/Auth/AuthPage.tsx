@@ -13,6 +13,7 @@ const AuthPage: React.FC = () => {
     department: '',
     company: ''
   });
+  const [orgId, setOrgId] = useState(() => localStorage.getItem('orgId') ?? '');
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const { login, register } = useAuth();
@@ -53,6 +54,16 @@ const AuthPage: React.FC = () => {
     });
   };
 
+  const handleOrgIdChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const nextValue = e.target.value;
+    setOrgId(nextValue);
+    if (nextValue.trim()) {
+      localStorage.setItem('orgId', nextValue.trim());
+    } else {
+      localStorage.removeItem('orgId');
+    }
+  };
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-8">
@@ -78,6 +89,19 @@ const AuthPage: React.FC = () => {
                 placeholder="Email address"
               />
             </div>
+            {isLogin && (
+              <div>
+                <input
+                  name="orgId"
+                  type="text"
+                  value={orgId}
+                  onChange={handleOrgIdChange}
+                  data-testid="auth-org-id"
+                  className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 rounded-md focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                  placeholder="Organization ID (optional)"
+                />
+              </div>
+            )}
             <div>
               <input
                 name="password"

@@ -8,14 +8,16 @@ const api = axios.create({
 
 export const attachAuthToken = (config: InternalAxiosRequestConfig) => {
   const token = localStorage.getItem('token');
+  const orgId = localStorage.getItem('orgId');
+  const headers = { ...(config.headers ?? {}) } as any;
   if (token) {
-    // Merge existing headers and ensure the type matches Axios expectations.
-    // Casting to `any` avoids TypeScript errors with `AxiosHeaders` methods.
-    config.headers = ({
-      ...(config.headers ?? {}),
-      Authorization: `Bearer ${token}`
-    } as any);
+    headers.Authorization = `Bearer ${token}`;
   }
+  if (orgId && orgId.trim()) {
+    headers['X-Org-Id'] = orgId.trim();
+  }
+  // Casting to `any` avoids TypeScript errors with `AxiosHeaders` methods.
+  config.headers = headers;
   return config;
 };
 
