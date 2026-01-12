@@ -6,6 +6,7 @@ import { useSettings } from '../../contexts/SettingsContext';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
 import QuickActions from './QuickActions';
+import StatsCards from './StatsCards';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 
@@ -247,6 +248,8 @@ const Dashboard: React.FC = () => {
         onGiveRecognition={() => setShowRecognitionModal(true)}
         onRecommendGift={handleRecommendGift}
       />
+
+      <StatsCards user={user} rewardsCount={rewards.length} />
 
       {user?.role === 'hr_admin' && analytics && (
         <section className="mt-10">
