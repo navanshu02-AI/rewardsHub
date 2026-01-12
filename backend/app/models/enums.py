@@ -38,6 +38,13 @@ class RewardProvider(str, Enum):
     AMAZON_GIFTCARD = "amazon_giftcard"
     MANUAL_VENDOR = "manual_vendor"
 
+class RedemptionStatus(str, Enum):
+    REQUESTED = "requested"
+    APPROVED = "approved"
+    FULFILLED = "fulfilled"
+    DELIVERED = "delivered"
+    CANCELLED = "cancelled"
+
 class AchievementType(str, Enum):
     PERFORMANCE_EXCELLENCE = "performance_excellence"
     INNOVATION = "innovation"

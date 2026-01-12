@@ -19,13 +19,19 @@ interface Redemption {
 }
 
 const statusStyles: Record<string, string> = {
-  pending: 'bg-amber-100 text-amber-700',
-  pending_fulfillment: 'bg-amber-100 text-amber-700',
-  pending_code: 'bg-amber-100 text-amber-700',
-  approved: 'bg-emerald-100 text-emerald-700',
+  requested: 'bg-amber-100 text-amber-700',
+  approved: 'bg-blue-100 text-blue-700',
   fulfilled: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-rose-100 text-rose-700',
-  failed: 'bg-rose-100 text-rose-700'
+  delivered: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-rose-100 text-rose-700'
+};
+
+const statusLabels: Record<string, string> = {
+  requested: 'Requested',
+  approved: 'Approved',
+  fulfilled: 'Fulfilled',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled'
 };
 
 const RedemptionsPage: React.FC = () => {
@@ -94,6 +100,7 @@ const RedemptionsPage: React.FC = () => {
             {redemptions.map((redemption) => {
               const rewardTitle = rewardTitleMap.get(redemption.reward_id) || 'Reward unavailable';
               const statusClass = statusStyles[redemption.status] || 'bg-gray-100 text-gray-600';
+              const statusLabel = statusLabels[redemption.status] || redemption.status;
 
               return (
                 <li key={redemption.id} className="rounded-lg border border-gray-200 p-4 shadow-sm">
@@ -102,14 +109,14 @@ const RedemptionsPage: React.FC = () => {
                       <div className="flex flex-wrap items-center gap-2">
                         <span className="text-sm font-semibold text-gray-900">{rewardTitle}</span>
                         <span className={`rounded-full px-2 py-1 text-xs font-semibold uppercase tracking-wide ${statusClass}`}>
-                          {redemption.status}
+                          {statusLabel}
                         </span>
                         <span className="text-xs text-gray-400">
                           {new Date(redemption.redeemed_at).toLocaleString()}
                         </span>
                       </div>
                       <p className="mt-2 text-sm text-gray-600">Reward ID: {redemption.reward_id}</p>
-                      {redemption.status === 'fulfilled' && redemption.fulfillment_code && (
+                      {['fulfilled', 'delivered'].includes(redemption.status) && redemption.fulfillment_code && (
                         <div className="mt-3 rounded-md border border-emerald-100 bg-emerald-50 px-3 py-2 text-sm text-emerald-700">
                           <span className="font-semibold">Gift card code:</span> {redemption.fulfillment_code}
                         </div>
