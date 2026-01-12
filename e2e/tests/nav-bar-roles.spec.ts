@@ -14,6 +14,13 @@ test.describe('NavBar role links', () => {
   test.describe('employee', () => {
     test.use({ storageState: storageStates.employee });
 
+    test('sees profile in the user menu', async ({ page }) => {
+      await page.goto('/dashboard');
+
+      await page.getByTestId('nav-user-menu').click();
+      await expect(page.getByTestId('nav-profile')).toBeVisible();
+    });
+
     test('does not see approvals, org chart, or all redemptions', async ({ page }) => {
       await page.goto('/dashboard');
 

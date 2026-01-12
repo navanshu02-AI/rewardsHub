@@ -7,13 +7,13 @@ import AuthPage from './components/Auth/AuthPage';
 import ForgotPasswordPage from './components/Auth/ForgotPasswordPage';
 import ResetPasswordPage from './components/Auth/ResetPasswordPage';
 import Dashboard from './components/Dashboard/Dashboard';
-import PreferencesPage from './components/Preferences/PreferencesPage';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
 import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
 import AllRedemptionsPage from './pages/AllRedemptionsPage';
 import OrgChartPage from './pages/OrgChartPage';
 import ApprovalsPage from './pages/ApprovalsPage';
+import ProfilePage from './pages/ProfilePage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -37,11 +37,19 @@ function App() {
               }
             />
             <Route
-              path="/preferences"
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <NavBar />
-                  <PreferencesPage />
+                  <ProfilePage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/preferences"
+              element={
+                <ProtectedRoute>
+                  <Navigate to="/profile?tab=preferences" replace />
                 </ProtectedRoute>
               }
             />
