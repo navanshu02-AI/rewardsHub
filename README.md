@@ -338,9 +338,13 @@ pytest backend/tests
 # Frontend recognition modal interactions (watch mode disabled for CI)
 cd ../frontend
 yarn test --watchAll=false
+
+# E2E flows (Playwright)
+cd ../e2e
+yarn e2e
 ```
 
-Each command can be run independently; the backend suite mocks MongoDB while the frontend suite uses Jest and React Testing Library.
+Each command can be run independently; the backend suite mocks MongoDB while the frontend suite uses Jest and React Testing Library. Add or update E2E coverage for new user-facing features in the `e2e/tests` suite.
 
 ## ✅ Release QA
 
