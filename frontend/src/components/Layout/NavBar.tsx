@@ -6,7 +6,11 @@ const NavBar: React.FC = () => {
   const { user, logout } = useAuth();
   const navigate = useNavigate();
   const [isMenuOpen, setIsMenuOpen] = React.useState(false);
+  const [isAdminMenuOpen, setIsAdminMenuOpen] = React.useState(false);
   const menuRef = React.useRef<HTMLDivElement>(null);
+  const adminMenuRef = React.useRef<HTMLDivElement>(null);
+
+  const isAdminUser = user?.role === 'hr_admin' || user?.role === 'executive' || user?.role === 'c_level';
 
   const initials = React.useMemo(() => {
     if (!user) return '';
@@ -17,8 +21,14 @@ const NavBar: React.FC = () => {
 
   React.useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+      const targetNode = event.target as Node;
+      const menuClicked = menuRef.current && menuRef.current.contains(targetNode);
+      const adminClicked = adminMenuRef.current && adminMenuRef.current.contains(targetNode);
+      if (!menuClicked) {
         setIsMenuOpen(false);
+      }
+      if (!adminClicked) {
+        setIsAdminMenuOpen(false);
       }
     };
 
@@ -75,32 +85,75 @@ const NavBar: React.FC = () => {
               >
                 Redemptions
               </button>
-              {(user.role === 'hr_admin' || user.role === 'executive') && (
-                <button
-                  onClick={() => navigate('/admin/redemptions')}
-                  data-testid="nav-all-redemptions"
-                  className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                >
-                  All Redemptions
-                </button>
-              )}
-              {user.role === 'hr_admin' && (
-                <>
+              {isAdminUser && (
+                <div className="relative" ref={adminMenuRef}>
                   <button
-                    onClick={() => navigate('/approvals')}
-                    data-testid="nav-approvals"
+                    onClick={() => setIsAdminMenuOpen((open) => !open)}
+                    data-testid="nav-admin-menu"
                     className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
+                    aria-haspopup="menu"
+                    aria-expanded={isAdminMenuOpen}
                   >
-                    Approvals
+                    Admin
                   </button>
-                  <button
-                    onClick={() => navigate('/org-chart')}
-                    data-testid="nav-org-chart"
-                    className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-                  >
-                    Org Chart
-                  </button>
-                </>
+
+                  {isAdminMenuOpen && (
+                    <div
+                      className="absolute right-0 mt-2 w-52 overflow-hidden rounded-xl border border-slate-200 bg-white py-1 shadow-lg"
+                      role="menu"
+                      aria-label="Admin menu"
+                    >
+                      <button
+                        onClick={() => {
+                          setIsAdminMenuOpen(false);
+                          navigate('/admin/users');
+                        }}
+                        data-testid="nav-admin-users"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
+                        role="menuitem"
+                      >
+                        Manage users
+                      </button>
+                      <button
+                        onClick={() => {
+                          setIsAdminMenuOpen(false);
+                          navigate('/admin/redemptions');
+                        }}
+                        data-testid="nav-all-redemptions"
+                        className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
+                        role="menuitem"
+                      >
+                        All redemptions
+                      </button>
+                      {user.role === 'hr_admin' && (
+                        <>
+                          <button
+                            onClick={() => {
+                              setIsAdminMenuOpen(false);
+                              navigate('/approvals');
+                            }}
+                            data-testid="nav-approvals"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
+                            role="menuitem"
+                          >
+                            Approvals
+                          </button>
+                          <button
+                            onClick={() => {
+                              setIsAdminMenuOpen(false);
+                              navigate('/org-chart');
+                            }}
+                            data-testid="nav-org-chart"
+                            className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
+                            role="menuitem"
+                          >
+                            Org chart
+                          </button>
+                        </>
+                      )}
+                    </div>
+                  )}
+                </div>
               )}
 
               <div className="relative" ref={menuRef}>
