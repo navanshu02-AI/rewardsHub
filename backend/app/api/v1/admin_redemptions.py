@@ -9,6 +9,7 @@ from pydantic import BaseModel
 from app.api.dependencies import get_current_admin_user
 from app.database.connection import get_database
 from app.models.recognition import RewardRedemption
+from app.services.email_service import email_notification_service
 
 router = APIRouter()
 
@@ -52,6 +53,7 @@ async def update_redemption(
     if not existing:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Redemption not found")
 
+    previous_status = existing.get("status", "unknown")
     update_data = payload.dict(exclude_unset=True)
     if update_data.get("status") == "fulfilled" and update_data.get("fulfilled_at") is None:
         update_data["fulfilled_at"] = datetime.utcnow()
@@ -64,5 +66,13 @@ async def update_redemption(
     updated = await db.redemptions.find_one({"id": redemption_id, "org_id": current_user.org_id})
     if not updated:
         raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Redemption not found")
+
+    if updated.get("status") != previous_status:
+        recipient = await db.users.find_one({"id": updated["user_id"], "org_id": current_user.org_id}) or {}
+        email_notification_service.queue_redemption_status_change(
+            redemption=RewardRedemption(**updated),
+            recipient=recipient,
+            previous_status=previous_status,
+        )
 
     return RewardRedemption(**updated)
