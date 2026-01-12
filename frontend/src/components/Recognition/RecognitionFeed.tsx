@@ -1,5 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
+import { useAuth } from '../../contexts/AuthContext';
 
 const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
 const API = `${BACKEND_URL}/api/v1`;
@@ -20,11 +21,24 @@ type RecognitionFeedEntry = {
   created_at: string;
   from_user: RecognitionUserSummary;
   to_users: RecognitionUserSummary[];
+  values_tags: string[];
+  reactions: RecognitionReaction[];
+};
+
+type RecognitionReaction = {
+  emoji: string;
+  user_ids: string[];
+};
+
+type ReactionResponse = {
+  reactions: RecognitionReaction[];
 };
 
 const PAGE_SIZE = 10;
+const REACTION_EMOJIS = ['👍', '🎉', '🙌'];
 
 const RecognitionFeed: React.FC = () => {
+  const { user } = useAuth();
   const [feed, setFeed] = useState<RecognitionFeedEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
@@ -69,6 +83,20 @@ const RecognitionFeed: React.FC = () => {
     void fetchFeed(false);
   }, [fetchFeed]);
 
+  const handleToggleReaction = async (recognitionId: string, emoji: string) => {
+    try {
+      const response = await axios.post<ReactionResponse>(`${API}/recognitions/${recognitionId}/react`, { emoji });
+      const updatedReactions = response.data.reactions;
+      setFeed((prev) =>
+        prev.map((entry) =>
+          entry.id === recognitionId ? { ...entry, reactions: updatedReactions } : entry
+        )
+      );
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Unable to update that reaction right now.');
+    }
+  };
+
   const renderEmptyState = () => (
     <div className="rounded-lg border border-dashed border-gray-300 bg-gray-50 p-8 text-center text-sm text-gray-500">
       <p>No recognitions have been shared publicly yet. Check back once teammates start celebrating wins.</p>
@@ -99,6 +127,10 @@ const RecognitionFeed: React.FC = () => {
             const recipients = entry.to_users
               .map((recipient) => `${recipient.first_name} ${recipient.last_name}`)
               .join(', ');
+            const reactionsByEmoji = entry.reactions.reduce<Record<string, string[]>>((acc, reaction) => {
+              acc[reaction.emoji] = reaction.user_ids;
+              return acc;
+            }, {});
             return (
               <li key={entry.id} className="rounded-lg border border-gray-200 p-4 shadow-sm">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -112,11 +144,44 @@ const RecognitionFeed: React.FC = () => {
                       </span>
                     </div>
                     <p className="mt-2 text-sm text-gray-700">{entry.message}</p>
+                    {entry.values_tags.length > 0 && (
+                      <div className="mt-3 flex flex-wrap gap-2">
+                        {entry.values_tags.map((tag) => (
+                          <span
+                            key={tag}
+                            className="rounded-full bg-indigo-50 px-2 py-1 text-xs font-medium text-indigo-700"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                    )}
                     <p className="mt-3 text-sm text-gray-500">
                       <span className="font-medium text-gray-700">{senderName}</span> recognized{' '}
                       <span className="font-medium text-gray-700">{recipients || 'the team'}</span>
                       {` with ${entry.points_awarded} point${entry.points_awarded === 1 ? '' : 's'}.`}
                     </p>
+                    <div className="mt-4 flex flex-wrap gap-2">
+                      {REACTION_EMOJIS.map((emoji) => {
+                        const userIds = reactionsByEmoji[emoji] || [];
+                        const hasReacted = user ? userIds.includes(user.id) : false;
+                        return (
+                          <button
+                            key={emoji}
+                            type="button"
+                            onClick={() => void handleToggleReaction(entry.id, emoji)}
+                            className={`inline-flex items-center gap-1 rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                              hasReacted
+                                ? 'border-blue-200 bg-blue-50 text-blue-700'
+                                : 'border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50'
+                            }`}
+                          >
+                            <span>{emoji}</span>
+                            <span>{userIds.length}</span>
+                          </button>
+                        );
+                      })}
+                    </div>
                   </div>
                   <div className="flex items-center gap-2 self-start rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
                     <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">

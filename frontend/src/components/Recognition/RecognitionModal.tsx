@@ -61,6 +61,15 @@ const MESSAGE_TONES: MessageToneOption[] = [
   { value: 'enthusiastic', label: 'Enthusiastic' }
 ];
 
+const VALUES_TAGS = [
+  'Customer focus',
+  'Ownership',
+  'Collaboration',
+  'Innovation',
+  'Growth mindset',
+  'Integrity',
+];
+
 const PRIVILEGED_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
 
 const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, onSuccess }) => {
@@ -75,6 +84,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const [message, setMessage] = useState('');
   const [messageTone, setMessageTone] = useState<MessageToneOption['value']>('warm');
   const [points, setPoints] = useState<number>(10);
+  const [valuesTags, setValuesTags] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [aiLoading, setAiLoading] = useState(false);
 
@@ -104,6 +114,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setMessageTone('warm');
     setSelectedScope('peer');
     setPoints(10);
+    setValuesTags([]);
     setError(null);
   };
 
@@ -142,6 +153,11 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
       return;
     }
 
+    if (valuesTags.length < 1 || valuesTags.length > 3) {
+      setError('Choose between 1 and 3 values to highlight.');
+      return;
+    }
+
     setSubmitting(true);
     try {
       await api.post('/recognitions', {
@@ -149,7 +165,8 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
         recognition_type: recognitionType,
         message,
         scope: selectedScope,
-        points_awarded: canConfigurePoints ? points : undefined
+        points_awarded: canConfigurePoints ? points : undefined,
+        values_tags: valuesTags,
       });
       await refreshUser();
       onSuccess();
@@ -190,6 +207,18 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     } finally {
       setAiLoading(false);
     }
+  };
+
+  const toggleValueTag = (tag: string) => {
+    setValuesTags((prev) => {
+      if (prev.includes(tag)) {
+        return prev.filter((value) => value !== tag);
+      }
+      if (prev.length >= 3) {
+        return prev;
+      }
+      return [...prev, tag];
+    });
   };
 
   const renderScopeButton = (scopeKey: RecognitionScope, label: string) => {
@@ -344,6 +373,37 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                     {RECOGNITION_TYPES.find((type) => type.value === recognitionType)?.helper}
                   </p>
                 )}
+              </section>
+
+              <section>
+                <div className="flex items-center justify-between">
+                  <label className="text-sm font-medium text-gray-700">Company values</label>
+                  <span className="text-xs text-gray-500">{valuesTags.length}/3 selected</span>
+                </div>
+                <p className="mt-1 text-xs text-gray-500">Select up to three values that best reflect this recognition.</p>
+                <div className="mt-3 flex flex-wrap gap-2">
+                  {VALUES_TAGS.map((tag) => {
+                    const isSelected = valuesTags.includes(tag);
+                    const isDisabled = !isSelected && valuesTags.length >= 3;
+                    return (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => toggleValueTag(tag)}
+                        disabled={isDisabled}
+                        className={`rounded-full border px-3 py-1 text-xs font-medium transition-colors ${
+                          isSelected
+                            ? 'border-blue-600 bg-blue-50 text-blue-700'
+                            : isDisabled
+                            ? 'border-gray-200 bg-gray-100 text-gray-400 cursor-not-allowed'
+                            : 'border-gray-200 bg-white text-gray-600 hover:border-blue-200 hover:bg-blue-50'
+                        }`}
+                      >
+                        {tag}
+                      </button>
+                    );
+                  })}
+                </div>
               </section>
 
               <section>

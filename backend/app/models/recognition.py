@@ -13,6 +13,10 @@ class RecognitionUserSummary(BaseModel):
     manager_id: Optional[str] = None
     avatar_url: Optional[str] = None
 
+class RecognitionReaction(BaseModel):
+    emoji: str
+    user_ids: List[str] = Field(default_factory=list)
+
 class Recognition(BaseModel):
     id: str = Field(default_factory=lambda: str(uuid.uuid4()))
     org_id: str
@@ -31,6 +35,8 @@ class Recognition(BaseModel):
     scope: RecognitionScope = RecognitionScope.PEER
     from_user_snapshot: Optional[RecognitionUserSummary] = None
     to_user_snapshots: List[RecognitionUserSummary] = Field(default_factory=list)
+    values_tags: List[str] = Field(default_factory=list)
+    reactions: List[RecognitionReaction] = Field(default_factory=list)
 
 class RecognitionCreate(BaseModel):
     to_user_id: Optional[str] = None
@@ -41,6 +47,7 @@ class RecognitionCreate(BaseModel):
     achievement_type: Optional[AchievementType] = None
     is_public: bool = True
     scope: RecognitionScope = RecognitionScope.PEER
+    values_tags: Optional[List[str]] = None
 
 class RecognitionHistoryEntry(BaseModel):
     id: str
@@ -51,6 +58,8 @@ class RecognitionHistoryEntry(BaseModel):
     created_at: datetime
     from_user: RecognitionUserSummary
     to_users: List[RecognitionUserSummary]
+    values_tags: List[str] = Field(default_factory=list)
+    reactions: List[RecognitionReaction] = Field(default_factory=list)
 
 class RecognitionFeedEntry(BaseModel):
     id: str
@@ -60,6 +69,11 @@ class RecognitionFeedEntry(BaseModel):
     created_at: datetime
     from_user: RecognitionUserSummary
     to_users: List[RecognitionUserSummary]
+    values_tags: List[str] = Field(default_factory=list)
+    reactions: List[RecognitionReaction] = Field(default_factory=list)
+
+class RecognitionReactionToggleRequest(BaseModel):
+    emoji: str
 
 class RecognitionMessageAssistRequest(BaseModel):
     message: str
