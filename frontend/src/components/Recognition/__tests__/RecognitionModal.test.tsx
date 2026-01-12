@@ -152,6 +152,8 @@ test('surfaces backend validation errors during submission', async () => {
   const messageInput = screen.getByLabelText('Appreciation message');
   await user.type(messageInput, 'Huge thanks for coordinating the rollout.');
 
+  await user.click(screen.getByRole('button', { name: 'Customer focus' }));
+
   const submitButton = screen.getByRole('button', { name: /Send recognition/i });
   await user.click(submitButton);
 

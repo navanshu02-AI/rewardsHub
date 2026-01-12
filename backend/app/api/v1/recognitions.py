@@ -14,6 +14,7 @@ from app.models.recognition import (
     RecognitionHistoryEntry,
     RecognitionMessageAssistRequest,
     RecognitionMessageAssistResponse,
+    RecognitionReactionToggleRequest,
 )
 from app.models.user import User
 from app.services.gemini_service import gemini_service
@@ -72,6 +73,14 @@ async def reject_recognition(
     current_user: User = Depends(get_current_hr_admin_user),
 ) -> Recognition:
     return await recognition_service.reject_recognition(recognition_id, current_user)
+
+@router.post("/{recognition_id}/react", response_model=Recognition)
+async def toggle_reaction(
+    recognition_id: str,
+    payload: RecognitionReactionToggleRequest,
+    current_user: User = Depends(get_current_user),
+) -> Recognition:
+    return await recognition_service.toggle_reaction(recognition_id, payload.emoji, current_user)
 
 
 @router.get("", response_model=List[RecognitionHistoryEntry])

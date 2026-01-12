@@ -12,6 +12,7 @@ from app.models.recognition import (
     RecognitionCreate,
     RecognitionFeedEntry,
     RecognitionHistoryEntry,
+    RecognitionReaction,
     RecognitionUserSummary,
 )
 from app.models.user import User
@@ -183,6 +184,14 @@ class RecognitionService:
         can_award_points = self._can_award_points(user_role, recipients, downline_user_ids)
         points_awarded = self._determine_points(user_role, payload.points_awarded, allow_points=can_award_points)
 
+        values_tags = payload.values_tags or []
+        normalized_tags = [tag.strip() for tag in values_tags if tag and tag.strip()]
+        if normalized_tags and not (1 <= len(normalized_tags) <= 3):
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="Values tags must include between 1 and 3 entries.",
+            )
+
         approval_required = points_awarded > APPROVAL_THRESHOLD
         status_value = "pending" if approval_required else "approved"
         approved_at = None if approval_required else datetime.utcnow()
@@ -213,6 +222,8 @@ class RecognitionService:
             scope=scope,
             from_user_snapshot=self._map_user_summary(current_user.dict()).dict(),
             to_user_snapshots=[self._map_user_summary(recipient).dict() for recipient in recipients],
+            values_tags=normalized_tags,
+            reactions=[],
             status=status_value,
             approved_at=approved_at,
             approved_by=approved_by,
@@ -504,6 +515,8 @@ class RecognitionService:
                 created_at=record.get("created_at", datetime.utcnow()),
                 from_user=from_summary,
                 to_users=to_summaries,
+                values_tags=record.get("values_tags", []),
+                reactions=[RecognitionReaction(**reaction) for reaction in record.get("reactions", [])],
             )
             history.append(entry)
 
@@ -596,10 +609,41 @@ class RecognitionService:
                     created_at=record.get("created_at", datetime.utcnow()),
                     from_user=from_summary,
                     to_users=to_summaries,
+                    values_tags=record.get("values_tags", []),
+                    reactions=[RecognitionReaction(**reaction) for reaction in record.get("reactions", [])],
                 )
             )
 
         return feed
+
+    async def toggle_reaction(
+        self,
+        recognition_id: str,
+        emoji: str,
+        current_user: User,
+    ) -> Recognition:
+        db = await get_database()
+        record = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+        if not record:
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="Recognition not found")
+
+        reactions = [RecognitionReaction(**reaction) for reaction in record.get("reactions", [])]
+        reaction_entry = next((reaction for reaction in reactions if reaction.emoji == emoji), None)
+        if reaction_entry:
+            if current_user.id in reaction_entry.user_ids:
+                reaction_entry.user_ids = [uid for uid in reaction_entry.user_ids if uid != current_user.id]
+            else:
+                reaction_entry.user_ids.append(current_user.id)
+        else:
+            reactions.append(RecognitionReaction(emoji=emoji, user_ids=[current_user.id]))
+
+        reactions = [reaction for reaction in reactions if reaction.user_ids]
+        await db.recognitions.update_one(
+            {"id": recognition_id, "org_id": current_user.org_id},
+            {"$set": {"reactions": [reaction.dict() for reaction in reactions]}},
+        )
+        record["reactions"] = [reaction.dict() for reaction in reactions]
+        return Recognition(**record)
 
     async def _reward_recipients(
         self,
