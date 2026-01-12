@@ -75,13 +75,6 @@ const NavBar: React.FC = () => {
               >
                 Redemptions
               </button>
-              <button
-                onClick={() => navigate('/preferences')}
-                data-testid="nav-preferences"
-                className="rounded-full border border-slate-200 bg-white px-3 py-2 text-sm font-medium text-slate-700 shadow-sm transition-colors hover:border-blue-200 hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-200 focus-visible:ring-offset-2 focus-visible:ring-offset-white"
-              >
-                Preferences
-              </button>
               {(user.role === 'hr_admin' || user.role === 'executive') && (
                 <button
                   onClick={() => navigate('/admin/redemptions')}
@@ -131,6 +124,31 @@ const NavBar: React.FC = () => {
                     <div className="px-3 py-2 text-left text-xs font-semibold uppercase tracking-wide text-slate-500">
                       {user.first_name} {user.last_name}
                     </div>
+                    <button
+                      onClick={() => {
+                        setIsMenuOpen(false);
+                        navigate('/profile');
+                      }}
+                      data-testid="nav-profile"
+                      className="flex w-full items-center gap-2 px-3 py-2 text-left text-sm text-slate-700 transition-colors hover:bg-blue-50 hover:text-blue-700 focus-visible:outline-none focus-visible:bg-blue-50 focus-visible:text-blue-700"
+                      role="menuitem"
+                    >
+                      <svg
+                        className="h-4 w-4"
+                        fill="none"
+                        stroke="currentColor"
+                        strokeWidth="1.5"
+                        viewBox="0 0 24 24"
+                        aria-hidden="true"
+                      >
+                        <path
+                          strokeLinecap="round"
+                          strokeLinejoin="round"
+                          d="M15.75 6.75a3.75 3.75 0 11-7.5 0 3.75 3.75 0 017.5 0zM4.5 20.118a7.5 7.5 0 0115 0A17.933 17.933 0 0112 21.75c-2.676 0-5.216-.584-7.5-1.632z"
+                        />
+                      </svg>
+                      Profile
+                    </button>
                     <button
                       onClick={() => {
                         setIsMenuOpen(false);
