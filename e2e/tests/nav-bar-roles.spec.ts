@@ -48,6 +48,7 @@ test.describe('NavBar role links', () => {
       await page.getByTestId('nav-admin-menu').click();
       await expect(page.getByTestId('nav-all-redemptions')).toBeVisible();
       await expect(page.getByTestId('nav-admin-users')).toBeVisible();
+      await expect(page.getByTestId('nav-admin-rewards')).toBeVisible();
       await expect(page.getByTestId('nav-approvals')).toBeHidden();
       await expect(page.getByTestId('nav-org-chart')).toBeHidden();
     });
@@ -64,6 +65,7 @@ test.describe('NavBar role links', () => {
       await expect(page.getByTestId('nav-org-chart')).toBeVisible();
       await expect(page.getByTestId('nav-all-redemptions')).toBeVisible();
       await expect(page.getByTestId('nav-admin-users')).toBeVisible();
+      await expect(page.getByTestId('nav-admin-rewards')).toBeVisible();
     });
   });
 });
