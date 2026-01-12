@@ -112,8 +112,9 @@ test('disables restricted scopes for employees and defaults to peer recipients',
   expect(screen.getByRole('button', { name: /Direct reports/i })).toBeDisabled();
   expect(screen.getByRole('button', { name: /Company-wide/i })).toBeDisabled();
 
-  const recipientSelect = screen.getByLabelText('Choose recipient');
-  expect(recipientSelect).toHaveValue('peer-1');
+  const recipientSelect = screen.getByLabelText('Choose recipients') as HTMLSelectElement;
+  expect(recipientSelect.selectedOptions).toHaveLength(1);
+  expect(recipientSelect.selectedOptions[0].value).toBe('peer-1');
   expect(screen.getByRole('option', { name: /Pat Peer/ })).toBeInTheDocument();
 });
 
@@ -159,8 +160,9 @@ test('surfaces backend validation errors during submission', async () => {
 
   await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
 
-  const recipientSelect = screen.getByLabelText('Choose recipient');
-  expect(recipientSelect).toHaveValue('global-1');
+  const recipientSelect = screen.getByLabelText('Choose recipients') as HTMLSelectElement;
+  expect(recipientSelect.selectedOptions).toHaveLength(1);
+  expect(recipientSelect.selectedOptions[0].value).toBe('global-1');
 
   const messageInput = screen.getByLabelText('Appreciation message');
   await user.type(messageInput, 'Huge thanks for coordinating the rollout.');
@@ -179,4 +181,64 @@ test('surfaces backend validation errors during submission', async () => {
   expect(onSuccess).not.toHaveBeenCalled();
   expect(onClose).not.toHaveBeenCalled();
   expect(authValue.refreshUser).not.toHaveBeenCalled();
+});
+
+test('submits multiple recipients using to_user_ids', async () => {
+  const authValue = createAuthContextValue('hr_admin');
+  mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
+
+  mockedAxios.get.mockResolvedValue({
+    data: {
+      peer: { enabled: false, recipients: [] },
+      report: { enabled: false, recipients: [] },
+      global: {
+        enabled: true,
+        recipients: [
+          {
+            id: 'global-1',
+            first_name: 'Riley',
+            last_name: 'Recipient',
+            role: 'employee',
+          },
+          {
+            id: 'global-2',
+            first_name: 'Jordan',
+            last_name: 'Recipient',
+            role: 'employee',
+          },
+        ],
+        description: 'Company leaders can recognise anyone.',
+      },
+    },
+  });
+
+  mockedAxios.post.mockResolvedValue({ data: {} });
+
+  const onSuccess = jest.fn();
+  const user = userEvent.setup();
+
+  render(
+    <RecognitionModal
+      isOpen
+      onClose={jest.fn()}
+      onSuccess={onSuccess}
+    />
+  );
+
+  await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
+
+  await user.selectOptions(screen.getByTestId('recognition-recipient'), ['global-1', 'global-2']);
+  await user.type(screen.getByLabelText('Appreciation message'), 'Great collaboration across the launch.');
+  await user.click(screen.getByRole('button', { name: 'Customer focus' }));
+
+  await user.click(screen.getByRole('button', { name: /Send recognition/i }));
+
+  await waitFor(() => expect(mockedAxios.post).toHaveBeenCalled());
+  expect(mockedAxios.post).toHaveBeenCalledWith(
+    '/recognitions',
+    expect.objectContaining({
+      to_user_ids: ['global-1', 'global-2'],
+    })
+  );
 });

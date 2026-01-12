@@ -63,3 +63,36 @@ def test_recognition_updates_balances_and_records(
     assert ledger_entry["delta"] == DEFAULT_POINTS
     assert ledger_entry["ref_type"] == "recognition"
     assert ledger_entry["ref_id"] == record["id"]
+
+
+def test_recognition_updates_multiple_recipients(
+    recognition_service_setup: tuple[RecognitionService, FakeDatabase, Dict[str, User]]
+) -> None:
+    service, db, users = recognition_service_setup
+    manager = users["manager"]
+    direct_report = users["employee"]
+    peer_report = users["peer"]
+
+    payload = RecognitionCreate(
+        to_user_ids=[direct_report.id, peer_report.id],
+        message="Appreciate the launch collaboration",
+        recognition_type=RecognitionType.MANAGER_TO_EMPLOYEE,
+        scope=RecognitionScope.REPORT,
+    )
+
+    asyncio.run(service.create_recognition(manager, payload))
+
+    recognitions = db.recognitions.values()
+    assert len(recognitions) == 1
+    record = recognitions[0]
+
+    assert record["to_user_id"] is None
+    assert record["to_user_ids"] == [direct_report.id, peer_report.id]
+
+    to_snapshots = record["to_user_snapshots"]
+    assert {snapshot["id"] for snapshot in to_snapshots} == {direct_report.id, peer_report.id}
+
+    ledger_entries = db.points_ledger.values()
+    assert len(ledger_entries) == 2
+    ledger_user_ids = {entry["user_id"] for entry in ledger_entries}
+    assert ledger_user_ids == {direct_report.id, peer_report.id}
