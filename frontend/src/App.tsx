@@ -16,6 +16,7 @@ import OrgChartPage from './pages/OrgChartPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminUsersPage from './pages/AdminUsersPage';
+import AdminRewardsPage from './pages/AdminRewardsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -106,6 +107,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <AdminUsersPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/rewards"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <AdminRewardsPage />
                 </ProtectedRoute>
               }
             />
