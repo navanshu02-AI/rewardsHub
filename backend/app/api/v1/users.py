@@ -53,7 +53,7 @@ async def update_user_preferences(
     updated_user = await user_service.update_preferences(current_user.id, current_user.org_id, preferences)
     return UserResponse(**updated_user.dict())
 
-@router.get("/", dependencies=[Depends(get_current_admin_user)])
+@router.get("/", response_model=list[UserResponse], dependencies=[Depends(get_current_admin_user)])
 async def get_all_users(current_user: User = Depends(get_current_admin_user)):
     """Get all users (admin only)"""
     return await user_service.get_all_users(current_user.org_id)

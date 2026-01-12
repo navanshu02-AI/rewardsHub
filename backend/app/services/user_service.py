@@ -4,7 +4,14 @@ from typing import Dict, List, Optional
 from fastapi import HTTPException, status
 from motor.motor_asyncio import AsyncIOMotorClientSession
 
-from app.models.user import User, UserUpdate, UserPreferences, UserReportingUpdate, OrgChartNode
+from app.models.user import (
+    User,
+    UserUpdate,
+    UserPreferences,
+    UserReportingUpdate,
+    OrgChartNode,
+    UserResponse,
+)
 from app.database.connection import get_database
 
 class UserService:
@@ -53,8 +60,11 @@ class UserService:
     async def get_all_users(self, org_id: str) -> list:
         """Get all users (admin only)"""
         db = await get_database()
-        users = await db.users.find({"org_id": org_id}, {"password_hash": 0}).to_list(100)
-        return users
+        users = await db.users.find(
+            {"org_id": org_id},
+            {"password_hash": 0, "_id": 0},
+        ).to_list(100)
+        return [UserResponse(**user) for user in users]
     
     async def assign_points(self, user_id: str, org_id: str, points: int) -> dict:
         """Assign points to user (admin only)"""
