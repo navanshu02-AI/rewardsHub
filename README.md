@@ -346,6 +346,31 @@ yarn e2e
 
 Each command can be run independently; the backend suite mocks MongoDB while the frontend suite uses Jest and React Testing Library. Add or update E2E coverage for new user-facing features in the `e2e/tests` suite.
 
+## 🧭 Running E2E Tests (Playwright)
+
+Use the Playwright suite when you need full-stack coverage. The tests assume the frontend is available at `http://localhost:3000` and the backend is reachable from the UI.
+
+1. Start the backend and frontend (either via `docker compose up --build` or separate `uvicorn` + `yarn start` terminals).
+2. Ensure Python is available on your PATH; the global setup runs `backend/scripts/create_admin.py` to seed the HR admin user.
+3. Install E2E dependencies and browser binaries:
+
+   ```bash
+   cd e2e
+   yarn install
+   yarn playwright install
+   ```
+
+4. Run the suite (or choose headed/UI/debug modes):
+
+   ```bash
+   yarn e2e
+   # yarn e2e:headed
+   # yarn e2e:ui
+   # yarn e2e:debug
+   ```
+
+To point the suite at a different frontend URL, update `baseURL` in `e2e/playwright.config.ts`.
+
 ## ✅ Release QA
 
 Manual regression steps for the recognition permissions live in [`docs/manual-qa-checklist.md`](docs/manual-qa-checklist.md). Run through the checklist before cutting a release to confirm that forbidden scenarios return HTTP 403 and that privileged roles can still complete positive recognition flows.
