@@ -24,9 +24,7 @@ test.describe('NavBar role links', () => {
     test('does not see approvals, org chart, or all redemptions', async ({ page }) => {
       await page.goto('/dashboard');
 
-      await expect(page.getByTestId('nav-approvals')).toBeHidden();
-      await expect(page.getByTestId('nav-org-chart')).toBeHidden();
-      await expect(page.getByTestId('nav-all-redemptions')).toBeHidden();
+      await expect(page.getByTestId('nav-admin-menu')).toBeHidden();
     });
   });
 
@@ -36,19 +34,20 @@ test.describe('NavBar role links', () => {
     test('does not see approvals, org chart, or all redemptions', async ({ page }) => {
       await page.goto('/dashboard');
 
-      await expect(page.getByTestId('nav-approvals')).toBeHidden();
-      await expect(page.getByTestId('nav-org-chart')).toBeHidden();
-      await expect(page.getByTestId('nav-all-redemptions')).toBeHidden();
+      await expect(page.getByTestId('nav-admin-menu')).toBeHidden();
     });
   });
 
   test.describe('executive', () => {
     test.use({ storageState: storageStates.executive });
 
-    test('sees all redemptions but not approvals or org chart', async ({ page }) => {
+    test('sees admin menu with all redemptions and users', async ({ page }) => {
       await page.goto('/dashboard');
 
+      await expect(page.getByTestId('nav-admin-menu')).toBeVisible();
+      await page.getByTestId('nav-admin-menu').click();
       await expect(page.getByTestId('nav-all-redemptions')).toBeVisible();
+      await expect(page.getByTestId('nav-admin-users')).toBeVisible();
       await expect(page.getByTestId('nav-approvals')).toBeHidden();
       await expect(page.getByTestId('nav-org-chart')).toBeHidden();
     });
@@ -57,12 +56,14 @@ test.describe('NavBar role links', () => {
   test.describe('hr admin', () => {
     test.use({ storageState: storageStates.hrAdmin });
 
-    test('sees approvals, org chart, and all redemptions', async ({ page }) => {
+    test('sees approvals, org chart, all redemptions, and users', async ({ page }) => {
       await page.goto('/dashboard');
 
+      await page.getByTestId('nav-admin-menu').click();
       await expect(page.getByTestId('nav-approvals')).toBeVisible();
       await expect(page.getByTestId('nav-org-chart')).toBeVisible();
       await expect(page.getByTestId('nav-all-redemptions')).toBeVisible();
+      await expect(page.getByTestId('nav-admin-users')).toBeVisible();
     });
   });
 });

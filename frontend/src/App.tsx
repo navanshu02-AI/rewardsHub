@@ -14,6 +14,7 @@ import AllRedemptionsPage from './pages/AllRedemptionsPage';
 import OrgChartPage from './pages/OrgChartPage';
 import ApprovalsPage from './pages/ApprovalsPage';
 import ProfilePage from './pages/ProfilePage';
+import AdminUsersPage from './pages/AdminUsersPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -86,6 +87,15 @@ function App() {
                 <ProtectedRoute>
                   <NavBar />
                   <AllRedemptionsPage />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/admin/users"
+              element={
+                <ProtectedRoute>
+                  <NavBar />
+                  <AdminUsersPage />
                 </ProtectedRoute>
               }
             />
