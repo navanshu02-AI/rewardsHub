@@ -2,12 +2,15 @@ import React, { useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
 
+const STATUS_OPTIONS = ['all', 'requested', 'approved', 'fulfilled', 'delivered', 'cancelled'] as const;
+type RedemptionStatus = Exclude<(typeof STATUS_OPTIONS)[number], 'all'>;
+
 type Redemption = {
   id: string;
   user_id: string;
   reward_id: string;
   points_used: number;
-  status: string;
+  status: RedemptionStatus;
   redeemed_at: string;
   tracking_number?: string | null;
   delivered_at?: string | null;
@@ -16,31 +19,33 @@ type Redemption = {
 };
 
 type RedemptionDraft = {
-  status: string;
   tracking_number: string;
   delivered_at: string;
   fulfillment_code: string;
 };
 
-const STATUS_OPTIONS = [
-  'all',
-  'pending_fulfillment',
-  'pending_code',
-  'shipped',
-  'delivered',
-  'fulfilled',
-  'cancelled',
-  'failed'
-];
-
 const statusStyles: Record<string, string> = {
-  pending_fulfillment: 'bg-amber-100 text-amber-700',
-  pending_code: 'bg-amber-100 text-amber-700',
-  shipped: 'bg-blue-100 text-blue-700',
-  delivered: 'bg-emerald-100 text-emerald-700',
+  requested: 'bg-amber-100 text-amber-700',
+  approved: 'bg-blue-100 text-blue-700',
   fulfilled: 'bg-emerald-100 text-emerald-700',
-  cancelled: 'bg-rose-100 text-rose-700',
-  failed: 'bg-rose-100 text-rose-700'
+  delivered: 'bg-emerald-100 text-emerald-700',
+  cancelled: 'bg-rose-100 text-rose-700'
+};
+
+const statusLabels: Record<RedemptionStatus, string> = {
+  requested: 'Requested',
+  approved: 'Approved',
+  fulfilled: 'Fulfilled',
+  delivered: 'Delivered',
+  cancelled: 'Cancelled'
+};
+
+const statusActions: Record<RedemptionStatus, RedemptionStatus[]> = {
+  requested: ['approved', 'cancelled'],
+  approved: ['fulfilled', 'cancelled'],
+  fulfilled: ['delivered'],
+  delivered: [],
+  cancelled: []
 };
 
 const AllRedemptionsPage: React.FC = () => {
@@ -79,7 +84,6 @@ const AllRedemptionsPage: React.FC = () => {
   const draftFor = useMemo(() => {
     return redemptions.reduce<Record<string, RedemptionDraft>>((acc, redemption) => {
       acc[redemption.id] = drafts[redemption.id] || {
-        status: redemption.status,
         tracking_number: redemption.tracking_number ?? '',
         delivered_at: redemption.delivered_at ? redemption.delivered_at.slice(0, 10) : '',
         fulfillment_code: redemption.fulfillment_code ?? ''
@@ -104,9 +108,6 @@ const AllRedemptionsPage: React.FC = () => {
       return;
     }
     const payload: Record<string, any> = {};
-    if (draft.status !== redemption.status) {
-      payload.status = draft.status;
-    }
     if (draft.tracking_number !== (redemption.tracking_number ?? '')) {
       payload.tracking_number = draft.tracking_number || null;
     }
@@ -131,6 +132,23 @@ const AllRedemptionsPage: React.FC = () => {
         delete next[redemption.id];
         return next;
       });
+    } catch (err: any) {
+      setError(err.response?.data?.detail || 'Unable to update redemption.');
+    } finally {
+      setSavingId(null);
+    }
+  };
+
+  const handleStatusAction = async (redemption: Redemption, nextStatus: RedemptionStatus) => {
+    if (nextStatus === redemption.status) {
+      return;
+    }
+
+    setSavingId(redemption.id);
+    setError(null);
+    try {
+      await api.patch(`/admin/redemptions/${redemption.id}`, { status: nextStatus });
+      await loadRedemptions(statusFilter);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to update redemption.');
     } finally {
@@ -167,7 +185,7 @@ const AllRedemptionsPage: React.FC = () => {
             >
               {STATUS_OPTIONS.map((option) => (
                 <option key={option} value={option}>
-                  {option.replace('_', ' ')}
+                  {option === 'all' ? 'all' : statusLabels[option]}
                 </option>
               ))}
             </select>
@@ -190,14 +208,16 @@ const AllRedemptionsPage: React.FC = () => {
           <div className="space-y-4">
             {redemptions.map((redemption) => {
               const draft = draftFor[redemption.id];
-              const statusClass = statusStyles[draft.status] || 'bg-slate-100 text-slate-600';
+              const statusClass = statusStyles[redemption.status] || 'bg-slate-100 text-slate-600';
+              const statusLabel = statusLabels[redemption.status] || redemption.status;
+              const actions = statusActions[redemption.status];
 
               return (
                 <div key={redemption.id} className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm">
                   <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
                     <div className="space-y-2">
                       <div className="flex flex-wrap items-center gap-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        <span className={`rounded-full px-2 py-1 ${statusClass}`}>{draft.status}</span>
+                        <span className={`rounded-full px-2 py-1 ${statusClass}`}>{statusLabel}</span>
                         <span>Redeemed {new Date(redemption.redeemed_at).toLocaleString()}</span>
                       </div>
                       <div className="text-sm text-slate-700">
@@ -216,50 +236,56 @@ const AllRedemptionsPage: React.FC = () => {
                       )}
                     </div>
 
-                    <div className="grid w-full gap-3 sm:max-w-xl sm:grid-cols-2">
-                      <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Status
-                        <select
-                          value={draft.status}
-                          onChange={(event) => updateDraft(redemption.id, { status: event.target.value })}
-                          className="mt-1 rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        >
-                          {STATUS_OPTIONS.filter((option) => option !== 'all').map((option) => (
-                            <option key={option} value={option}>
-                              {option.replace('_', ' ')}
-                            </option>
+                    <div className="flex w-full flex-col gap-4 sm:max-w-xl">
+                      {actions.length > 0 && (
+                        <div className="flex flex-wrap gap-2">
+                          {actions.map((nextStatus) => (
+                            <button
+                              key={nextStatus}
+                              type="button"
+                              onClick={() => handleStatusAction(redemption, nextStatus)}
+                              disabled={savingId === redemption.id}
+                              className="rounded-full border border-slate-200 bg-white px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm transition hover:border-blue-200 hover:text-blue-700 disabled:cursor-not-allowed disabled:opacity-60"
+                            >
+                              {nextStatus === 'approved' && 'Approve'}
+                              {nextStatus === 'fulfilled' && 'Mark fulfilled'}
+                              {nextStatus === 'delivered' && 'Mark delivered'}
+                              {nextStatus === 'cancelled' && 'Cancel'}
+                            </button>
                           ))}
-                        </select>
-                      </label>
-                      <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Tracking #
-                        <input
-                          type="text"
-                          value={draft.tracking_number}
-                          onChange={(event) => updateDraft(redemption.id, { tracking_number: event.target.value })}
-                          className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                          placeholder="Tracking number"
-                        />
-                      </label>
-                      <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Delivered at
-                        <input
-                          type="date"
-                          value={draft.delivered_at}
-                          onChange={(event) => updateDraft(redemption.id, { delivered_at: event.target.value })}
-                          className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                        />
-                      </label>
-                      <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
-                        Fulfillment code
-                        <input
-                          type="text"
-                          value={draft.fulfillment_code}
-                          onChange={(event) => updateDraft(redemption.id, { fulfillment_code: event.target.value })}
-                          className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
-                          placeholder="Gift card code"
-                        />
-                      </label>
+                        </div>
+                      )}
+                      <div className="grid gap-3 sm:grid-cols-2">
+                        <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Tracking #
+                          <input
+                            type="text"
+                            value={draft.tracking_number}
+                            onChange={(event) => updateDraft(redemption.id, { tracking_number: event.target.value })}
+                            className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            placeholder="Tracking number"
+                          />
+                        </label>
+                        <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Delivered at
+                          <input
+                            type="date"
+                            value={draft.delivered_at}
+                            onChange={(event) => updateDraft(redemption.id, { delivered_at: event.target.value })}
+                            className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                          />
+                        </label>
+                        <label className="flex flex-col text-xs font-semibold uppercase tracking-wide text-slate-500">
+                          Fulfillment code
+                          <input
+                            type="text"
+                            value={draft.fulfillment_code}
+                            onChange={(event) => updateDraft(redemption.id, { fulfillment_code: event.target.value })}
+                            className="mt-1 rounded-lg border border-slate-200 px-3 py-2 text-sm font-normal text-slate-700 shadow-sm focus:border-blue-200 focus:outline-none focus:ring-2 focus:ring-blue-100"
+                            placeholder="Gift card code"
+                          />
+                        </label>
+                      </div>
                     </div>
                   </div>
                   <div className="mt-4 flex justify-end">
