@@ -109,7 +109,7 @@ def test_redeem_reward_success_updates_balances(monkeypatch: pytest.MonkeyPatch)
     assert record["user_id"] == user.id
     assert record["reward_id"] == reward.id
     assert record["points_used"] == reward.points_required
-    assert record["status"] == "pending_fulfillment"
+    assert record["status"] == "requested"
     assert redemption.id == record["id"]
 
     ledger_entries = db.points_ledger.values()
@@ -131,7 +131,7 @@ def test_user_redemptions_are_scoped_to_org(monkeypatch: pytest.MonkeyPatch) -> 
                 "user_id": user.id,
                 "reward_id": "reward-1",
                 "points_used": 100,
-                "status": "pending",
+                "status": "requested",
                 "redeemed_at": datetime.utcnow(),
             },
             {
@@ -140,7 +140,7 @@ def test_user_redemptions_are_scoped_to_org(monkeypatch: pytest.MonkeyPatch) -> 
                 "user_id": user.id,
                 "reward_id": "reward-2",
                 "points_used": 120,
-                "status": "pending",
+                "status": "requested",
                 "redeemed_at": datetime.utcnow(),
             },
         ]
