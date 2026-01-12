@@ -78,6 +78,7 @@ openapi_tags = [
     {"name": "points", "description": "Points balance and transaction history."},
     {"name": "admin-redemptions", "description": "Admin workflows for redemption approvals."},
     {"name": "admin-analytics", "description": "Admin reporting and analytics endpoints."},
+    {"name": "admin-audit-logs", "description": "Admin audit log access."},
     {"name": "orgs", "description": "Organization configuration and metadata."},
 ]
 

@@ -4,6 +4,8 @@ from app.models.user import User, UserReportingUpdate, UserResponse, UserUpdate,
 from app.services.user_service import user_service
 from app.api.dependencies import get_current_user, get_current_admin_user, get_current_hr_admin_user
 from app.services.auth_service import auth_service
+from app.services.audit_log_service import audit_log_service
+from app.database.connection import get_database
 
 router = APIRouter()
 
@@ -48,6 +50,20 @@ async def provision_user(
 ):
     """Provision a user with role/manager assignments (admin only)."""
     user = await auth_service.register_user(user_data, created_by=current_user, org_id=current_user.org_id)
+    await audit_log_service.log_event(
+        actor_id=current_user.id,
+        org_id=current_user.org_id,
+        action="user_provisioned",
+        entity_type="user",
+        entity_id=user.id,
+        diff_summary={
+            "email": user.email,
+            "role": user.role,
+            "manager_id": user.manager_id,
+            "department": user.department,
+            "company": user.company,
+        },
+    )
     return UserResponse(**user.dict())
 
 
@@ -58,7 +74,24 @@ async def update_reporting_line(
     current_user: User = Depends(get_current_admin_user)
 ):
     """Update reporting details like manager or role (admin only)."""
+    db = await get_database()
+    existing = await db.users.find_one({"id": user_id, "org_id": current_user.org_id})
     updated_user = await user_service.update_reporting(user_id, current_user.org_id, payload)
+    if existing:
+        changes = {}
+        if payload.manager_id is not None and existing.get("manager_id") != updated_user.manager_id:
+            changes["manager_id"] = {"from": existing.get("manager_id"), "to": updated_user.manager_id}
+        if payload.role is not None and existing.get("role") != updated_user.role:
+            changes["role"] = {"from": existing.get("role"), "to": updated_user.role}
+        if changes:
+            await audit_log_service.log_event(
+                actor_id=current_user.id,
+                org_id=current_user.org_id,
+                action="reporting_updated",
+                entity_type="user",
+                entity_id=updated_user.id,
+                diff_summary={"changes": changes},
+            )
     return UserResponse(**updated_user.dict())
 
 

@@ -7,6 +7,8 @@ from app.services.reward_service import reward_service
 from app.services.redemption_service import redemption_service
 from app.api.dependencies import get_current_admin_user, get_current_user
 from app.models.user import User
+from app.services.audit_log_service import audit_log_service
+from app.database.connection import get_database
 
 router = APIRouter()
 
@@ -39,7 +41,21 @@ async def create_reward(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Create a new reward (admin only)"""
-    return await reward_service.create_reward(reward_data, org_id=current_user.org_id)
+    reward = await reward_service.create_reward(reward_data, org_id=current_user.org_id)
+    await audit_log_service.log_event(
+        actor_id=current_user.id,
+        org_id=current_user.org_id,
+        action="reward_created",
+        entity_type="reward",
+        entity_id=reward.id,
+        diff_summary={
+            "title": reward.title,
+            "points_required": reward.points_required,
+            "reward_type": reward.reward_type,
+            "category": reward.category,
+        },
+    )
+    return reward
 
 @router.put("/{reward_id}", response_model=Reward, dependencies=[Depends(get_current_admin_user)])
 async def update_reward(
@@ -48,7 +64,25 @@ async def update_reward(
     current_user: User = Depends(get_current_admin_user),
 ):
     """Update a reward (admin only)"""
-    return await reward_service.update_reward(reward_id, update_data, org_id=current_user.org_id)
+    db = await get_database()
+    existing = await db.rewards.find_one({"id": reward_id, "org_id": current_user.org_id})
+    reward = await reward_service.update_reward(reward_id, update_data, org_id=current_user.org_id)
+    if existing:
+        changes = {}
+        update_dict = update_data.dict(exclude_none=True)
+        for key, value in update_dict.items():
+            if existing.get(key) != value:
+                changes[key] = {"from": existing.get(key), "to": value}
+        if changes:
+            await audit_log_service.log_event(
+                actor_id=current_user.id,
+                org_id=current_user.org_id,
+                action="reward_updated",
+                entity_type="reward",
+                entity_id=reward.id,
+                diff_summary={"changes": changes},
+            )
+    return reward
 
 @router.post("/seed", dependencies=[Depends(get_current_admin_user)])
 async def seed_rewards(current_user: User = Depends(get_current_admin_user)):

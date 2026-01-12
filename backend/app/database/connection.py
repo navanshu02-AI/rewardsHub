@@ -52,6 +52,12 @@ async def ensure_indexes(database=None) -> None:
     orgs = target_db.orgs
     await orgs.create_index("domain", unique=True)
 
+    audit_logs = target_db.audit_logs
+    await audit_logs.create_index("org_id")
+    await audit_logs.create_index("actor_id")
+    await audit_logs.create_index("action")
+    await audit_logs.create_index("timestamp")
+
 
 async def connect_to_mongo():
     """Create database connection"""
