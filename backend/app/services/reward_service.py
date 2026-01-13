@@ -30,6 +30,7 @@ class RewardService:
         min_points: Optional[int] = None,
         max_points: Optional[int] = None,
         region: Optional[str] = None,
+        currency: Optional[str] = None,
         limit: int = 20,
         skip: int = 0
     ) -> List[Reward]:
@@ -59,6 +60,8 @@ class RewardService:
         if region:
             normalized_region = normalize_region(region)
             query["available_regions"] = {"$in": [normalized_region, "GLOBAL"]}
+        if currency:
+            query[f"prices.{currency.upper()}"] = {"$gt": 0}
         
         rewards = await db.rewards.find(query).skip(skip).limit(limit).to_list(limit)
         return [Reward(**reward) for reward in rewards]
