@@ -42,6 +42,7 @@ Swagger organizes endpoints into the following tags:
 - points
 - admin-redemptions
 - admin-analytics
+- admin-audit-logs
 - orgs
 
 Refer to Swagger UI for detailed schemas, examples, and response codes.
