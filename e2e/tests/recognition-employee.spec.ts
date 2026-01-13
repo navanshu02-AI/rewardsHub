@@ -99,4 +99,71 @@ test.describe('employee recognition flow', () => {
 
     await expect(page.getByText(message)).toHaveCount(0);
   });
+
+  test('employee can recognize someone outside their team', async ({ page }, testInfo) => {
+    test.skip(testInfo.project.name !== 'employee', 'employee-only flow');
+
+    await loginAs(page, {
+      email: TEST_USERS.employee1.email,
+      password: TEST_USERS.employee1.password
+    });
+
+    const recipientsResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions/recipients') &&
+        response.request().method() === 'GET'
+    );
+
+    await page.getByTestId('recognition-open').click();
+
+    await expect(page.getByRole('dialog')).toBeVisible();
+
+    const recipientsResponse = await recipientsResponsePromise;
+    const recipientsData = await recipientsResponse.json();
+    const recipientSelect = page.getByTestId('recognition-recipient');
+
+    const targetFirstName = TEST_USERS.hrAdmin.firstName;
+    const targetLastName = TEST_USERS.hrAdmin.lastName;
+    let selectedRecipientId: string | null = null;
+
+    const match = recipientsData?.recipients?.find(
+      (recipient: { first_name: string; last_name: string; id: string }) =>
+        recipient.first_name === targetFirstName && recipient.last_name === targetLastName
+    );
+    if (match) {
+      selectedRecipientId = match.id;
+    }
+
+    if (!selectedRecipientId) {
+      throw new Error('Expected to find the HR admin in recognition recipients.');
+    }
+
+    const eligibilityResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions/eligibility') &&
+        response.request().method() === 'POST'
+    );
+
+    await recipientSelect.selectOption(selectedRecipientId);
+    await page.getByLabel('Recognition type').selectOption('spot_award');
+    await eligibilityResponsePromise;
+
+    await expect(page.getByText('Recognition only (no points)')).toBeVisible();
+
+    const message = `Cross-team recognition ${Date.now()}`;
+    await page.getByTestId('recognition-message').fill(message);
+
+    await page.getByTestId('recognition-value-customer-focus').click();
+    await page.getByTestId('recognition-value-ownership').click();
+
+    const submitResponsePromise = page.waitForResponse(
+      (response) =>
+        response.url().includes('/api/v1/recognitions') && response.request().method() === 'POST'
+    );
+
+    await page.getByTestId('recognition-submit').click();
+    await submitResponsePromise;
+
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+  });
 });

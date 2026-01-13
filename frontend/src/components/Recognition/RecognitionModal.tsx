@@ -93,6 +93,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     }
     return PRIVILEGED_ROLES.includes(user.role);
   }, [user]);
+  const isEmployee = user?.role === 'employee';
 
   useEffect(() => {
     if (isOpen) {
@@ -121,7 +122,9 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setRecipientsLoading(true);
     setError(null);
     try {
-      const response = await api.get<RecipientResponse>('/recognitions/recipients');
+      const response = await api.get<RecipientResponse>('/recognitions/recipients', {
+        params: isEmployee ? { scope: 'global' } : undefined,
+      });
       const loadedRecipients = response.data?.recipients ?? [];
       setRecipients(loadedRecipients);
       setEligibilityMap({});
@@ -362,6 +365,11 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                 </select>
                 {eligibilityHint && (
                   <p className="mt-2 text-xs text-gray-500">{eligibilityHint}</p>
+                )}
+                {isEmployee && (
+                  <p className="mt-2 text-xs text-gray-500">
+                    Employees can recognize anyone. Points may be limited by policy.
+                  </p>
                 )}
                 {!recipients.length && (
                   <p className="mt-2 text-sm text-gray-500">

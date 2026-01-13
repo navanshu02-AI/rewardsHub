@@ -52,10 +52,8 @@ class RecognitionService:
             "manager_id": 1,
             "avatar_url": 1,
         }
-        docs = await db.users.find(
-            {"id": {"$ne": current_user.id}, "is_active": True, "org_id": current_user.org_id},
-            projection,
-        ).to_list(500)
+        query = {"id": {"$ne": current_user.id}, "is_active": True, "org_id": current_user.org_id}
+        docs = await db.users.find(query, projection).to_list(500)
         recipients = [self._map_user_summary(doc) for doc in docs]
         return {
             "recipients": [summary.dict() for summary in recipients],
@@ -89,7 +87,7 @@ class RecognitionService:
         eligibility: List[Dict[str, object]] = []
         for recipient in recipients:
             recipient_id = str(recipient.get("id"))
-            points_eligible = self._is_points_eligible(user_role, recipient_id, downline_user_ids)
+            points_eligible = self._is_points_eligible(current_user, recipient, downline_user_ids)
             reason = self._points_eligibility_reason(user_role, points_eligible)
             eligibility.append(
                 {
@@ -132,7 +130,7 @@ class RecognitionService:
 
         await self._enforce_scope_permissions(current_user, recipients, scope, downline_user_ids=downline_user_ids)
 
-        can_award_points = self._can_award_points(user_role, recipients, downline_user_ids)
+        can_award_points = self._can_award_points(current_user, recipients, downline_user_ids)
         points_awarded = self._determine_points(user_role, payload.points_awarded, allow_points=can_award_points)
         if payload.recognition_type == RecognitionType.KUDOS:
             points_awarded = 0
@@ -778,28 +776,34 @@ class RecognitionService:
 
     def _can_award_points(
         self,
-        user_role: UserRole,
+        current_user: User,
         recipients: Sequence[Dict[str, object]],
         downline_user_ids: Optional[set[str]],
     ) -> bool:
+        user_role = _normalize_role(current_user.role)
         if user_role in PRIVILEGED_ROLES:
             return True
         if user_role in MANAGER_ROLES:
             if not downline_user_ids:
                 return False
             return all(recipient.get("id") in downline_user_ids for recipient in recipients)
+        if user_role == UserRole.EMPLOYEE:
+            return all(self._is_peer(current_user, recipient) for recipient in recipients)
         return True
 
     def _is_points_eligible(
         self,
-        user_role: UserRole,
-        recipient_id: str,
+        current_user: User,
+        recipient: Dict[str, object],
         downline_user_ids: Optional[set[str]],
     ) -> bool:
+        user_role = _normalize_role(current_user.role)
         if user_role in PRIVILEGED_ROLES:
             return True
         if user_role in MANAGER_ROLES:
-            return bool(downline_user_ids and recipient_id in downline_user_ids)
+            return bool(downline_user_ids and recipient.get("id") in downline_user_ids)
+        if user_role == UserRole.EMPLOYEE:
+            return self._is_peer(current_user, recipient)
         return True
 
     def _points_eligibility_reason(self, user_role: UserRole, points_eligible: bool) -> str:
@@ -807,6 +811,8 @@ class RecognitionService:
             return "role_allows_points"
         if user_role in MANAGER_ROLES:
             return "reporting_line" if points_eligible else "outside_reporting_line"
+        if user_role == UserRole.EMPLOYEE:
+            return "peer_scope" if points_eligible else "outside_peer_scope"
         return "standard_points"
 
     async def _get_downline_user_ids(self, current_user: User) -> set[str]:
@@ -845,6 +851,13 @@ class RecognitionService:
             manager_id=data.get("manager_id"),
             avatar_url=data.get("avatar_url"),
         )
+
+    def _is_peer(self, current_user: User, recipient: Dict[str, object]) -> bool:
+        if current_user.manager_id:
+            return recipient.get("manager_id") == current_user.manager_id
+        if current_user.department:
+            return recipient.get("department") == current_user.department
+        return False
 
     def _extract_snapshot(self, snapshot: Optional[Dict[str, object]]) -> Optional[RecognitionUserSummary]:
         if not snapshot:
