@@ -23,6 +23,7 @@ type RecipientSummary = {
   department?: string;
   manager_id?: string;
   avatar_url?: string;
+  is_active?: boolean;
 };
 
 type RecipientResponse = {
@@ -126,10 +127,12 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
         params: isEmployee ? { scope: 'global' } : undefined,
       });
       const loadedRecipients = response.data?.recipients ?? [];
-      setRecipients(loadedRecipients);
+      const activeRecipients = loadedRecipients.filter((recipient) => recipient.is_active !== false);
+      setRecipients(activeRecipients);
       setEligibilityMap({});
-      const defaultRecipient = loadedRecipients[0];
-      setSelectedRecipients(defaultRecipient ? [defaultRecipient.id] : []);
+      const defaultRecipient =
+        activeRecipients.find((recipient) => recipient.id !== user?.id) ?? activeRecipients[0];
+      setSelectedRecipients(defaultRecipient && defaultRecipient.id !== user?.id ? [defaultRecipient.id] : []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load recipients. Please try again later.');
     } finally {
@@ -177,15 +180,16 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
 
   const handleRecipientsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selections = Array.from(event.target.selectedOptions).map((option) => option.value);
-    if (selections.length > MAX_RECIPIENTS) {
+    const filteredSelections = selections.filter((value) => value && value !== user?.id);
+    if (filteredSelections.length > MAX_RECIPIENTS) {
       setError(MAX_RECIPIENTS_ERROR);
-      setSelectedRecipients(selections.slice(0, MAX_RECIPIENTS));
+      setSelectedRecipients(filteredSelections.slice(0, MAX_RECIPIENTS));
       return;
     }
     if (error === MAX_RECIPIENTS_ERROR) {
       setError(null);
     }
-    setSelectedRecipients(selections);
+    setSelectedRecipients(filteredSelections);
   };
 
   const handleSubmit = async (event: React.FormEvent) => {
@@ -307,76 +311,81 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     >
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black bg-opacity-40" />
-        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(95vw,40rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white p-6 shadow-xl outline-none max-h-[90vh] overflow-y-auto">
-          <div className="flex items-start justify-between mb-4">
-            <div>
-              <Dialog.Title className="text-2xl font-semibold text-gray-900">Celebrate a teammate</Dialog.Title>
-              <Dialog.Description className="text-sm text-gray-500">
-                Send a note of appreciation and reward points in seconds.
-              </Dialog.Description>
+        <Dialog.Content className="fixed left-1/2 top-1/2 z-50 w-[min(95vw,40rem)] -translate-x-1/2 -translate-y-1/2 rounded-xl bg-white shadow-xl outline-none max-h-[90vh] overflow-visible">
+          <div className="max-h-[90vh] overflow-y-auto p-6">
+            <div className="flex items-start justify-between mb-4">
+              <div>
+                <Dialog.Title className="text-2xl font-semibold text-gray-900">Celebrate a teammate</Dialog.Title>
+                <Dialog.Description className="text-sm text-gray-500">
+                  Send a note of appreciation and reward points in seconds.
+                </Dialog.Description>
+              </div>
+              <Dialog.Close asChild>
+                <button className="text-gray-400 hover:text-gray-600" aria-label="Close recognition modal">
+                  <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+              </Dialog.Close>
             </div>
-            <Dialog.Close asChild>
-              <button className="text-gray-400 hover:text-gray-600" aria-label="Close recognition modal">
-                <svg className="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-                </svg>
-              </button>
-            </Dialog.Close>
-          </div>
 
-          {error && (
-            <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
-              {error}
-            </div>
-          )}
+            {error && (
+              <div className="mb-4 rounded-md border border-red-200 bg-red-50 px-4 py-2 text-sm text-red-600">
+                {error}
+              </div>
+            )}
 
-          {recipientsLoading ? (
-            <div className="flex items-center justify-center py-12">
-              <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
-            </div>
-          ) : (
-            <form onSubmit={handleSubmit} className="space-y-6">
-              <section>
-                <div className="flex items-center justify-between">
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
-                    Choose recipients
-                  </label>
-                  <span className="text-xs text-gray-500">{selectedRecipients.length}/{MAX_RECIPIENTS} selected</span>
-                </div>
-                <select
-                  id="recognition-recipient"
-                  value={selectedRecipients}
-                  onChange={handleRecipientsChange}
-                  data-testid="recognition-recipient"
-                  className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  disabled={!recipients.length}
-                  multiple
-                  size={Math.min(6, Math.max(3, recipients.length))}
-                >
-                  <option value="" disabled>
-                    {recipients.length ? 'Select teammates' : 'No eligible teammates yet'}
-                  </option>
-                  {recipients.map((recipient) => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
-                      {recipient.department ? ` · ${recipient.department}` : ''}
+            {recipientsLoading ? (
+              <div className="flex items-center justify-center py-12">
+                <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
+              </div>
+            ) : (
+              <form onSubmit={handleSubmit} className="space-y-6">
+                <section>
+                  <div className="flex items-center justify-between">
+                    <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
+                      Choose recipients
+                    </label>
+                    <span className="text-xs text-gray-500">{selectedRecipients.length}/{MAX_RECIPIENTS} selected</span>
+                  </div>
+                  <select
+                    id="recognition-recipient"
+                    value={selectedRecipients}
+                    onChange={handleRecipientsChange}
+                    data-testid="recognition-recipient"
+                    className="mt-1 block w-full rounded-lg border border-gray-300 bg-white px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    disabled={!recipients.length}
+                    multiple
+                    size={Math.min(6, Math.max(3, recipients.length))}
+                  >
+                    <option value="" disabled>
+                      {recipients.length ? 'Select teammates' : 'No eligible teammates yet'}
                     </option>
-                  ))}
-                </select>
-                {eligibilityHint && (
-                  <p className="mt-2 text-xs text-gray-500">{eligibilityHint}</p>
-                )}
-                {isEmployee && (
-                  <p className="mt-2 text-xs text-gray-500">
-                    Employees can recognize anyone. Points may be limited by policy.
-                  </p>
-                )}
-                {!recipients.length && (
-                  <p className="mt-2 text-sm text-gray-500">
-                    Need to recognise someone outside this list? Reach out to your manager or HR partner.
-                  </p>
-                )}
-              </section>
+                    {recipients.map((recipient) => {
+                      const isSelf = recipient.id === user?.id;
+                      return (
+                        <option key={recipient.id} value={recipient.id} disabled={isSelf}>
+                          {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
+                          {recipient.department ? ` · ${recipient.department}` : ''}
+                          {isSelf ? ' (You)' : ''}
+                        </option>
+                      );
+                    })}
+                  </select>
+                  {eligibilityHint && (
+                    <p className="mt-2 text-xs text-gray-500">{eligibilityHint}</p>
+                  )}
+                  {isEmployee && (
+                    <p className="mt-2 text-xs text-gray-500">
+                      Employees can recognize anyone. Points may be limited by policy.
+                    </p>
+                  )}
+                  {!recipients.length && (
+                    <p className="mt-2 text-sm text-gray-500">
+                      Need to recognise someone outside this list? Reach out to your manager or HR partner.
+                    </p>
+                  )}
+                </section>
 
               <section>
                 <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-type">
@@ -536,32 +545,33 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                 </section>
               )}
 
-              <div className="flex justify-end gap-3 pt-4">
-                <Dialog.Close asChild>
+                <div className="flex justify-end gap-3 pt-4">
+                  <Dialog.Close asChild>
+                    <button
+                      type="button"
+                      className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    >
+                      Cancel
+                    </button>
+                  </Dialog.Close>
                   <button
-                    type="button"
-                    className="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-100"
+                    type="submit"
+                    disabled={submitting}
+                    data-testid="recognition-submit"
+                    className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
                   >
-                    Cancel
+                    {submitting && (
+                      <svg className="-ml-1 mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
+                      </svg>
+                    )}
+                    Send recognition
                   </button>
-                </Dialog.Close>
-                <button
-                  type="submit"
-                  disabled={submitting}
-                  data-testid="recognition-submit"
-                  className="inline-flex items-center rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm transition-colors hover:bg-blue-700 disabled:opacity-60"
-                >
-                  {submitting && (
-                    <svg className="-ml-1 mr-2 h-4 w-4 animate-spin" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"></path>
-                    </svg>
-                  )}
-                  Send recognition
-                </button>
-              </div>
-            </form>
-          )}
+                </div>
+              </form>
+            )}
+          </div>
         </Dialog.Content>
       </Dialog.Portal>
     </Dialog.Root>

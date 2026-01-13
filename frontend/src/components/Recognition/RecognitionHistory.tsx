@@ -34,7 +34,7 @@ const RECOGNITION_TYPE_LABELS: Record<string, string> = {
   peer_to_peer: 'Peer to Peer',
   manager_to_employee: 'Manager to Employee',
   team_recognition: 'Team Recognition',
-  company_wide: 'Company Wide',
+  company_wide: 'Company-wide',
 };
 
 const RECOGNITION_TYPE_OPTIONS = [
@@ -103,7 +103,10 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
             <button
               key={item}
               type="button"
-              onClick={() => setDirection(item)}
+              onClick={() => {
+                setDirection(item);
+                setTypeFilter('all');
+              }}
               data-testid={`recognition-history-direction-${item}`}
               className={`rounded-md px-3 py-2 text-sm font-medium transition-colors ${
                 direction === item ? 'bg-white shadow text-blue-600' : 'text-gray-600 hover:text-gray-800'
