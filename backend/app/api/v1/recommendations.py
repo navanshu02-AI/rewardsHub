@@ -10,18 +10,25 @@ router = APIRouter()
 @router.get("/")
 async def get_recommendations(
     region: str | None = None,
+    currency: str | None = None,
     current_user: User = Depends(get_current_user),
 ):
     """Get personalized recommendations for current user"""
     if not settings.AI_FEATURES_ENABLED:
         return JSONResponse(status_code=501, content={"error": "AI features are disabled."})
-    return await recommendation_service.get_personalized_recommendations(current_user, region=region)
+    return await recommendation_service.get_personalized_recommendations(
+        current_user,
+        region=region,
+        currency=currency,
+    )
 
 @router.get("/gift/{recipient_id}")
 async def get_gift_recommendations(
     recipient_id: str,
     budget_min: float,
     budget_max: float,
+    region: str | None = None,
+    currency: str | None = None,
     current_user: User = Depends(get_current_user)
 ):
     """Get gift recommendations for a specific user"""
@@ -32,5 +39,7 @@ async def get_gift_recommendations(
         budget_min,
         budget_max,
         org_id=current_user.org_id,
+        region=region,
+        currency=currency,
     )
     return {"recommendations": recommendations}
