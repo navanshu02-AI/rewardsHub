@@ -81,12 +81,12 @@ class RecommendationService:
             query["brand"] = {"$in": preferred_brands}
             personalization_factors.append("Preferred brands")
         
+        query["available_regions"] = {"$in": [resolved_region]}
+        personalization_factors.append(f"Region availability ({resolved_region})")
+
         # Add price range filter
         query[f"prices.{currency}"] = {"$gte": min_price, "$lte": max_price}
         personalization_factors.append(f"Budget preferences ({currency})")
-
-        query["available_regions"] = {"$in": [resolved_region]}
-        personalization_factors.append(f"Region availability ({resolved_region})")
         
         # Exclude already purchased items
         if purchase_history:
@@ -151,12 +151,12 @@ class RecommendationService:
         query = {
             "is_active": True,
             "org_id": org_id,
-            f"prices.{currency}": {
-                "$gte": budget_min if budget_min is not None else min_price,
-                "$lte": budget_max if budget_max is not None else max_price
-            }
         }
         query["available_regions"] = {"$in": [resolved_region]}
+        query[f"prices.{currency}"] = {
+            "$gte": budget_min if budget_min is not None else min_price,
+            "$lte": budget_max if budget_max is not None else max_price
+        }
         
         if preferred_categories:
             query["category"] = {"$in": preferred_categories}

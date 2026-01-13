@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       const recommendationsPromise = aiEnabled
-        ? api.get('/recommendations', { params: { currency, region } })
+        ? api.get('/recommendations', { params: { region } })
         : Promise.resolve(null);
       const analyticsPromise =
         user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
