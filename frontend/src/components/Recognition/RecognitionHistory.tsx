@@ -9,6 +9,8 @@ type RecognitionEntry = {
   scope: RecognitionScope;
   message: string;
   points_awarded: number;
+  points_status: 'credited' | 'pending' | 'none';
+  credited_points: number;
   recognition_type: string;
   created_at: string;
   from_user: RecognitionUserSummary;
@@ -143,6 +145,14 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
               .map((recipient) => `${recipient.first_name} ${recipient.last_name}`)
               .join(', ');
             const displayType = RECOGNITION_TYPE_LABELS[entry.recognition_type] || entry.recognition_type;
+            const shouldShowPoints = entry.points_status === 'credited';
+            const isPendingPoints = entry.points_status === 'pending';
+            const pointsSummary =
+              entry.points_status === 'credited'
+                ? ` with ${entry.credited_points} point${entry.credited_points === 1 ? '' : 's'}.`
+                : entry.points_status === 'pending'
+                  ? ' with points pending approval.'
+                  : '.';
             return (
               <li key={entry.id} className="rounded-lg border border-gray-200 p-4 shadow-sm" data-testid="recognition-history-item">
                 <div className="flex flex-col gap-3 md:flex-row md:items-start md:justify-between">
@@ -162,15 +172,21 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
                     <p className="mt-3 text-sm text-gray-500">
                       {isSender ? 'You recognised' : `${entry.from_user.first_name} ${entry.from_user.last_name} recognised`}{' '}
                       <span className="font-medium text-gray-700">{recipients || 'the team'}</span>
-                      {` with ${entry.points_awarded} point${entry.points_awarded === 1 ? '' : 's'}.`}
+                      {pointsSummary}
                     </p>
                   </div>
-                  <div className="flex items-center gap-2 self-start rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
-                    <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
-                    </svg>
-                    +{entry.points_awarded} pts
-                  </div>
+                  {shouldShowPoints ? (
+                    <div className="flex items-center gap-2 self-start rounded-full bg-amber-100 px-3 py-1 text-sm font-semibold text-amber-700">
+                      <svg className="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6l4 2" />
+                      </svg>
+                      +{entry.credited_points} pts
+                    </div>
+                  ) : isPendingPoints ? (
+                    <div className="self-start rounded-full bg-slate-100 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-600">
+                      Pending
+                    </div>
+                  ) : null}
                 </div>
               </li>
             );

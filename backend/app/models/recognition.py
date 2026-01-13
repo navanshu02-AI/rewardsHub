@@ -37,6 +37,8 @@ class Recognition(BaseModel):
     to_user_snapshots: List[RecognitionUserSummary] = Field(default_factory=list)
     values_tags: List[str] = Field(default_factory=list)
     reactions: List[RecognitionReaction] = Field(default_factory=list)
+    points_status: Literal["credited", "pending", "none"] = "none"
+    credited_points: int = 0
 
 class RecognitionCreate(BaseModel):
     to_user_id: Optional[str] = None
@@ -60,6 +62,8 @@ class RecognitionHistoryEntry(BaseModel):
     to_users: List[RecognitionUserSummary]
     values_tags: List[str] = Field(default_factory=list)
     reactions: List[RecognitionReaction] = Field(default_factory=list)
+    points_status: Literal["credited", "pending", "none"] = "none"
+    credited_points: int = 0
 
 class RecognitionFeedEntry(BaseModel):
     id: str
@@ -71,6 +75,8 @@ class RecognitionFeedEntry(BaseModel):
     to_users: List[RecognitionUserSummary]
     values_tags: List[str] = Field(default_factory=list)
     reactions: List[RecognitionReaction] = Field(default_factory=list)
+    points_status: Literal["credited", "pending", "none"] = "none"
+    credited_points: int = 0
 
 class RecognitionReactionToggleRequest(BaseModel):
     emoji: str
