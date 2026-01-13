@@ -293,7 +293,13 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   );
   const pointsEligibleRecipients = recipients.filter((recipient) => pointsEligibleIds.has(recipient.id));
   const appreciationRecipients = recipients.filter((recipient) => !pointsEligibleIds.has(recipient.id));
-  const appreciationLabel = selectedScope === 'global' ? 'Appreciation (company-wide)' : 'Appreciation';
+  const recognitionOnlyRecipientIds = useMemo(
+    () => new Set(appreciationRecipients.map((recipient) => recipient.id)),
+    [appreciationRecipients]
+  );
+  const hasRecognitionOnlySelection = selectedRecipients.some((recipientId) =>
+    recognitionOnlyRecipientIds.has(recipientId)
+  );
 
   return (
     <Dialog.Root
@@ -381,7 +387,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                     </optgroup>
                   )}
                   {appreciationRecipients.length > 0 && (
-                    <optgroup label={appreciationLabel}>
+                    <optgroup label="Recognition only">
                       {appreciationRecipients.map((recipient) => (
                         <option key={recipient.id} value={recipient.id}>
                           {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
@@ -391,6 +397,9 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                     </optgroup>
                   )}
                 </select>
+                {hasRecognitionOnlySelection && (
+                  <p className="mt-2 text-xs text-gray-500">No points will be awarded.</p>
+                )}
                 {scopes?.pointsEligibilityHint && appreciationRecipients.length > 0 && (
                   <p className="mt-2 text-xs text-gray-500">{scopes.pointsEligibilityHint}</p>
                 )}

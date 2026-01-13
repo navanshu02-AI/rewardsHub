@@ -37,6 +37,9 @@ test.describe('employee recognition flow', () => {
 
     const recipientsResponse = await recipientsResponsePromise;
     const recipientsData = await recipientsResponse.json();
+    const recipientSelect = page.getByTestId('recognition-recipient');
+
+    await expect(recipientSelect.locator('option', { hasText: 'Points eligible' })).toHaveCount(0);
 
     const scopeButtons = {
       peer: page.getByTestId('recognition-scope-peer'),
@@ -81,7 +84,19 @@ test.describe('employee recognition flow', () => {
       await scopeButtons[selectedScope].click();
     }
 
-    await page.getByTestId('recognition-recipient').selectOption(selectedRecipientId);
+    const pointsEligibleIds = new Set(
+      (recipientsData?.pointsEligibleRecipients ?? []).map((recipient: { id: string }) => recipient.id)
+    );
+    const recognitionOnlyRecipient = recipientsData?.[selectedScope]?.recipients?.find(
+      (recipient: { id: string }) => !pointsEligibleIds.has(recipient.id)
+    );
+
+    if (recognitionOnlyRecipient) {
+      await recipientSelect.selectOption(recognitionOnlyRecipient.id);
+      await expect(page.getByText('No points will be awarded.')).toBeVisible();
+    }
+
+    await recipientSelect.selectOption(selectedRecipientId);
 
     const message = `Automation recognition ${Date.now()}`;
     await page.getByTestId('recognition-message').fill(message);

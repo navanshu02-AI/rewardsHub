@@ -183,6 +183,62 @@ test('surfaces backend validation errors during submission', async () => {
   expect(authValue.refreshUser).not.toHaveBeenCalled();
 });
 
+test('shows recognition-only helper text and keeps group labels non-selectable', async () => {
+  const authValue = createAuthContextValue('employee');
+  mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
+
+  mockedAxios.get.mockResolvedValue({
+    data: {
+      peer: {
+        enabled: true,
+        recipients: [
+          {
+            id: 'peer-1',
+            first_name: 'Pat',
+            last_name: 'Peer',
+            role: 'employee',
+          },
+          {
+            id: 'peer-2',
+            first_name: 'Rory',
+            last_name: 'Recognition',
+            role: 'employee',
+          },
+        ],
+      },
+      report: { enabled: false, recipients: [] },
+      global: { enabled: false, recipients: [] },
+      pointsEligibleRecipients: [
+        {
+          id: 'peer-1',
+          first_name: 'Pat',
+          last_name: 'Peer',
+          role: 'employee',
+        },
+      ],
+    },
+  });
+
+  const user = userEvent.setup();
+
+  render(
+    <RecognitionModal
+      isOpen
+      onClose={jest.fn()}
+      onSuccess={jest.fn()}
+    />
+  );
+
+  await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
+
+  expect(screen.queryByRole('option', { name: 'Points eligible' })).not.toBeInTheDocument();
+
+  await user.selectOptions(screen.getByTestId('recognition-recipient'), ['peer-2']);
+
+  expect(screen.getByText('No points will be awarded.')).toBeInTheDocument();
+});
+
 test('submits multiple recipients using to_user_ids', async () => {
   const authValue = createAuthContextValue('hr_admin');
   mockedUseAuth.mockReturnValue(authValue);
