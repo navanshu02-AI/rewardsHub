@@ -37,7 +37,7 @@ interface Recommendations {
 }
 
 interface RecommendationsSectionProps {
-  recommendations: Recommendations;
+  recommendations: Recommendations | null;
   onRedeemReward: (rewardId: string) => void;
   userPoints: number;
 }
@@ -47,39 +47,45 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   onRedeemReward,
   userPoints
 }) => {
-  if (!recommendations.rewards || recommendations.rewards.length === 0) {
-    return null;
-  }
+  const hasRecommendations = Boolean(recommendations?.rewards?.length);
 
   return (
-    <div className="mb-8">
-      <div className="flex justify-between items-center mb-6">
+    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-2xl font-bold text-gray-900">Recommended for You 🎯</h2>
-          <p className="text-gray-600 mt-1">{recommendations.reason}</p>
-        </div>
-        <div className="text-right">
-          <div className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium">
-            {Math.round(recommendations.confidence_score * 100)}% Match
-          </div>
-          <p className="text-xs text-gray-500 mt-1">
-            Based on: {recommendations.personalization_factors.join(', ')}
+          <h2 className="text-xl font-semibold text-gray-900">Recommended for you</h2>
+          <p className="mt-2 text-sm text-slate-600">
+            {hasRecommendations
+              ? recommendations?.reason
+              : 'Personalized reward ideas will appear here once they are ready.'}
           </p>
         </div>
+        {hasRecommendations && (
+          <div className="text-left lg:text-right">
+            <div className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+              {Math.round((recommendations?.confidence_score ?? 0) * 100)}% Match
+            </div>
+            <p className="mt-1 text-xs text-gray-500">
+              Based on: {recommendations?.personalization_factors.join(', ')}
+            </p>
+          </div>
+        )}
       </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {recommendations.rewards.slice(0, 3).map((reward) => (
-          <RewardCard
-            key={reward.id}
-            reward={reward}
-            onRedeemReward={onRedeemReward}
-            userPoints={userPoints}
-            isRecommended={true}
-          />
-        ))}
-      </div>
-    </div>
+
+      {hasRecommendations && (
+        <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
+          {recommendations?.rewards.slice(0, 3).map((reward) => (
+            <RewardCard
+              key={reward.id}
+              reward={reward}
+              onRedeemReward={onRedeemReward}
+              userPoints={userPoints}
+              isRecommended={true}
+            />
+          ))}
+        </div>
+      )}
+    </section>
   );
 };
 

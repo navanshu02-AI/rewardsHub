@@ -5,9 +5,9 @@ import toast from 'react-hot-toast';
 import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import RecommendationsSection from './RecommendationsSection';
+import RewardCard from '../Rewards/RewardCard';
 import RewardsCatalog from './RewardsCatalog';
 import RecognitionCallout from './RecognitionCallout';
-import RecommendationsCallout from './RecommendationsCallout';
 import StatsCards from './StatsCards';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
@@ -52,6 +52,27 @@ interface Recommendations {
   personalization_factors: string[];
 }
 
+interface RecipientSummary {
+  id: string;
+  first_name: string;
+  last_name: string;
+  department?: string;
+  role?: string;
+}
+
+interface RecipientScope {
+  enabled: boolean;
+  recipients: RecipientSummary[];
+  description?: string;
+  emptyMessage?: string;
+}
+
+interface RecipientResponse {
+  peer: RecipientScope;
+  report: RecipientScope;
+  global: RecipientScope;
+}
+
 interface AnalyticsOverview {
   recognitions_last_7_days: number;
   recognitions_last_30_days: number;
@@ -71,6 +92,14 @@ const Dashboard: React.FC = () => {
   const { user, currency, region } = useAuth();
   const { aiEnabled, loading: settingsLoading } = useSettings();
   const [recommendations, setRecommendations] = useState<Recommendations | null>(null);
+  const [giftRecommendations, setGiftRecommendations] = useState<Reward[]>([]);
+  const [giftRecipients, setGiftRecipients] = useState<RecipientSummary[]>([]);
+  const [selectedRecipientId, setSelectedRecipientId] = useState('');
+  const [giftBudgetMin, setGiftBudgetMin] = useState('25');
+  const [giftBudgetMax, setGiftBudgetMax] = useState('100');
+  const [giftLoading, setGiftLoading] = useState(false);
+  const [giftRequestMade, setGiftRequestMade] = useState(false);
+  const [giftError, setGiftError] = useState('');
   const [rewards, setRewards] = useState<Reward[]>([]);
   const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
@@ -101,6 +130,15 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     void fetchFilterOptions();
   }, []);
+
+  useEffect(() => {
+    if (aiEnabled) {
+      void fetchGiftRecipients();
+    } else {
+      setGiftRecipients([]);
+      setSelectedRecipientId('');
+    }
+  }, [aiEnabled]);
 
   useEffect(() => {
     if (!loading) {
@@ -196,6 +234,19 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchGiftRecipients = async () => {
+    try {
+      const response = await api.get<RecipientResponse>('/recognitions/recipients');
+      const recipients = response.data?.global?.recipients ?? [];
+      setGiftRecipients(recipients);
+      if (recipients.length > 0) {
+        setSelectedRecipientId(recipients[0].id);
+      }
+    } catch (error) {
+      console.error('Error fetching gift recipients:', error);
+    }
+  };
+
   const handleRecognitionSuccess = () => {
     setShowRecognitionModal(false);
     void fetchDashboardData();
@@ -227,9 +278,43 @@ const Dashboard: React.FC = () => {
     toast.success(`Reward redeemed successfully!${suffix}`);
   };
 
-  const handleRecommendGift = () => {
-    if (recommendationsRef.current) {
-      recommendationsRef.current.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  const handleGiftRecommendations = async () => {
+    if (!selectedRecipientId) {
+      toast.error('Select a recipient to get gift recommendations.');
+      return;
+    }
+
+    const minValue = Number(giftBudgetMin);
+    const maxValue = Number(giftBudgetMax);
+    if (
+      Number.isNaN(minValue) ||
+      Number.isNaN(maxValue) ||
+      minValue < 0 ||
+      maxValue <= 0 ||
+      minValue > maxValue
+    ) {
+      toast.error('Enter a valid budget range.');
+      return;
+    }
+
+    setGiftLoading(true);
+    setGiftRequestMade(true);
+    setGiftError('');
+    try {
+      const response = await api.get(`/recommendations/gift/${selectedRecipientId}`, {
+        params: { budget_min: minValue, budget_max: maxValue, region, currency }
+      });
+      const giftRecommendationsData = response.data?.recommendations ?? [];
+      setGiftRecommendations(giftRecommendationsData);
+      if (!giftRecommendationsData.length) {
+        setGiftError('No gift recommendations matched that budget. Try another range.');
+      }
+    } catch (error) {
+      console.error('Error fetching gift recommendations:', error);
+      setGiftRecommendations([]);
+      setGiftError('Unable to load gift recommendations. Please try again.');
+    } finally {
+      setGiftLoading(false);
     }
   };
 
@@ -274,13 +359,8 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      <section className="mb-8 grid gap-4 md:grid-cols-2">
+      <section className="mb-8">
         <RecognitionCallout onOpenRecognition={() => setShowRecognitionModal(true)} />
-        <RecommendationsCallout
-          aiEnabled={aiEnabled}
-          hasRecommendations={recommendations !== null}
-          onGetRecommendations={handleRecommendGift}
-        />
       </section>
 
       {showGettingStarted && (
@@ -402,14 +482,106 @@ const Dashboard: React.FC = () => {
         </section>
       )}
 
-      {aiEnabled && recommendations && (
-        <div ref={recommendationsRef}>
-          <RecommendationsSection
-            recommendations={recommendations}
-            onRedeemReward={redeemReward}
-            userPoints={user?.points_balance || 0}
-          />
-        </div>
+      {aiEnabled && (
+        <section className="mt-10" ref={recommendationsRef}>
+          <div className="grid gap-6 lg:grid-cols-2">
+            <RecommendationsSection
+              recommendations={recommendations}
+              onRedeemReward={redeemReward}
+              userPoints={user?.points_balance || 0}
+            />
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-xl font-semibold text-gray-900">Recommend a gift</h2>
+                <p className="text-sm text-slate-600">
+                  Choose a recipient and budget to find thoughtful rewards to send.
+                </p>
+              </div>
+              <div className="mt-4 grid gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="gift-recipient">
+                    Recipient
+                  </label>
+                  <select
+                    id="gift-recipient"
+                    data-testid="gift-recipient"
+                    value={selectedRecipientId}
+                    onChange={(event) => setSelectedRecipientId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Select a teammate</option>
+                    {giftRecipients.map((recipient) => (
+                      <option key={recipient.id} value={recipient.id}>
+                        {recipient.first_name} {recipient.last_name}
+                        {recipient.department ? ` · ${recipient.department}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-min">
+                      Budget min
+                    </label>
+                    <input
+                      id="gift-budget-min"
+                      type="number"
+                      min={0}
+                      value={giftBudgetMin}
+                      onChange={(event) => setGiftBudgetMin(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-max">
+                      Budget max
+                    </label>
+                    <input
+                      id="gift-budget-max"
+                      type="number"
+                      min={0}
+                      value={giftBudgetMax}
+                      onChange={(event) => setGiftBudgetMax(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="gift-recommendations-submit"
+                  onClick={handleGiftRecommendations}
+                  disabled={giftLoading}
+                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  {giftLoading ? 'Finding gifts…' : 'Get gift recommendations'}
+                </button>
+                {giftError && (
+                  <p className="text-sm text-amber-600" role="status">
+                    {giftError}
+                  </p>
+                )}
+              </div>
+
+              {giftRecommendations.length > 0 && (
+                <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                  {giftRecommendations.slice(0, 4).map((reward) => (
+                    <RewardCard
+                      key={reward.id}
+                      reward={reward}
+                      onRedeemReward={redeemReward}
+                      userPoints={user?.points_balance || 0}
+                    />
+                  ))}
+                </div>
+              )}
+              {giftRequestMade && !giftLoading && giftRecommendations.length === 0 && !giftError && (
+                <p className="mt-4 text-sm text-slate-600">
+                  No gifts returned yet. Adjust the budget or choose a different recipient.
+                </p>
+              )}
+            </div>
+          </div>
+        </section>
       )}
 
       <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
