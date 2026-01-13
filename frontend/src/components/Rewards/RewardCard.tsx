@@ -46,6 +46,13 @@ const RewardCard: React.FC<RewardCardProps> = ({
 
   const currentPrice = reward.prices?.[currency] ?? 0;
   const originalPrice = reward.original_prices?.[currency];
+  const hasOtherCurrencyPrice = reward.prices
+    ? Object.entries(reward.prices).some(
+        ([priceCurrency, price]) => priceCurrency !== currency && price > 0
+      )
+    : false;
+  const hasCurrentPrice = currentPrice > 0;
+  const showCurrencyUnavailable = !hasCurrentPrice && hasOtherCurrencyPrice;
 
   const canRedeem = userPoints >= reward.points_required && reward.availability > 0;
 
@@ -68,9 +75,9 @@ const RewardCard: React.FC<RewardCardProps> = ({
             POPULAR
           </div>
         )}
-        {originalPrice && originalPrice > currentPrice && (
+        {hasCurrentPrice && originalPrice && originalPrice > currentPrice && (
           <div className="absolute top-2 right-2 bg-green-500 text-white text-xs font-bold px-2 py-1 rounded">
-            SAVE {formatCurrency(originalPrice - currentPrice)}
+            SAVE {formatCurrency(originalPrice - currentPrice, currency)}
           </div>
         )}
       </div>
@@ -105,18 +112,24 @@ const RewardCard: React.FC<RewardCardProps> = ({
           </div>
         )}
 
-        {originalPrice && originalPrice > currentPrice && (
+        {hasCurrentPrice && originalPrice && originalPrice > currentPrice && (
           <div className="mb-2">
-            <span className="text-sm text-gray-500 line-through">{formatCurrency(originalPrice)}</span>
+            <span className="text-sm text-gray-500 line-through">
+              {formatCurrency(originalPrice, currency)}
+            </span>
             <span className="text-sm text-red-600 ml-2 font-medium">
-              Save {formatCurrency(originalPrice - currentPrice)}
+              Save {formatCurrency(originalPrice - currentPrice, currency)}
             </span>
           </div>
         )}
 
         <div className="flex justify-between items-center mb-2">
           <span className="text-lg font-bold text-blue-600">{reward.points_required} pts</span>
-          <span className="text-sm text-gray-500">{formatCurrency(currentPrice)}</span>
+          {showCurrencyUnavailable ? (
+            <span className="text-sm text-gray-500">Not available in your currency</span>
+          ) : (
+            <span className="text-sm text-gray-500">{formatCurrency(currentPrice, currency)}</span>
+          )}
         </div>
 
         <div className="text-xs text-gray-500 mb-3">
