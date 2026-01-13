@@ -101,12 +101,49 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     [currency]
   );
 
-  const setRegionCurrency = (newRegion: Region, newCurrency: Currency) => {
+  const setRegionCurrency = React.useCallback((newRegion: Region, newCurrency: Currency) => {
     setRegion(newRegion);
     setCurrency(newCurrency);
     localStorage.setItem('region', newRegion);
     localStorage.setItem('currency', newCurrency);
-  };
+  }, []);
+
+  const syncRegionCurrencyFromProfile = React.useCallback(
+    (preferences?: Record<string, any>) => {
+      const preferenceRegion = normalizeRegion(preferences?.region) as Region | undefined;
+      const preferenceCurrency = preferences?.currency as Currency | undefined;
+
+      if (preferenceRegion && REGION_CONFIG[preferenceRegion]) {
+        setRegionCurrency(preferenceRegion, preferenceCurrency || REGION_CONFIG[preferenceRegion].currency);
+        return;
+      }
+
+      if (preferenceCurrency) {
+        const matchingRegion = (Object.keys(REGION_CONFIG) as Region[]).find(
+          (key) => REGION_CONFIG[key].currency === preferenceCurrency
+        );
+        if (matchingRegion) {
+          setRegionCurrency(matchingRegion, preferenceCurrency);
+          return;
+        }
+      }
+
+      const storedRegionRaw = localStorage.getItem('region');
+      const storedRegion = normalizeRegion(storedRegionRaw);
+      const storedCurrency = localStorage.getItem('currency') as Currency | null;
+
+      if (storedRegion && REGION_CONFIG[storedRegion]) {
+        setRegionCurrency(storedRegion, storedCurrency || REGION_CONFIG[storedRegion].currency);
+        if (storedRegionRaw !== storedRegion) {
+          localStorage.setItem('region', storedRegion);
+        }
+        return;
+      }
+
+      setRegionCurrency('IN', 'INR');
+    },
+    [setRegionCurrency]
+  );
 
   const fetchUserProfile = React.useCallback(async (toggleLoading: boolean = true) => {
     if (toggleLoading) {
@@ -115,13 +152,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await api.get('/users/me');
       setUser(response.data);
-      const preferenceRegion = normalizeRegion(response.data?.preferences?.region) as Region | undefined;
-      const preferenceCurrency = response.data?.preferences?.currency as Currency | undefined;
-
-      if (preferenceRegion && REGION_CONFIG[preferenceRegion]) {
-        setRegion(preferenceRegion);
-        setCurrency(preferenceCurrency || REGION_CONFIG[preferenceRegion].currency);
-      }
+      syncRegionCurrencyFromProfile(response.data?.preferences);
     } catch (error) {
       console.error('Error fetching user profile:', error);
       logout();
@@ -130,27 +161,17 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         setLoading(false);
       }
     }
-  }, []);
+  }, [syncRegionCurrencyFromProfile]);
 
   useEffect(() => {
-    const storedRegionRaw = localStorage.getItem('region');
-    const storedRegion = normalizeRegion(storedRegionRaw);
-    const storedCurrency = localStorage.getItem('currency') as Currency | null;
-
-    if (storedRegion && REGION_CONFIG[storedRegion]) {
-      setRegion(storedRegion);
-      setCurrency(storedCurrency || REGION_CONFIG[storedRegion].currency);
-      if (storedRegionRaw !== storedRegion) {
-        localStorage.setItem('region', storedRegion);
-      }
-    }
+    syncRegionCurrencyFromProfile();
 
     if (token) {
       fetchUserProfile();
     } else {
       setLoading(false);
     }
-  }, [token, fetchUserProfile]);
+  }, [token, fetchUserProfile, syncRegionCurrencyFromProfile]);
 
   const setAuthSession = React.useCallback((accessToken: string, orgId?: string) => {
     localStorage.setItem('token', accessToken);
@@ -165,6 +186,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       const response = await api.post('/auth/login', { email, password });
       const { access_token } = response.data;
       setAuthSession(access_token);
+      await fetchUserProfile(false);
       return { success: true };
     } catch (error: any) {
       return { success: false, error: error.response?.data?.detail || 'Login failed' };
