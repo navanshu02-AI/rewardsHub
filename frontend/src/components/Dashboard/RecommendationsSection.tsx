@@ -40,24 +40,29 @@ interface RecommendationsSectionProps {
   recommendations: Recommendations | null;
   onRedeemReward: (rewardId: string) => void;
   userPoints: number;
+  aiEnabled: boolean;
+  onBrowseRewards?: () => void;
 }
 
 const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   recommendations,
   onRedeemReward,
-  userPoints
+  userPoints,
+  aiEnabled,
+  onBrowseRewards
 }) => {
   const hasRecommendations = Boolean(recommendations?.rewards?.length);
+  const showEmptyState = !aiEnabled || !hasRecommendations;
 
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h2 className="text-xl font-semibold text-gray-900">Recommended for you</h2>
+          <h2 className="text-xl font-semibold text-gray-900">Recommendations</h2>
           <p className="mt-2 text-sm text-slate-600">
             {hasRecommendations
               ? recommendations?.reason
-              : 'Personalized reward ideas will appear here once they are ready.'}
+              : 'Explore the rewards catalog for something that fits the moment.'}
           </p>
         </div>
         {hasRecommendations && (
@@ -72,7 +77,7 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         )}
       </div>
 
-      {hasRecommendations && (
+      {!showEmptyState && (
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">
           {recommendations?.rewards.slice(0, 3).map((reward) => (
             <RewardCard
@@ -83,6 +88,24 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
               isRecommended={true}
             />
           ))}
+        </div>
+      )}
+
+      {showEmptyState && (
+        <div className="mt-6 flex flex-col items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
+          <p className="text-sm font-medium text-slate-700">
+            {aiEnabled
+              ? 'We are still tailoring recommendations for you. In the meantime, browse what is available.'
+              : 'Personalized recommendations are not enabled for your workspace yet.'}
+          </p>
+          <button
+            type="button"
+            onClick={onBrowseRewards}
+            data-testid="recommendations-browse-rewards"
+            className="inline-flex items-center rounded-lg border border-blue-600 px-4 py-2 text-sm font-semibold text-blue-600 transition hover:bg-blue-50"
+          >
+            Browse rewards
+          </button>
         </div>
       )}
     </section>

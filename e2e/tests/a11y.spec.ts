@@ -59,7 +59,7 @@ test.describe('accessibility checks', () => {
       password: TEST_USERS.employee1.password
     });
 
-    await page.getByTestId('recognition-open').click();
+    await page.getByTestId('send-recognition-cta').click();
     await expect(page.getByRole('heading', { name: /celebrate a teammate/i })).toBeVisible();
 
     await runA11yScan(page, 'recognition modal');
