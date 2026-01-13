@@ -74,6 +74,7 @@ def test_pending_recognition_does_not_credit_until_approved(monkeypatch: pytest.
     assert recipient_after_approval["points_balance"] == 250
     ledger_entries = db.points_ledger.values()
     assert len(ledger_entries) == 1
+    assert ledger_entries[0]["delta"] == 250
     assert ledger_entries[0]["ref_id"] == recognition.id
 
 

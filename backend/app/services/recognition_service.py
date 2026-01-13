@@ -248,7 +248,10 @@ class RecognitionService:
         use_transaction = bool(transaction_started and session)
         if use_transaction:
             try:
-                await db.recognitions.insert_one(recognition.dict(), session=session)
+                await db.recognitions.insert_one(
+                    recognition.dict(exclude={"points_status", "credited_points"}),
+                    session=session,
+                )
                 if not approval_required:
                     await self._reward_recipients(
                         recipients,
@@ -284,10 +287,10 @@ class RecognitionService:
             else:
                 await session.end_session()
                 await self._dispatch_recognition_notifications(recognition, current_user, recipients)
-                return recognition
+                return self._apply_points_status(recognition)
 
         if not use_transaction:
-            await db.recognitions.insert_one(recognition.dict())
+            await db.recognitions.insert_one(recognition.dict(exclude={"points_status", "credited_points"}))
             if not approval_required:
                 await self._reward_recipients(
                     recipients,
@@ -298,7 +301,7 @@ class RecognitionService:
                 await self._update_manager_allowance(current_user, points_awarded, org_id=current_user.org_id)
 
         await self._dispatch_recognition_notifications(recognition, current_user, recipients)
-        return recognition
+        return self._apply_points_status(recognition)
 
     async def approve_recognition(self, recognition_id: str, current_user: User) -> Recognition:
         db = await get_database()
@@ -386,7 +389,8 @@ class RecognitionService:
                 raise
             else:
                 await session.end_session()
-                return Recognition(**(await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})))
+                updated_record = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
+                return self._build_recognition_from_record(updated_record)
 
         if not use_transaction:
             await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
@@ -405,7 +409,7 @@ class RecognitionService:
                     )
 
         updated = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
-        return Recognition(**updated)
+        return self._build_recognition_from_record(updated)
 
     async def reject_recognition(self, recognition_id: str, current_user: User) -> Recognition:
         db = await get_database()
@@ -424,7 +428,7 @@ class RecognitionService:
         }
         await db.recognitions.update_one({"id": recognition_id, "org_id": current_user.org_id}, update)
         updated = await db.recognitions.find_one({"id": recognition_id, "org_id": current_user.org_id})
-        return Recognition(**updated)
+        return self._build_recognition_from_record(updated)
 
     async def _dispatch_recognition_notifications(
         self,
@@ -451,7 +455,7 @@ class RecognitionService:
         records = await db.recognitions.find(
             {"org_id": current_user.org_id, "status": "pending"}
         ).sort("created_at", -1).limit(limit).to_list(limit)
-        return [Recognition(**record) for record in records]
+        return [self._build_recognition_from_record(record) for record in records]
 
     async def get_history(
         self,
@@ -541,6 +545,8 @@ class RecognitionService:
                 to_users=to_summaries,
                 values_tags=record.get("values_tags", []),
                 reactions=[RecognitionReaction(**reaction) for reaction in record.get("reactions", [])],
+                points_status=self._resolve_points_status(record.get("points_awarded", 0), record.get("status")),
+                credited_points=self._resolve_credited_points(record.get("points_awarded", 0), record.get("status")),
             )
             history.append(entry)
 
@@ -661,6 +667,8 @@ class RecognitionService:
                     to_users=to_summaries,
                     values_tags=record.get("values_tags", []),
                     reactions=[RecognitionReaction(**reaction) for reaction in record.get("reactions", [])],
+                    points_status=self._resolve_points_status(record.get("points_awarded", 0), record.get("status")),
+                    credited_points=self._resolve_credited_points(record.get("points_awarded", 0), record.get("status")),
                 )
             )
 
@@ -693,7 +701,7 @@ class RecognitionService:
             {"$set": {"reactions": [reaction.dict() for reaction in reactions]}},
         )
         record["reactions"] = [reaction.dict() for reaction in reactions]
-        return Recognition(**record)
+        return self._build_recognition_from_record(record)
 
     async def _reward_recipients(
         self,
@@ -875,6 +883,27 @@ class RecognitionService:
             return RecognitionUserSummary(**snapshot)
         except (TypeError, ValueError):
             return None
+
+    def _resolve_points_status(self, points_awarded: int, status: Optional[str]) -> str:
+        if points_awarded <= 0:
+            return "none"
+        if status == "pending":
+            return "pending"
+        if status == "approved":
+            return "credited"
+        return "none"
+
+    def _resolve_credited_points(self, points_awarded: int, status: Optional[str]) -> int:
+        return points_awarded if self._resolve_points_status(points_awarded, status) == "credited" else 0
+
+    def _apply_points_status(self, recognition: Recognition) -> Recognition:
+        recognition.points_status = self._resolve_points_status(recognition.points_awarded, recognition.status)
+        recognition.credited_points = self._resolve_credited_points(recognition.points_awarded, recognition.status)
+        return recognition
+
+    def _build_recognition_from_record(self, record: Dict[str, object]) -> Recognition:
+        recognition = Recognition(**record)
+        return self._apply_points_status(recognition)
 
 
 recognition_service = RecognitionService()
