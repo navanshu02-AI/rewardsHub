@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react';
 import api from '../../lib/api';
 import toast from 'react-hot-toast';
 import RegionCurrencySelector from '../Common/RegionCurrencySelector';
-import { useAuth, REGION_CONFIG, Region, Currency } from '../../contexts/AuthContext';
+import { useAuth, REGION_CONFIG, Region, Currency, normalizeRegion } from '../../contexts/AuthContext';
 
 interface Category {
   value: string;
@@ -94,7 +94,7 @@ const PreferencesPage: React.FC = () => {
     if (user?.preferences) {
       const userPrefs: any = user.preferences || {};
       const userBudgetRanges = { ...DEFAULT_BUDGET_RANGES, ...(userPrefs.budget_ranges || {}) } as Record<Currency, PriceRange>;
-      const derivedRegion = (userPrefs.region as Region) || region;
+      const derivedRegion = normalizeRegion(userPrefs.region) || region;
       const derivedCurrency = (userPrefs.currency as Currency) || REGION_CONFIG[derivedRegion].currency || currency;
       const derivedPriceRange =
         (userPrefs.price_range as PriceRange) || userBudgetRanges[derivedCurrency] || DEFAULT_BUDGET_RANGES[derivedCurrency];

@@ -34,7 +34,7 @@ test('accepts invite and sets password', async () => {
     loading: false,
     isAuthenticated: false,
     refreshUser: jest.fn(),
-    region: 'india',
+    region: 'IN',
     currency: 'INR',
     setRegionCurrency: jest.fn(),
     formatCurrency: jest.fn(),

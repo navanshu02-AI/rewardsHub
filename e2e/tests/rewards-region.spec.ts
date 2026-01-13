@@ -33,7 +33,7 @@ test.describe('Region availability in rewards catalog', () => {
     const employeeContext = await browser.newContext({ storageState: employeeStorageState });
     const employeePage = await employeeContext.newPage();
 
-    await selectPrimaryRegion(employeePage, 'usa');
+    await selectPrimaryRegion(employeePage, 'US');
     const usRewardsResponse = employeePage.waitForResponse((response) =>
       response.url().includes('/api/v1/rewards') && response.request().method() === 'GET'
     );
@@ -42,7 +42,7 @@ test.describe('Region availability in rewards catalog', () => {
     await expect(rewardByTitle(employeePage, 'Starbucks USA Gift Card - $50')).toBeVisible();
     await expect(rewardByTitle(employeePage, 'Eurail Global Pass - 3 Days')).toHaveCount(0);
 
-    await selectPrimaryRegion(employeePage, 'europe');
+    await selectPrimaryRegion(employeePage, 'EU');
     const euRewardsResponse = employeePage.waitForResponse((response) =>
       response.url().includes('/api/v1/rewards') && response.request().method() === 'GET'
     );

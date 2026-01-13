@@ -3,13 +3,32 @@ import api from '../lib/api';
 
 export type UserRole = 'employee' | 'manager' | 'hr_admin' | 'executive' | 'c_level';
 
-export type Region = 'india' | 'usa' | 'europe';
+export type Region = 'IN' | 'US' | 'EU';
 export type Currency = 'INR' | 'USD' | 'EUR';
 
 export const REGION_CONFIG: Record<Region, { label: string; currency: Currency; locale: string; flag: string }> = {
-  india: { label: 'India', currency: 'INR', locale: 'en-IN', flag: '🇮🇳' },
-  usa: { label: 'United States', currency: 'USD', locale: 'en-US', flag: '🇺🇸' },
-  europe: { label: 'Europe', currency: 'EUR', locale: 'de-DE', flag: '🇪🇺' }
+  IN: { label: 'India', currency: 'INR', locale: 'en-IN', flag: '🇮🇳' },
+  US: { label: 'United States', currency: 'USD', locale: 'en-US', flag: '🇺🇸' },
+  EU: { label: 'Europe', currency: 'EUR', locale: 'de-DE', flag: '🇪🇺' }
+};
+
+const LEGACY_REGION_MAP: Record<string, Region> = {
+  india: 'IN',
+  usa: 'US',
+  europe: 'EU'
+};
+
+export const normalizeRegion = (region: string | null | undefined): Region | undefined => {
+  if (!region) {
+    return undefined;
+  }
+  const trimmed = region.trim();
+  if (!trimmed) {
+    return undefined;
+  }
+  const lower = trimmed.toLowerCase();
+  const mappedRegion = LEGACY_REGION_MAP[lower] || trimmed.toUpperCase();
+  return REGION_CONFIG[mappedRegion as Region] ? (mappedRegion as Region) : undefined;
 };
 
 interface User {
@@ -61,7 +80,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
   const [token, setToken] = useState<string | null>(localStorage.getItem('token'));
-  const [region, setRegion] = useState<Region>('india');
+  const [region, setRegion] = useState<Region>('IN');
   const [currency, setCurrency] = useState<Currency>('INR');
 
   const formatCurrency = React.useCallback(
@@ -96,7 +115,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     try {
       const response = await api.get('/users/me');
       setUser(response.data);
-      const preferenceRegion = response.data?.preferences?.region as Region | undefined;
+      const preferenceRegion = normalizeRegion(response.data?.preferences?.region) as Region | undefined;
       const preferenceCurrency = response.data?.preferences?.currency as Currency | undefined;
 
       if (preferenceRegion && REGION_CONFIG[preferenceRegion]) {
@@ -114,12 +133,16 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
   }, []);
 
   useEffect(() => {
-    const storedRegion = localStorage.getItem('region') as Region | null;
+    const storedRegionRaw = localStorage.getItem('region');
+    const storedRegion = normalizeRegion(storedRegionRaw);
     const storedCurrency = localStorage.getItem('currency') as Currency | null;
 
     if (storedRegion && REGION_CONFIG[storedRegion]) {
       setRegion(storedRegion);
       setCurrency(storedCurrency || REGION_CONFIG[storedRegion].currency);
+      if (storedRegionRaw !== storedRegion) {
+        localStorage.setItem('region', storedRegion);
+      }
     }
 
     if (token) {
