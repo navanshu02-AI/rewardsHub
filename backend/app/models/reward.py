@@ -24,6 +24,7 @@ class Reward(BaseModel):
     rating: Optional[float] = None
     review_count: int = 0
     tags: List[str] = Field(default_factory=list)
+    available_regions: List[str] = Field(default_factory=lambda: ["IN", "US", "EU"])
     created_at: datetime = Field(default_factory=datetime.utcnow)
     is_active: bool = True
 
@@ -45,6 +46,7 @@ class RewardCreate(BaseModel):
     rating: Optional[float] = None
     review_count: int = 0
     tags: List[str] = Field(default_factory=list)
+    available_regions: List[str] = Field(default_factory=lambda: ["IN", "US", "EU"])
 
 class RewardUpdate(BaseModel):
     title: Optional[str] = None
@@ -58,3 +60,4 @@ class RewardUpdate(BaseModel):
     review_count: Optional[int] = None
     is_active: Optional[bool] = None
     provider: Optional[RewardProvider] = None
+    available_regions: Optional[List[str]] = None

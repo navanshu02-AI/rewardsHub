@@ -91,7 +91,7 @@ const Dashboard: React.FC = () => {
     if (!settingsLoading) {
       void fetchDashboardData();
     }
-  }, [currency, user?.role, aiEnabled, settingsLoading]);
+  }, [currency, region, user?.role, aiEnabled, settingsLoading]);
 
   useEffect(() => {
     setGettingStartedDismissed(localStorage.getItem(GETTING_STARTED_DISMISS_KEY) === 'true');
@@ -131,13 +131,13 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       const recommendationsPromise = aiEnabled
-        ? api.get('/recommendations', { params: { currency } })
+        ? api.get('/recommendations', { params: { currency, region } })
         : Promise.resolve(null);
       const analyticsPromise =
         user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
       const usersPromise = user?.role === 'hr_admin' ? api.get('/users') : Promise.resolve(null);
       const rewardsSummaryPromise =
-        user?.role === 'hr_admin' ? api.get('/rewards', { params: { currency } }) : Promise.resolve(null);
+        user?.role === 'hr_admin' ? api.get('/rewards', { params: { currency, region } }) : Promise.resolve(null);
 
       const [recommendationsRes, analyticsRes, usersRes, rewardsSummaryRes] = await Promise.all([
         recommendationsPromise,
@@ -169,7 +169,7 @@ const Dashboard: React.FC = () => {
 
   const fetchRewards = async () => {
     try {
-      const params: Record<string, string | number> = { currency };
+      const params: Record<string, string | number> = { currency, region };
       const trimmedSearch = search.trim();
       if (trimmedSearch) {
         params.search = trimmedSearch;

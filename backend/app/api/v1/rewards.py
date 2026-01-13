@@ -19,6 +19,7 @@ async def get_rewards(
     max_points: Optional[int] = Query(None, ge=0),
     category: Optional[PreferenceCategory] = None,
     reward_type: Optional[RewardType] = None,
+    region: Optional[str] = None,
     limit: int = Query(20, le=100),
     skip: int = Query(0, ge=0),
     current_user: User = Depends(get_current_user),
@@ -31,6 +32,7 @@ async def get_rewards(
         reward_type,
         min_points,
         max_points,
+        region,
         limit,
         skip,
     )

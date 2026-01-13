@@ -4,6 +4,18 @@ from app.models.reward import Reward, RewardCreate, RewardUpdate
 from app.models.enums import PreferenceCategory, RewardProvider, RewardType
 from app.database.connection import get_database
 
+REGION_CODE_MAP = {
+    "india": "IN",
+    "usa": "US",
+    "europe": "EU",
+    "in": "IN",
+    "us": "US",
+    "eu": "EU",
+}
+
+def normalize_region(region: str) -> str:
+    return REGION_CODE_MAP.get(region.lower(), region.upper())
+
 class RewardService:
     def __init__(self):
         pass
@@ -16,6 +28,7 @@ class RewardService:
         reward_type: Optional[RewardType] = None,
         min_points: Optional[int] = None,
         max_points: Optional[int] = None,
+        region: Optional[str] = None,
         limit: int = 20,
         skip: int = 0
     ) -> List[Reward]:
@@ -42,6 +55,9 @@ class RewardService:
             if max_points is not None:
                 points_filter["$lte"] = max_points
             query["points_required"] = points_filter
+        if region:
+            normalized_region = normalize_region(region)
+            query["available_regions"] = {"$in": [normalized_region]}
         
         rewards = await db.rewards.find(query).skip(skip).limit(limit).to_list(limit)
         return [Reward(**reward) for reward in rewards]
@@ -92,7 +108,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.3,
                 "review_count": 1250,
-                "tags": ["electronics", "audio", "wireless", "noise-canceling"]
+                "tags": ["electronics", "audio", "wireless", "noise-canceling"],
+                "available_regions": ["IN"]
             },
             {
                 "title": "Amazon Pay Gift Card - ₹5,000",
@@ -110,7 +127,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.8,
                 "review_count": 5000,
-                "tags": ["gift card", "shopping", "amazon", "digital"]
+                "tags": ["gift card", "shopping", "amazon", "digital"],
+                "available_regions": ["IN"]
             },
             {
                 "title": "Fitbit Charge 5 Fitness Tracker",
@@ -128,7 +146,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.2,
                 "review_count": 890,
-                "tags": ["fitness", "health", "wearable", "gps", "heart-rate"]
+                "tags": ["fitness", "health", "wearable", "gps", "heart-rate"],
+                "available_regions": ["IN"]
             },
             {
                 "title": "Tanishq Gold Coin - 2 grams",
@@ -145,7 +164,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.9,
                 "review_count": 89,
-                "tags": ["jewelry", "gold", "investment", "tanishq"]
+                "tags": ["jewelry", "gold", "investment", "tanishq"],
+                "available_regions": ["IN"]
             },
             {
                 "title": "Myntra Fashion Voucher - ₹4,000",
@@ -162,7 +182,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.3,
                 "review_count": 1890,
-                "tags": ["fashion", "clothing", "voucher", "myntra"]
+                "tags": ["fashion", "clothing", "voucher", "myntra"],
+                "available_regions": ["IN"]
             },
             {
                 "title": "Starbucks USA Gift Card - $50",
@@ -178,7 +199,8 @@ class RewardService:
                 "is_popular": False,
                 "rating": 4.6,
                 "review_count": 2200,
-                "tags": ["coffee", "gift card", "usa"]
+                "tags": ["coffee", "gift card", "usa"],
+                "available_regions": ["US"]
             },
             {
                 "title": "Eurail Global Pass - 3 Days",
@@ -194,7 +216,8 @@ class RewardService:
                 "is_popular": True,
                 "rating": 4.7,
                 "review_count": 540,
-                "tags": ["travel", "europe", "rail", "experience"]
+                "tags": ["travel", "europe", "rail", "experience"],
+                "available_regions": ["EU"]
             }
         ]
         
