@@ -19,7 +19,7 @@ RewardsHub is a modern, full-stack application designed to manage employee rewar
 | Area      | Technology                                                                                                |
 | :-------- | :-------------------------------------------------------------------------------------------------------- |
 | **Backend**   | [FastAPI](https://fastapi.tiangolo.com/), [Python 3.11+](https://www.python.org/)                          |
-| **Frontend**  | [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Vite](https://vitejs.dev/) |
+| **Frontend**  | [React 19](https://react.dev/), [TypeScript](https://www.typescriptlang.org/), [Create React App (CRACO)](https://github.com/dilanx/craco) |
 | **Database**  | [MongoDB](https://www.mongodb.com/) (with `motor` for async access)                                       |
 | **AI Model**  | [Google Gemini](https://ai.google.dev/)                                                                   |
 | **Styling**   | [Tailwind CSS](https://tailwindcss.com/)                                                                  |
