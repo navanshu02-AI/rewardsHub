@@ -7,18 +7,18 @@ interface RecognitionCalloutProps {
 const RecognitionCallout: React.FC<RecognitionCalloutProps> = ({ onOpenRecognition }) => {
   return (
     <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-      <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Recognition</p>
-      <h2 className="mt-2 text-2xl font-semibold text-slate-900">Celebrate a teammate today</h2>
+      <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">Send recognition</p>
+      <h2 className="mt-2 text-2xl font-semibold text-slate-900">Highlight great work instantly</h2>
       <p className="mt-2 text-sm text-slate-600">
-        Send a quick note of appreciation and boost morale across your team.
+        Share a quick note of appreciation and celebrate wins across your team.
       </p>
       <button
         type="button"
         onClick={onOpenRecognition}
-        data-testid="recognition-open"
+        data-testid="send-recognition-cta"
         className="mt-4 inline-flex items-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-700"
       >
-        Give recognition
+        Send recognition
       </button>
     </section>
   );

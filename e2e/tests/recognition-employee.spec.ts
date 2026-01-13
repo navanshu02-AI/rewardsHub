@@ -27,7 +27,7 @@ test.describe('employee recognition flow', () => {
         response.request().method() === 'GET'
     );
 
-    await page.getByTestId('recognition-open').click();
+    await page.getByTestId('send-recognition-cta').click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
 
@@ -114,7 +114,7 @@ test.describe('employee recognition flow', () => {
         response.request().method() === 'GET'
     );
 
-    await page.getByTestId('recognition-open').click();
+    await page.getByTestId('send-recognition-cta').click();
 
     await expect(page.getByRole('dialog')).toBeVisible();
 

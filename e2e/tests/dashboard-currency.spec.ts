@@ -46,7 +46,7 @@ test.describe('Dashboard currency updates', () => {
     await expect(catalogSection.getByText(/€\s?\d/)).toBeVisible();
 
     const recommendationsSection = page
-      .getByRole('heading', { name: /recommended for you/i })
+      .getByRole('heading', { name: /Recommendations/i })
       .locator('..')
       .locator('..');
     await expect(recommendationsSection.getByText(/€\s?\d/)).toBeVisible();

@@ -17,7 +17,7 @@ test.describe('approval workflow', () => {
         response.request().method() === 'GET'
     );
 
-    await page.getByTestId('recognition-open').click();
+    await page.getByTestId('send-recognition-cta').click();
     await expect(page.getByRole('dialog')).toBeVisible();
 
     const recipientsResponse = await recipientsResponsePromise;
