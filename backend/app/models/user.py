@@ -87,12 +87,12 @@ class UserResponse(BaseModel):
     first_name: str
     last_name: str
     role: UserRole
-    department: Optional[str]
-    company: Optional[str]
-    employee_id: Optional[str]
-    manager_id: Optional[str]
-    location: Optional[str]
-    avatar_url: Optional[str]
+    department: Optional[str] = None
+    company: Optional[str] = None
+    employee_id: Optional[str] = None
+    manager_id: Optional[str] = None
+    location: Optional[str] = None
+    avatar_url: Optional[str] = None
     points_balance: int
     total_points_earned: int
     recognition_count: int
