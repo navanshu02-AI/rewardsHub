@@ -14,6 +14,7 @@ type RewardRecord = {
   availability: number;
   is_popular: boolean;
   is_active: boolean;
+  available_regions?: string[];
 };
 
 type RewardForm = {
@@ -29,6 +30,7 @@ type RewardForm = {
   availability: string;
   is_popular: boolean;
   is_active: boolean;
+  available_regions: string[];
 };
 
 const ADMIN_ROLES: UserRole[] = ['hr_admin', 'executive', 'c_level'];
@@ -62,6 +64,15 @@ const REWARD_TYPE_OPTIONS = [
 ];
 
 const PROVIDER_OPTIONS = ['internal', 'amazon_giftcard', 'manual_vendor'];
+
+const REGION_OPTIONS = [
+  { value: 'IN', label: 'IN' },
+  { value: 'US', label: 'US' },
+  { value: 'EU', label: 'EU' },
+  { value: 'GLOBAL', label: 'Global' }
+];
+
+const REGION_LABELS = new Map(REGION_OPTIONS.map((option) => [option.value, option.label]));
 
 const toTitleCase = (value: string) => value.replace(/_/g, ' ').replace(/\b\w/g, (char) => char.toUpperCase());
 
@@ -104,7 +115,8 @@ const defaultFormState: RewardForm = {
   price_eur: '',
   availability: '0',
   is_popular: false,
-  is_active: true
+  is_active: true,
+  available_regions: []
 };
 
 const AdminRewardsPage: React.FC = () => {
@@ -152,7 +164,10 @@ const AdminRewardsPage: React.FC = () => {
   }, [canAccess]);
 
   const openCreateModal = () => {
-    setFormState(defaultFormState);
+    setFormState({
+      ...defaultFormState,
+      available_regions: region ? [region] : []
+    });
     setSelectedReward(null);
     setActionErrors([]);
     setIsCreateOpen(true);
@@ -172,18 +187,36 @@ const AdminRewardsPage: React.FC = () => {
       price_eur: String(reward.prices?.EUR ?? ''),
       availability: String(reward.availability ?? 0),
       is_popular: reward.is_popular,
-      is_active: reward.is_active
+      is_active: reward.is_active,
+      available_regions: reward.available_regions?.length ? reward.available_regions : region ? [region] : []
     });
     setActionErrors([]);
     setIsEditOpen(true);
   };
 
-  const updateFormField = (field: keyof RewardForm, value: string | boolean) => {
+  const updateFormField = (field: keyof RewardForm, value: string | boolean | string[]) => {
     setFormState((prev) => ({
       ...prev,
       [field]: value
     }));
   };
+
+  const toggleRegion = (regionCode: string) => {
+    setFormState((prev) => {
+      const nextRegions = new Set(prev.available_regions);
+      if (nextRegions.has(regionCode)) {
+        nextRegions.delete(regionCode);
+      } else {
+        nextRegions.add(regionCode);
+      }
+      return {
+        ...prev,
+        available_regions: Array.from(nextRegions)
+      };
+    });
+  };
+
+  const formatRegionLabel = (value: string) => REGION_LABELS.get(value) ?? value;
 
   const handleCreateSubmit = async (event: React.FormEvent) => {
     event.preventDefault();
@@ -204,7 +237,8 @@ const AdminRewardsPage: React.FC = () => {
         },
         availability: parseNumber(formState.availability),
         is_popular: formState.is_popular,
-        is_active: formState.is_active
+        is_active: formState.is_active,
+        available_regions: formState.available_regions
       };
       await api.post('/rewards', payload);
       setIsCreateOpen(false);
@@ -236,7 +270,8 @@ const AdminRewardsPage: React.FC = () => {
         availability: parseNumber(formState.availability),
         is_popular: formState.is_popular,
         is_active: formState.is_active,
-        provider: formState.provider
+        provider: formState.provider,
+        available_regions: formState.available_regions
       };
       await api.put(`/rewards/${selectedReward.id}`, payload);
       setIsEditOpen(false);
@@ -345,6 +380,18 @@ const AdminRewardsPage: React.FC = () => {
                   <p className="text-xs text-slate-500">
                     {reward.rewardTypeLabel} · {reward.providerLabel}
                   </p>
+                  {reward.available_regions && reward.available_regions.length > 0 && (
+                    <div className="mt-2 flex flex-wrap gap-2">
+                      {reward.available_regions.map((rewardRegion) => (
+                        <span
+                          key={`${reward.id}-${rewardRegion}`}
+                          className="rounded-full bg-slate-100 px-2 py-0.5 text-[11px] font-medium text-slate-500"
+                        >
+                          {formatRegionLabel(rewardRegion)}
+                        </span>
+                      ))}
+                    </div>
+                  )}
                 </div>
                 <div className="col-span-2 text-slate-600">{reward.categoryLabel}</div>
                 <div className="col-span-2 text-slate-600">{reward.points_required}</div>
@@ -469,6 +516,22 @@ const AdminRewardsPage: React.FC = () => {
                     ))}
                   </select>
                 </label>
+                <fieldset className="text-sm font-medium text-slate-700 sm:col-span-2">
+                  <legend className="text-sm font-medium text-slate-700">Available regions</legend>
+                  <div className="mt-2 flex flex-wrap gap-4">
+                    {REGION_OPTIONS.map((option) => (
+                      <label key={option.value} className="flex items-center gap-2 text-sm text-slate-600">
+                        <input
+                          type="checkbox"
+                          checked={formState.available_regions.includes(option.value)}
+                          onChange={() => toggleRegion(option.value)}
+                          className="h-4 w-4 rounded border-slate-300 text-blue-600"
+                        />
+                        {option.label}
+                      </label>
+                    ))}
+                  </div>
+                </fieldset>
                 <label className="text-sm font-medium text-slate-700">
                   Points required
                   <input
