@@ -86,6 +86,10 @@ interface AnalyticsOverview {
   };
 }
 
+interface PointsLedgerEntry {
+  delta: number;
+}
+
 const GETTING_STARTED_DISMISS_KEY = 'getting-started-dismissed';
 
 const Dashboard: React.FC = () => {
@@ -116,6 +120,9 @@ const Dashboard: React.FC = () => {
   const recommendationsRef = useRef<HTMLDivElement | null>(null);
   const [gettingStartedEligible, setGettingStartedEligible] = useState(false);
   const [gettingStartedDismissed, setGettingStartedDismissed] = useState(false);
+  const [availablePoints, setAvailablePoints] = useState(0);
+  const [totalPointsEarned, setTotalPointsEarned] = useState(0);
+  const [recognitionCount, setRecognitionCount] = useState(0);
 
   useEffect(() => {
     if (!settingsLoading) {
@@ -130,6 +137,13 @@ const Dashboard: React.FC = () => {
   useEffect(() => {
     void fetchFilterOptions();
   }, []);
+
+  useEffect(() => {
+    if (user) {
+      setAvailablePoints(user.points_balance ?? 0);
+      setRecognitionCount(user.recognition_count ?? 0);
+    }
+  }, [user]);
 
   useEffect(() => {
     if (aiEnabled) {
@@ -198,6 +212,7 @@ const Dashboard: React.FC = () => {
       } else {
         setGettingStartedEligible(false);
       }
+      await fetchPointsStats();
       await fetchRewards();
     } catch (error) {
       console.error('Error fetching data:', error);
@@ -247,6 +262,28 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const fetchPointsStats = async () => {
+    try {
+      const [userRes, ledgerRes] = await Promise.all([
+        api.get('/users/me'),
+        api.get<PointsLedgerEntry[]>('/points/ledger/me')
+      ]);
+      const pointsBalance = userRes.data?.points_balance ?? 0;
+      const recognitions = userRes.data?.recognition_count ?? 0;
+      const ledgerEntries = ledgerRes.data ?? [];
+      const earnedTotal = ledgerEntries.reduce(
+        (sum, entry) => (entry.delta > 0 ? sum + entry.delta : sum),
+        0
+      );
+
+      setAvailablePoints(pointsBalance);
+      setRecognitionCount(recognitions);
+      setTotalPointsEarned(earnedTotal);
+    } catch (error) {
+      console.error('Error fetching points stats:', error);
+    }
+  };
+
   const handleRecognitionSuccess = () => {
     setShowRecognitionModal(false);
     void fetchDashboardData();
@@ -276,6 +313,7 @@ const Dashboard: React.FC = () => {
 
     const suffix = message ? ` ${message}` : '';
     toast.success(`Reward redeemed successfully!${suffix}`);
+    void fetchPointsStats();
   };
 
   const handleGiftRecommendations = async () => {
@@ -434,7 +472,12 @@ const Dashboard: React.FC = () => {
         </section>
       )}
 
-      <StatsCards user={user} rewardsCount={rewards.length} />
+      <StatsCards
+        availablePoints={availablePoints}
+        totalPointsEarned={totalPointsEarned}
+        recognitionCount={recognitionCount}
+        rewardsCount={rewards.length}
+      />
 
       {user?.role === 'hr_admin' && analytics && (
         <section className="mt-10">
