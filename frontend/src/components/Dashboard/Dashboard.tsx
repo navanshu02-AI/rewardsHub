@@ -105,7 +105,7 @@ const Dashboard: React.FC = () => {
     if (!loading) {
       void fetchRewards();
     }
-  }, [search, minPoints, maxPoints, category, rewardType]);
+  }, [search, minPoints, maxPoints, category, rewardType, currency, region]);
 
   const rewardsById = useMemo(() => {
     const map = new Map<string, Reward>();
@@ -131,7 +131,7 @@ const Dashboard: React.FC = () => {
     try {
       setLoading(true);
       const recommendationsPromise = aiEnabled
-        ? api.get('/recommendations', { params: { region } })
+        ? api.get('/recommendations', { params: { region, currency } })
         : Promise.resolve(null);
       const analyticsPromise =
         user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
