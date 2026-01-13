@@ -1,5 +1,6 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import api from '../lib/api';
+import { useAuth } from '../contexts/AuthContext';
 
 interface RewardSummary {
   id: string;
@@ -35,6 +36,7 @@ const statusLabels: Record<string, string> = {
 };
 
 const RedemptionsPage: React.FC = () => {
+  const { region } = useAuth();
   const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [rewards, setRewards] = useState<RewardSummary[]>([]);
   const [loading, setLoading] = useState(true);
@@ -55,7 +57,7 @@ const RedemptionsPage: React.FC = () => {
       try {
         const [redemptionsResponse, rewardsResponse] = await Promise.all([
           api.get<Redemption[]>('/rewards/redemptions/me'),
-          api.get<RewardSummary[]>('/rewards', { params: { limit: 100 } })
+          api.get<RewardSummary[]>('/rewards', { params: { limit: 100, region } })
         ]);
         setRedemptions(redemptionsResponse.data);
         setRewards(rewardsResponse.data);

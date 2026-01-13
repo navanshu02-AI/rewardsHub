@@ -69,3 +69,48 @@ def test_rewards_search_and_points_filtering(monkeypatch) -> None:
     )
 
     assert [reward.id for reward in results] == ["reward-1"]
+
+
+def test_rewards_respect_region_availability(monkeypatch) -> None:
+    rewards = [
+        {
+            "id": "reward-eu",
+            "org_id": "org-1",
+            "title": "EU Only Reward",
+            "description": "Available in EU",
+            "category": PreferenceCategory.TRAVEL,
+            "reward_type": RewardType.EXPERIENCE,
+            "points_required": 500,
+            "prices": {"INR": 2000.0, "USD": 30.0, "EUR": 28.0},
+            "availability": 5,
+            "is_active": True,
+            "tags": ["travel"],
+            "available_regions": ["EU"],
+        },
+        {
+            "id": "reward-us",
+            "org_id": "org-1",
+            "title": "US Only Reward",
+            "description": "Available in US",
+            "category": PreferenceCategory.FOOD,
+            "reward_type": RewardType.GIFT_CARD,
+            "points_required": 200,
+            "prices": {"INR": 1000.0, "USD": 12.0, "EUR": 11.0},
+            "availability": 12,
+            "is_active": True,
+            "tags": ["coffee"],
+            "available_regions": ["US"],
+        },
+    ]
+
+    db = FakeDatabase(rewards=rewards)
+
+    async def fake_get_database() -> FakeDatabase:
+        return db
+
+    monkeypatch.setattr("app.services.reward_service.get_database", fake_get_database)
+
+    service = RewardService()
+    results = asyncio.run(service.get_rewards("org-1", region="EU"))
+
+    assert [reward.id for reward in results] == ["reward-eu"]

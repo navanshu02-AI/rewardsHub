@@ -108,7 +108,7 @@ const defaultFormState: RewardForm = {
 };
 
 const AdminRewardsPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, region } = useAuth();
   const [rewards, setRewards] = useState<RewardRecord[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -135,7 +135,7 @@ const AdminRewardsPage: React.FC = () => {
     setLoading(true);
     setError(null);
     try {
-      const response = await api.get<RewardRecord[]>('/rewards', { params: { limit: 100 } });
+      const response = await api.get<RewardRecord[]>('/rewards', { params: { limit: 100, region } });
       setRewards(response.data);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load rewards right now.');

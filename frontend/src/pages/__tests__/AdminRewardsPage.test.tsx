@@ -51,6 +51,10 @@ beforeEach(() => {
     loading: false,
     isAuthenticated: true,
     refreshUser: jest.fn(),
+    region: 'india',
+    currency: 'INR',
+    setRegionCurrency: jest.fn(),
+    formatCurrency: jest.fn(),
   });
 });
 
@@ -64,7 +68,9 @@ test('loads rewards on mount', async () => {
 
   render(<AdminRewardsPage />);
 
-  await waitFor(() => expect(mockedApi.get).toHaveBeenCalledWith('/rewards', { params: { limit: 100 } }));
+  await waitFor(() =>
+    expect(mockedApi.get).toHaveBeenCalledWith('/rewards', { params: { limit: 100, region: 'india' } })
+  );
 });
 
 test('surfaces validation errors from the API', async () => {

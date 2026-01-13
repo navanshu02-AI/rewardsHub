@@ -15,13 +15,27 @@ REGION_CURRENCY_MAP = {
     "EU": "EUR"
 }
 
+REGION_CODE_MAP = {
+    "india": "IN",
+    "usa": "US",
+    "europe": "EU",
+    "in": "IN",
+    "us": "US",
+    "eu": "EU",
+}
+
+def normalize_region(region: str) -> str:
+    return REGION_CODE_MAP.get(region.lower(), region.upper())
+
 class RecommendationService:
     def __init__(self):
         pass
 
     def _resolve_currency_and_range(self, preferences: dict):
+        region_input = preferences.get("region")
+        normalized_region = normalize_region(region_input) if region_input else None
         currency = (preferences.get("currency") or REGION_CURRENCY_MAP.get(
-            preferences.get("region"), "INR"
+            normalized_region, "INR"
         )).upper()
         budget_ranges = preferences.get("budget_ranges") or DEFAULT_BUDGET_RANGES
         price_range = preferences.get("price_range") or budget_ranges.get(currency) or DEFAULT_BUDGET_RANGES.get(
@@ -35,7 +49,7 @@ class RecommendationService:
 
         return currency, min_price, max_price
 
-    async def get_personalized_recommendations(self, user: User) -> dict:
+    async def get_personalized_recommendations(self, user: User, region: str | None = None) -> dict:
         """Get personalized recommendations for user"""
         db = await get_database()
         
@@ -43,6 +57,8 @@ class RecommendationService:
         preferred_categories = user_preferences.get("categories", [])
         preferred_reward_types = user_preferences.get("reward_types", [])
         preferred_brands = user_preferences.get("preferred_brands", [])
+        region_input = region or user_preferences.get("region") or "IN"
+        resolved_region = normalize_region(region_input)
         currency, min_price, max_price = self._resolve_currency_and_range(user_preferences)
         purchase_history = user.purchase_history or []
         
@@ -68,6 +84,9 @@ class RecommendationService:
         # Add price range filter
         query[f"prices.{currency}"] = {"$gte": min_price, "$lte": max_price}
         personalization_factors.append(f"Budget preferences ({currency})")
+
+        query["available_regions"] = {"$in": [resolved_region]}
+        personalization_factors.append(f"Region availability ({resolved_region})")
         
         # Exclude already purchased items
         if purchase_history:
@@ -123,6 +142,8 @@ class RecommendationService:
             return []
         
         recipient_preferences = recipient.get("preferences", {})
+        region_input = recipient_preferences.get("region") or "IN"
+        resolved_region = normalize_region(region_input)
         currency, min_price, max_price = self._resolve_currency_and_range(recipient_preferences)
         preferred_categories = recipient_preferences.get("categories", [])
 
@@ -135,6 +156,7 @@ class RecommendationService:
                 "$lte": budget_max if budget_max is not None else max_price
             }
         }
+        query["available_regions"] = {"$in": [resolved_region]}
         
         if preferred_categories:
             query["category"] = {"$in": preferred_categories}
