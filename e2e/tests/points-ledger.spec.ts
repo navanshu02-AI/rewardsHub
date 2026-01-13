@@ -23,33 +23,24 @@ test.describe('points ledger', () => {
     const recipientsResponse = await recipientsResponsePromise;
     const recipientsData = await recipientsResponse.json();
 
-    const scopeOrder = ['peer', 'report', 'global'] as const;
     const targetFirstName = TEST_USERS.employee1.firstName;
     const targetLastName = TEST_USERS.employee1.lastName;
-    let selectedScope: (typeof scopeOrder)[number] | null = null;
     let selectedRecipientId: string | null = null;
 
-    for (const scopeKey of scopeOrder) {
-      const match = recipientsData?.[scopeKey]?.recipients?.find(
-        (recipient: { first_name: string; last_name: string; id: string }) =>
-          recipient.first_name === targetFirstName && recipient.last_name === targetLastName
-      );
-      if (match) {
-        selectedScope = scopeKey;
-        selectedRecipientId = match.id;
-        break;
-      }
+    const match = recipientsData?.recipients?.find(
+      (recipient: { first_name: string; last_name: string; id: string }) =>
+        recipient.first_name === targetFirstName && recipient.last_name === targetLastName
+    );
+    if (match) {
+      selectedRecipientId = match.id;
     }
 
-    if (!selectedScope || !selectedRecipientId) {
+    if (!selectedRecipientId) {
       throw new Error('Expected to find emp1 in recognition recipients.');
     }
 
-    if (selectedScope !== 'peer') {
-      await page.getByTestId(`recognition-scope-${selectedScope}`).click();
-    }
-
     await page.getByTestId('recognition-recipient').selectOption(selectedRecipientId);
+    await page.getByLabel('Recognition type').selectOption('spot_award');
 
     const message = `Points recognition ${Date.now()}`;
     await page.getByTestId('recognition-message').fill(message);

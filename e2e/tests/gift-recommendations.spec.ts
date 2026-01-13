@@ -23,7 +23,7 @@ test.describe('Gift recommendations', () => {
 
     const recipientsResponse = await page.request.get('/api/v1/recognitions/recipients');
     const recipientsData = await recipientsResponse.json();
-    const recipients = recipientsData?.global?.recipients ?? [];
+    const recipients = recipientsData?.recipients ?? [];
     test.skip(!recipients.length, 'No available recipients for gift recommendations.');
 
     await page.goto('/dashboard');

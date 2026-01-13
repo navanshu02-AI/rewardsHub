@@ -4,8 +4,6 @@ import * as Dialog from '@radix-ui/react-dialog';
 import { useAuth, UserRole } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 
-type RecognitionScope = 'peer' | 'report' | 'global';
-
 type RecognitionTypeOption = {
   value: string;
   label: string;
@@ -27,17 +25,15 @@ type RecipientSummary = {
   avatar_url?: string;
 };
 
-type RecipientScopeResponse = {
-  enabled: boolean;
+type RecipientResponse = {
   recipients: RecipientSummary[];
-  description?: string | null;
   emptyMessage?: string | null;
 };
 
-type RecipientResponse = Record<RecognitionScope, RecipientScopeResponse>;
-type RecipientResponseWithPoints = RecipientResponse & {
-  pointsEligibleRecipients?: RecipientSummary[];
-  pointsEligibilityHint?: string | null;
+type RecipientEligibilityEntry = {
+  user_id: string;
+  points_eligible: boolean;
+  reason?: string | null;
 };
 
 interface RecognitionModalProps {
@@ -47,12 +43,9 @@ interface RecognitionModalProps {
 }
 
 const RECOGNITION_TYPES: RecognitionTypeOption[] = [
-  { value: 'peer_to_peer', label: 'Peer to Peer', helper: 'Celebrate collaboration within your immediate circle.' },
-  { value: 'manager_to_employee', label: 'Manager to Employee', helper: 'Highlight a direct report’s outstanding performance.' },
-  { value: 'team_recognition', label: 'Team Recognition', helper: 'Cheer on group achievements and shared wins.' },
-  { value: 'company_wide', label: 'Company Wide', helper: 'Spotlight contributions with organisation-wide visibility.' },
-  { value: 'milestone', label: 'Milestone', helper: 'Mark service anniversaries and personal milestones.' },
-  { value: 'spot_award', label: 'Spot Award', helper: 'Instant kudos for above-and-beyond impact.' }
+  { value: 'kudos', label: 'Kudos', helper: 'Send a thoughtful thank-you without points.' },
+  { value: 'spot_award', label: 'Spot Award', helper: 'Recognise standout impact with points when eligible.' },
+  { value: 'milestone', label: 'Milestone', helper: 'Celebrate tenure and personal achievements.' },
 ];
 
 const MESSAGE_TONES: MessageToneOption[] = [
@@ -79,10 +72,11 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   const { user, refreshUser } = useAuth();
   const { aiEnabled } = useSettings();
   const lastFocusedElement = useRef<HTMLElement | null>(null);
-  const [scopes, setScopes] = useState<RecipientResponseWithPoints | null>(null);
-  const [scopeLoading, setScopeLoading] = useState(false);
+  const [recipients, setRecipients] = useState<RecipientSummary[]>([]);
+  const [recipientsLoading, setRecipientsLoading] = useState(false);
+  const [eligibilityMap, setEligibilityMap] = useState<Record<string, RecipientEligibilityEntry>>({});
+  const [eligibilityLoading, setEligibilityLoading] = useState(false);
   const [submitting, setSubmitting] = useState(false);
-  const [selectedScope, setSelectedScope] = useState<RecognitionScope>('peer');
   const [selectedRecipients, setSelectedRecipients] = useState<string[]>([]);
   const [recognitionType, setRecognitionType] = useState<string>(RECOGNITION_TYPES[0].value);
   const [message, setMessage] = useState('');
@@ -117,7 +111,6 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     setSelectedRecipients([]);
     setRecognitionType(RECOGNITION_TYPES[0].value);
     setMessageTone('warm');
-    setSelectedScope('peer');
     setPoints(10);
     setValuesTags([]);
     setIsPublic(true);
@@ -125,43 +118,59 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
   };
 
   const loadRecipients = async () => {
-    setScopeLoading(true);
+    setRecipientsLoading(true);
     setError(null);
     try {
-      const response = await api.get<RecipientResponseWithPoints>('/recognitions/recipients');
-      setScopes(response.data);
-      const defaultScope = (['peer', 'report', 'global'] as RecognitionScope[]).find(
-        (scopeKey) => response.data[scopeKey]?.enabled
-      ) || 'peer';
-      setSelectedScope(defaultScope);
-      const recipients = response.data[defaultScope]?.recipients || [];
-      const pointsEligibleIds = new Set(response.data.pointsEligibleRecipients?.map((recipient) => recipient.id));
-      const defaultRecipient = recipients.find((recipient) => pointsEligibleIds.has(recipient.id)) || recipients[0];
+      const response = await api.get<RecipientResponse>('/recognitions/recipients');
+      const loadedRecipients = response.data?.recipients ?? [];
+      setRecipients(loadedRecipients);
+      setEligibilityMap({});
+      const defaultRecipient = loadedRecipients[0];
       setSelectedRecipients(defaultRecipient ? [defaultRecipient.id] : []);
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Unable to load recipients. Please try again later.');
     } finally {
-      setScopeLoading(false);
+      setRecipientsLoading(false);
     }
   };
 
   useEffect(() => {
-    if (!scopes) {
+    if (!selectedRecipients.length) {
+      setEligibilityMap({});
+      setEligibilityLoading(false);
       return;
     }
-    const scopeRecipients = scopes[selectedScope]?.recipients || [];
-    const availableIds = new Set(scopeRecipients.map((recipient) => recipient.id));
-    const pointsEligible = new Set(scopes.pointsEligibleRecipients?.map((recipient) => recipient.id));
-    const defaultRecipient = scopeRecipients.find((recipient) => pointsEligible.has(recipient.id)) || scopeRecipients[0];
-
-    setSelectedRecipients((prev) => {
-      const filtered = prev.filter((recipientId) => availableIds.has(recipientId));
-      if (filtered.length > 0) {
-        return filtered.slice(0, MAX_RECIPIENTS);
-      }
-      return defaultRecipient ? [defaultRecipient.id] : [];
-    });
-  }, [scopes, selectedScope]);
+    let isActive = true;
+    setEligibilityLoading(true);
+    void api
+      .post<RecipientEligibilityEntry[]>('/recognitions/eligibility', { to_user_ids: selectedRecipients })
+      .then((response) => {
+        if (!isActive) {
+          return;
+        }
+        const nextMap = response.data.reduce<Record<string, RecipientEligibilityEntry>>((acc, entry) => {
+          acc[entry.user_id] = entry;
+          return acc;
+        }, {});
+        setEligibilityMap(nextMap);
+      })
+      .catch((err: any) => {
+        if (!isActive) {
+          return;
+        }
+        console.error('Unable to load eligibility', err);
+        setEligibilityMap({});
+      })
+      .finally(() => {
+        if (!isActive) {
+          return;
+        }
+        setEligibilityLoading(false);
+      });
+    return () => {
+      isActive = false;
+    };
+  }, [selectedRecipients]);
 
   const handleRecipientsChange = (event: React.ChangeEvent<HTMLSelectElement>) => {
     const selections = Array.from(event.target.selectedOptions).map((option) => option.value);
@@ -205,8 +214,7 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
         ...recipientPayload,
         recognition_type: recognitionType,
         message,
-        scope: selectedScope,
-        points_awarded: canConfigurePoints ? points : undefined,
+        points_awarded: shouldAwardPoints && canConfigurePoints ? points : undefined,
         values_tags: valuesTags,
         is_public: isPublic,
       });
@@ -263,43 +271,27 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
     });
   };
 
-  const renderScopeButton = (scopeKey: RecognitionScope, label: string) => {
-    const scopeData = scopes?.[scopeKey];
-    const enabled = scopeData?.enabled ?? false;
-    const isActive = selectedScope === scopeKey;
-    const baseClasses = 'px-3 py-2 rounded-lg border text-sm font-medium transition-colors';
-    const activeClasses = 'bg-blue-600 text-white border-blue-600 shadow-sm';
-    const inactiveClasses = enabled ? 'bg-white text-gray-700 border-gray-300 hover:bg-blue-50' : 'bg-gray-100 text-gray-400 border-gray-200 cursor-not-allowed';
+  const selectedRecipientsAreEligible = useMemo(() => {
+    if (!selectedRecipients.length) {
+      return false;
+    }
+    return selectedRecipients.every((recipientId) => eligibilityMap[recipientId]?.points_eligible);
+  }, [eligibilityMap, selectedRecipients]);
 
-    return (
-      <button
-        key={scopeKey}
-        type="button"
-        disabled={!enabled}
-        data-testid={`recognition-scope-${scopeKey}`}
-        className={`${baseClasses} ${isActive ? activeClasses : inactiveClasses}`}
-        onClick={() => enabled && setSelectedScope(scopeKey)}
-      >
-        {label}
-      </button>
-    );
-  };
+  const shouldAwardPoints = recognitionType !== 'kudos' && selectedRecipientsAreEligible;
 
-  const activeScope = scopes ? scopes[selectedScope] : null;
-  const recipients = activeScope?.recipients || [];
-  const pointsEligibleIds = useMemo(
-    () => new Set(scopes?.pointsEligibleRecipients?.map((recipient) => recipient.id)),
-    [scopes]
-  );
-  const pointsEligibleRecipients = recipients.filter((recipient) => pointsEligibleIds.has(recipient.id));
-  const appreciationRecipients = recipients.filter((recipient) => !pointsEligibleIds.has(recipient.id));
-  const recognitionOnlyRecipientIds = useMemo(
-    () => new Set(appreciationRecipients.map((recipient) => recipient.id)),
-    [appreciationRecipients]
-  );
-  const hasRecognitionOnlySelection = selectedRecipients.some((recipientId) =>
-    recognitionOnlyRecipientIds.has(recipientId)
-  );
+  const eligibilityHint = useMemo(() => {
+    if (!selectedRecipients.length) {
+      return null;
+    }
+    if (eligibilityLoading) {
+      return null;
+    }
+    if (!shouldAwardPoints) {
+      return 'Recognition only (no points)';
+    }
+    return 'Points will be awarded';
+  }, [eligibilityLoading, selectedRecipients.length, shouldAwardPoints]);
 
   return (
     <Dialog.Root
@@ -335,27 +327,12 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
             </div>
           )}
 
-          {scopeLoading ? (
+          {recipientsLoading ? (
             <div className="flex items-center justify-center py-12">
               <div className="h-10 w-10 animate-spin rounded-full border-4 border-blue-200 border-t-blue-600"></div>
             </div>
           ) : (
             <form onSubmit={handleSubmit} className="space-y-6">
-              <section>
-                <h3 className="text-sm font-semibold uppercase tracking-wide text-gray-500">Recognition scope</h3>
-                <div className="mt-3 flex flex-wrap gap-2">
-                  {renderScopeButton('peer', 'Peers')}
-                  {renderScopeButton('report', 'Direct reports')}
-                  {renderScopeButton('global', 'Company-wide')}
-                </div>
-                {activeScope?.description && (
-                  <p className="mt-2 text-sm text-gray-500">{activeScope.description}</p>
-                )}
-                {activeScope?.emptyMessage && !recipients.length && (
-                  <p className="mt-2 text-sm text-amber-600">{activeScope.emptyMessage}</p>
-                )}
-              </section>
-
               <section>
                 <div className="flex items-center justify-between">
                   <label className="block text-sm font-medium text-gray-700" htmlFor="recognition-recipient">
@@ -376,36 +353,19 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                   <option value="" disabled>
                     {recipients.length ? 'Select teammates' : 'No eligible teammates yet'}
                   </option>
-                  {pointsEligibleRecipients.length > 0 && (
-                    <optgroup label="Points eligible">
-                      {pointsEligibleRecipients.map((recipient) => (
-                        <option key={recipient.id} value={recipient.id}>
-                          {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
-                          {recipient.department ? ` · ${recipient.department}` : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
-                  {appreciationRecipients.length > 0 && (
-                    <optgroup label="Recognition only">
-                      {appreciationRecipients.map((recipient) => (
-                        <option key={recipient.id} value={recipient.id}>
-                          {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
-                          {recipient.department ? ` · ${recipient.department}` : ''}
-                        </option>
-                      ))}
-                    </optgroup>
-                  )}
+                  {recipients.map((recipient) => (
+                    <option key={recipient.id} value={recipient.id}>
+                      {recipient.first_name} {recipient.last_name} · {recipient.role.replace('_', ' ')}
+                      {recipient.department ? ` · ${recipient.department}` : ''}
+                    </option>
+                  ))}
                 </select>
-                {hasRecognitionOnlySelection && (
-                  <p className="mt-2 text-xs text-gray-500">No points will be awarded.</p>
-                )}
-                {scopes?.pointsEligibilityHint && appreciationRecipients.length > 0 && (
-                  <p className="mt-2 text-xs text-gray-500">{scopes.pointsEligibilityHint}</p>
+                {eligibilityHint && (
+                  <p className="mt-2 text-xs text-gray-500">{eligibilityHint}</p>
                 )}
                 {!recipients.length && (
                   <p className="mt-2 text-sm text-gray-500">
-                    Need to recognise someone outside this list? Reach out to your manager or HR partner so we can enable the right scope.
+                    Need to recognise someone outside this list? Reach out to your manager or HR partner.
                   </p>
                 )}
               </section>
@@ -537,34 +497,36 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                 </div>
               </section>
 
-              <section>
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium text-gray-700">Reward points</span>
-                  {canConfigurePoints ? (
-                    <div className="flex items-center gap-2">
-                      <input
-                        type="number"
-                        min={10}
-                        max={10000}
-                        value={points}
-                        onChange={(event) => {
-                          const value = Number(event.target.value);
-                          if (!Number.isNaN(value)) {
-                            setPoints(Math.min(10000, Math.max(10, value)));
-                          }
-                        }}
-                        data-testid="recognition-points"
-                        className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-right shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                      />
-                      <span className="text-sm text-gray-500">points</span>
-                    </div>
-                  ) : (
-                    <span className="text-sm text-gray-500">
-                      Peers award a standard 10 points for each recognition. Leaders can request additional points from HR.
-                    </span>
-                  )}
-                </div>
-              </section>
+              {shouldAwardPoints && (
+                <section>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium text-gray-700">Reward points</span>
+                    {canConfigurePoints ? (
+                      <div className="flex items-center gap-2">
+                        <input
+                          type="number"
+                          min={10}
+                          max={10000}
+                          value={points}
+                          onChange={(event) => {
+                            const value = Number(event.target.value);
+                            if (!Number.isNaN(value)) {
+                              setPoints(Math.min(10000, Math.max(10, value)));
+                            }
+                          }}
+                          data-testid="recognition-points"
+                          className="w-28 rounded-lg border border-gray-300 px-3 py-2 text-right shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                        />
+                        <span className="text-sm text-gray-500">points</span>
+                      </div>
+                    ) : (
+                      <span className="text-sm text-gray-500">
+                        Peers award a standard 10 points for each recognition. Leaders can request additional points from HR.
+                      </span>
+                    )}
+                  </div>
+                </section>
+              )}
 
               <div className="flex justify-end gap-3 pt-4">
                 <Dialog.Close asChild>

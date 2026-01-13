@@ -24,59 +24,23 @@ test.describe('manager recognition flow', () => {
     const recipientsResponse = await recipientsResponsePromise;
     const recipientsData = await recipientsResponse.json();
 
-    const reportScope = recipientsData?.report;
-    if (!reportScope?.enabled) {
-      throw new Error('Expected direct reports scope to be enabled for manager.');
-    }
-
-    const reportRecipients = reportScope.recipients ?? [];
-    const emp1Match = reportRecipients.find(
+    const recipients = recipientsData?.recipients ?? [];
+    const emp1Match = recipients.find(
       (recipient: { first_name: string; last_name: string; id: string }) =>
         recipient.first_name === TEST_USERS.employee1.firstName &&
         recipient.last_name === TEST_USERS.employee1.lastName
     );
-    const emp2Match = reportRecipients.find(
+    const emp2Match = recipients.find(
       (recipient: { first_name: string; last_name: string; id: string }) =>
         recipient.first_name === TEST_USERS.employee2.firstName &&
         recipient.last_name === TEST_USERS.employee2.lastName
     );
 
     if (!emp1Match || !emp2Match) {
-      throw new Error('Expected emp1 and emp2 to appear in direct reports recipients.');
-    }
-
-    const nonReportMatch = reportRecipients.find(
-      (recipient: { first_name: string; last_name: string }) =>
-        recipient.first_name === TEST_USERS.executive.firstName &&
-        recipient.last_name === TEST_USERS.executive.lastName
-    );
-
-    if (nonReportMatch) {
-      throw new Error('Expected non-report executive to be excluded from direct reports recipients.');
+      throw new Error('Expected emp1 and emp2 to appear in recognition recipients.');
     }
 
     const recipientSelect = page.getByTestId('recognition-recipient');
-    const peerOptions = await recipientSelect.locator('option').allTextContents();
-
-    await page.getByTestId('recognition-scope-report').click();
-
-    await expect(recipientSelect).toContainText(
-      `${TEST_USERS.employee1.firstName} ${TEST_USERS.employee1.lastName}`
-    );
-    await expect(recipientSelect).toContainText(
-      `${TEST_USERS.employee2.firstName} ${TEST_USERS.employee2.lastName}`
-    );
-    await expect(recipientSelect).not.toContainText(
-      `${TEST_USERS.executive.firstName} ${TEST_USERS.executive.lastName}`
-    );
-
-    const reportOptions = await recipientSelect.locator('option').allTextContents();
-    const normalizeOptions = (options: string[]) =>
-      options
-        .map((option) => option.trim())
-        .filter((option) => option && !option.toLowerCase().includes('select teammates'));
-
-    expect(normalizeOptions(peerOptions)).not.toEqual(normalizeOptions(reportOptions));
 
     await recipientSelect.selectOption(emp1Match.id);
 
@@ -130,20 +94,13 @@ test.describe('manager recognition flow', () => {
     const recipientsResponse = await recipientsResponsePromise;
     const recipientsData = await recipientsResponse.json();
 
-    const reportScope = recipientsData?.report;
-    if (!reportScope?.enabled) {
-      throw new Error('Expected direct reports scope to be enabled for manager.');
+    const recipients = recipientsData?.recipients ?? [];
+    if (recipients.length < 2) {
+      throw new Error('Expected at least two recipients to run multi-select test.');
     }
-
-    const reportRecipients = reportScope.recipients ?? [];
-    if (reportRecipients.length < 2) {
-      throw new Error('Expected at least two direct reports to run multi-select test.');
-    }
-
-    await page.getByTestId('recognition-scope-report').click();
 
     const recipientSelect = page.getByTestId('recognition-recipient');
-    const selectedIds = reportRecipients.slice(0, 2).map((recipient: { id: string }) => recipient.id);
+    const selectedIds = recipients.slice(0, 2).map((recipient: { id: string }) => recipient.id);
 
     await recipientSelect.selectOption(selectedIds);
 

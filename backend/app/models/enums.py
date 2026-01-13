@@ -58,12 +58,13 @@ class AchievementType(str, Enum):
     COST_SAVING = "cost_saving"
 
 class RecognitionType(str, Enum):
+    KUDOS = "kudos"
+    SPOT_AWARD = "spot_award"
+    MILESTONE = "milestone"
     PEER_TO_PEER = "peer_to_peer"
     MANAGER_TO_EMPLOYEE = "manager_to_employee"
     TEAM_RECOGNITION = "team_recognition"
     COMPANY_WIDE = "company_wide"
-    MILESTONE = "milestone"
-    SPOT_AWARD = "spot_award"
 
 class RecognitionScope(str, Enum):
     PEER = "peer"
