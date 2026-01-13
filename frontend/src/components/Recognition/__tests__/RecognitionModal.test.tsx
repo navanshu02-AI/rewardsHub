@@ -113,6 +113,67 @@ test('loads recipients and defaults to the first option', async () => {
   expect(screen.getByRole('option', { name: /Pat Peer/ })).toBeInTheDocument();
 });
 
+test('filters inactive recipients and disables self selection', async () => {
+  const authValue = createAuthContextValue('employee');
+  mockedUseAuth.mockReturnValue(authValue);
+  mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
+
+  mockedAxios.get.mockResolvedValue({
+    data: {
+      recipients: [
+        {
+          id: 'current-user',
+          first_name: 'Casey',
+          last_name: 'Current',
+          role: 'employee',
+          is_active: true,
+        },
+        {
+          id: 'inactive-1',
+          first_name: 'Ingrid',
+          last_name: 'Inactive',
+          role: 'employee',
+          is_active: false,
+        },
+        {
+          id: 'active-1',
+          first_name: 'Avery',
+          last_name: 'Active',
+          role: 'employee',
+          is_active: true,
+        },
+      ],
+    },
+  });
+
+  mockedAxios.post.mockImplementation((url) => {
+    if (url === '/recognitions/eligibility') {
+      return Promise.resolve({
+        data: [{ user_id: 'active-1', points_eligible: true, reason: 'standard_points' }],
+      });
+    }
+    return Promise.resolve({ data: {} });
+  });
+
+  render(
+    <RecognitionModal
+      isOpen
+      onClose={jest.fn()}
+      onSuccess={jest.fn()}
+    />
+  );
+
+  await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
+
+  expect(screen.queryByRole('option', { name: /Ingrid Inactive/ })).not.toBeInTheDocument();
+  const selfOption = screen.getByRole('option', { name: /Casey Current/ });
+  expect(selfOption).toBeDisabled();
+
+  const recipientSelect = screen.getByLabelText('Choose recipients') as HTMLSelectElement;
+  expect(recipientSelect.selectedOptions).toHaveLength(1);
+  expect(recipientSelect.selectedOptions[0].value).toBe('active-1');
+});
+
 test('surfaces backend validation errors during submission', async () => {
   const authValue = createAuthContextValue('hr_admin');
   mockedUseAuth.mockReturnValue(authValue);
