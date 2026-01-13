@@ -11,7 +11,7 @@ from app.services.recognition_service import RecognitionService
 from .fakes import FakeDatabase
 
 
-def test_employee_can_send_appreciation_org_wide_with_fixed_points(
+def test_employee_can_recognize_non_peer_org_wide_without_points(
     recognition_service_setup: tuple[RecognitionService, FakeDatabase, Dict[str, User]]
 ) -> None:
     service, db, users = recognition_service_setup
@@ -29,7 +29,8 @@ def test_employee_can_send_appreciation_org_wide_with_fixed_points(
     asyncio.run(service.create_recognition(employee, payload))
 
     unrelated_doc = db.users.get(unrelated.id)
-    assert unrelated_doc["points_balance"] == 10
+    assert unrelated_doc["points_balance"] == 0
+    assert unrelated_doc["total_points_earned"] == 0
     assert unrelated_doc["recognition_count"] == 1
 
 

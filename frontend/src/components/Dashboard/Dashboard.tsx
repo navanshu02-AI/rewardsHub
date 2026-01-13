@@ -242,7 +242,9 @@ const Dashboard: React.FC = () => {
 
   const fetchGiftRecipients = async () => {
     try {
-      const response = await api.get<RecipientResponse>('/recognitions/recipients');
+      const response = await api.get<RecipientResponse>('/recognitions/recipients', {
+        params: user?.role === 'employee' ? { scope: 'global' } : undefined,
+      });
       const recipients = response.data?.recipients ?? [];
       setGiftRecipients(recipients);
       if (recipients.length > 0) {
