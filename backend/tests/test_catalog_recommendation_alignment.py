@@ -88,7 +88,9 @@ def test_recommendations_align_with_catalog_filters(monkeypatch) -> None:
     recommendations = asyncio.run(
         recommendation_service.get_personalized_recommendations(user, region="EU", currency="EUR")
     )
-    catalog_rewards = asyncio.run(reward_service.get_rewards("org-1", region="EU"))
+    catalog_rewards = asyncio.run(
+        reward_service.get_rewards("org-1", region="EU", currency="EUR")
+    )
 
     recommended_ids = {reward.id for reward in recommendations["rewards"]}
     catalog_ids = {reward.id for reward in catalog_rewards}
