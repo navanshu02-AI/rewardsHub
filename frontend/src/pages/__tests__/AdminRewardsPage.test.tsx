@@ -51,7 +51,7 @@ beforeEach(() => {
     loading: false,
     isAuthenticated: true,
     refreshUser: jest.fn(),
-    region: 'india',
+    region: 'IN',
     currency: 'INR',
     setRegionCurrency: jest.fn(),
     formatCurrency: jest.fn(),
@@ -69,7 +69,7 @@ test('loads rewards on mount', async () => {
   render(<AdminRewardsPage />);
 
   await waitFor(() =>
-    expect(mockedApi.get).toHaveBeenCalledWith('/rewards', { params: { limit: 100, region: 'india' } })
+    expect(mockedApi.get).toHaveBeenCalledWith('/rewards', { params: { limit: 100, region: 'IN' } })
   );
 });
 

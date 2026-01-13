@@ -64,7 +64,7 @@ const createAuthContextValue = () => {
     loading: false,
     isAuthenticated: true,
     refreshUser,
-    region: 'usa' as AuthContext.Region,
+    region: 'US' as AuthContext.Region,
     currency: 'USD' as AuthContext.Currency,
     setRegionCurrency: jest.fn(),
     formatCurrency: (amount: number) => `$${amount}`,
