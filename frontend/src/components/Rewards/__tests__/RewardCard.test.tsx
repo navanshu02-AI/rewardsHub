@@ -31,10 +31,10 @@ afterEach(() => {
   jest.clearAllMocks();
 });
 
-test('shows currency unavailable message when current currency pricing is missing', () => {
+test('shows currency unavailable message when currency cannot be resolved', () => {
   const formatCurrency = jest.fn((amount: number) => `$${amount}`);
   mockedUseAuth.mockReturnValue({
-    currency: 'USD' as AuthContext.Currency,
+    currency: undefined as unknown as AuthContext.Currency,
     formatCurrency,
   } as AuthContext.AuthContextType);
 
@@ -76,4 +76,28 @@ test('formats savings and pricing with explicit currency', () => {
   expect(formatCurrency).toHaveBeenCalledWith(80, 'USD');
   expect(formatCurrency).toHaveBeenCalledWith(50, 'USD');
   expect(formatCurrency).toHaveBeenCalledWith(30, 'USD');
+});
+
+test('does not show currency unavailable message when currency is resolved', () => {
+  const formatCurrency = jest.fn((amount: number, currency?: AuthContext.Currency) =>
+    currency ? `${currency} ${amount}` : `${amount}`
+  );
+  mockedUseAuth.mockReturnValue({
+    currency: 'USD' as AuthContext.Currency,
+    formatCurrency,
+  } as AuthContext.AuthContextType);
+
+  render(
+    <RewardCard
+      reward={{
+        ...baseReward,
+        prices: { USD: 0, INR: 800, EUR: 9 },
+      }}
+      onRedeemReward={jest.fn()}
+      userPoints={300}
+    />
+  );
+
+  expect(screen.queryByText('Not available in your currency')).not.toBeInTheDocument();
+  expect(formatCurrency).toHaveBeenCalledWith(0, 'USD');
 });

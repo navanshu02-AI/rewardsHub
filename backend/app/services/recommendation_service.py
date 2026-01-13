@@ -101,11 +101,9 @@ class RecommendationService:
         personalization_factors.append(f"Region availability ({resolved_region})")
 
         # Add price range filter
-        price_filter = {"$lte": max_price}
+        price_filter = {"$gt": 0, "$lte": max_price}
         if min_price > 0:
             price_filter["$gte"] = min_price
-        else:
-            price_filter["$gt"] = 0
         query[f"prices.{currency}"] = price_filter
         personalization_factors.append(f"Budget preferences ({currency})")
         
@@ -119,6 +117,11 @@ class RecommendationService:
         
         # Get recommendations
         recommendations = await db.rewards.find(query).sort(sort_criteria).limit(10).to_list(10)
+        if preferred_categories and len(recommendations) < 10:
+            query.pop("category", None)
+            if "Preferred categories" in personalization_factors:
+                personalization_factors.remove("Preferred categories")
+            recommendations = await db.rewards.find(query).sort(sort_criteria).limit(10).to_list(10)
         
         # Calculate confidence score based on preference matching
         confidence_factors = 0
@@ -182,11 +185,9 @@ class RecommendationService:
         query["available_regions"] = {"$in": [resolved_region, "GLOBAL"]}
         min_budget = budget_min if budget_min is not None else min_price
         max_budget = budget_max if budget_max is not None else max_price
-        price_filter = {"$lte": max_budget}
+        price_filter = {"$gt": 0, "$lte": max_budget}
         if min_budget > 0:
             price_filter["$gte"] = min_budget
-        else:
-            price_filter["$gt"] = 0
         query[f"prices.{currency}"] = price_filter
         
         if preferred_categories:

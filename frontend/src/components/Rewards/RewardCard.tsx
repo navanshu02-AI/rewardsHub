@@ -44,6 +44,7 @@ const RewardCard: React.FC<RewardCardProps> = ({
 }) => {
   const { currency, formatCurrency } = useAuth();
 
+  const currencyResolved = Boolean(currency);
   const currentPrice = reward.prices?.[currency] ?? 0;
   const originalPrice = reward.original_prices?.[currency];
   const hasOtherCurrencyPrice = reward.prices
@@ -52,7 +53,7 @@ const RewardCard: React.FC<RewardCardProps> = ({
       )
     : false;
   const hasCurrentPrice = currentPrice > 0;
-  const showCurrencyUnavailable = !hasCurrentPrice && hasOtherCurrencyPrice;
+  const showCurrencyUnavailable = !currencyResolved && hasOtherCurrencyPrice;
 
   const canRedeem = userPoints >= reward.points_required && reward.availability > 0;
 
