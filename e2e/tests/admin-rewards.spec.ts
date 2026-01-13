@@ -30,6 +30,7 @@ test.describe('Admin rewards', () => {
 
     await adminPage.getByLabel('Title').fill(rewardTitle);
     await adminPage.getByLabel('Description').fill(rewardDescription);
+    await expect(adminPage.getByLabel('IN', { exact: true })).toBeChecked();
     await adminPage.getByLabel('Points required').fill('150');
     await adminPage.getByLabel('Availability').fill('12');
     await adminPage.getByLabel('Price (INR)').fill('1500');

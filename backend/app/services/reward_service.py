@@ -11,6 +11,7 @@ REGION_CODE_MAP = {
     "in": "IN",
     "us": "US",
     "eu": "EU",
+    "global": "GLOBAL",
 }
 
 def normalize_region(region: str) -> str:
@@ -57,7 +58,7 @@ class RewardService:
             query["points_required"] = points_filter
         if region:
             normalized_region = normalize_region(region)
-            query["available_regions"] = {"$in": [normalized_region]}
+            query["available_regions"] = {"$in": [normalized_region, "GLOBAL"]}
         
         rewards = await db.rewards.find(query).skip(skip).limit(limit).to_list(limit)
         return [Reward(**reward) for reward in rewards]
