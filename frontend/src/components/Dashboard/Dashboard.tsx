@@ -6,7 +6,8 @@ import { REGION_CONFIG, useAuth } from '../../contexts/AuthContext';
 import { useSettings } from '../../contexts/SettingsContext';
 import RecommendationsSection from './RecommendationsSection';
 import RewardsCatalog from './RewardsCatalog';
-import QuickActions from './QuickActions';
+import RecognitionCallout from './RecognitionCallout';
+import RecommendationsCallout from './RecommendationsCallout';
 import StatsCards from './StatsCards';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
@@ -273,10 +274,14 @@ const Dashboard: React.FC = () => {
         </p>
       </div>
 
-      <QuickActions
-        onGiveRecognition={() => setShowRecognitionModal(true)}
-        onRecommendGift={handleRecommendGift}
-      />
+      <section className="mb-8 grid gap-4 md:grid-cols-2">
+        <RecognitionCallout onOpenRecognition={() => setShowRecognitionModal(true)} />
+        <RecommendationsCallout
+          aiEnabled={aiEnabled}
+          hasRecommendations={recommendations !== null}
+          onGetRecommendations={handleRecommendGift}
+        />
+      </section>
 
       {showGettingStarted && (
         <section
