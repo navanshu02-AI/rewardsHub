@@ -65,37 +65,32 @@ const createAuthContextValue = (role: AuthContext.UserRole) => {
   };
 };
 
-test('disables restricted scopes for employees and defaults to peer recipients', async () => {
+test('loads recipients and defaults to the first option', async () => {
   const authValue = createAuthContextValue('employee');
   mockedUseAuth.mockReturnValue(authValue);
   mockedUseSettings.mockReturnValue({ aiEnabled: false, loading: false });
 
   mockedAxios.get.mockResolvedValue({
     data: {
-      peer: {
-        enabled: true,
-        recipients: [
-          {
-            id: 'peer-1',
-            first_name: 'Pat',
-            last_name: 'Peer',
-            role: 'employee',
-            department: 'Engineering',
-          },
-        ],
-        description: 'Peers are colleagues who share your manager.',
-      },
-      report: {
-        enabled: false,
-        recipients: [],
-        description: 'Only managers can see this scope.',
-      },
-      global: {
-        enabled: false,
-        recipients: [],
-        description: 'Only HR may send company-wide recognition.',
-      },
+      recipients: [
+        {
+          id: 'peer-1',
+          first_name: 'Pat',
+          last_name: 'Peer',
+          role: 'employee',
+          department: 'Engineering',
+        },
+      ],
     },
+  });
+
+  mockedAxios.post.mockImplementation((url) => {
+    if (url === '/recognitions/eligibility') {
+      return Promise.resolve({
+        data: [{ user_id: 'peer-1', points_eligible: true, reason: 'standard_points' }],
+      });
+    }
+    return Promise.resolve({ data: {} });
   });
 
   render(
@@ -108,9 +103,9 @@ test('disables restricted scopes for employees and defaults to peer recipients',
 
   await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
 
-  expect(screen.getByRole('button', { name: /Peers/i })).not.toBeDisabled();
-  expect(screen.getByRole('button', { name: /Direct reports/i })).toBeDisabled();
-  expect(screen.getByRole('button', { name: /Company-wide/i })).toBeDisabled();
+  expect(screen.queryByRole('button', { name: /Peers/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Direct reports/i })).not.toBeInTheDocument();
+  expect(screen.queryByRole('button', { name: /Company-wide/i })).not.toBeInTheDocument();
 
   const recipientSelect = screen.getByLabelText('Choose recipients') as HTMLSelectElement;
   expect(recipientSelect.selectedOptions).toHaveLength(1);
@@ -125,25 +120,26 @@ test('surfaces backend validation errors during submission', async () => {
 
   mockedAxios.get.mockResolvedValue({
     data: {
-      peer: { enabled: false, recipients: [] },
-      report: { enabled: false, recipients: [] },
-      global: {
-        enabled: true,
-        recipients: [
-          {
-            id: 'global-1',
-            first_name: 'Riley',
-            last_name: 'Recipient',
-            role: 'employee',
-          },
-        ],
-        description: 'Company leaders can recognise anyone.',
-      },
+      recipients: [
+        {
+          id: 'global-1',
+          first_name: 'Riley',
+          last_name: 'Recipient',
+          role: 'employee',
+        },
+      ],
     },
   });
 
-  mockedAxios.post.mockRejectedValue({
-    response: { data: { detail: 'Only managers and HR leaders can recognize direct reports.' } },
+  mockedAxios.post.mockImplementation((url) => {
+    if (url === '/recognitions/eligibility') {
+      return Promise.resolve({
+        data: [{ user_id: 'global-1', points_eligible: true, reason: 'role_allows_points' }],
+      });
+    }
+    return Promise.reject({
+      response: { data: { detail: 'Only managers and HR leaders can recognize direct reports.' } },
+    });
   });
 
   const onSuccess = jest.fn();
@@ -190,34 +186,35 @@ test('shows recognition-only helper text and keeps group labels non-selectable',
 
   mockedAxios.get.mockResolvedValue({
     data: {
-      peer: {
-        enabled: true,
-        recipients: [
-          {
-            id: 'peer-1',
-            first_name: 'Pat',
-            last_name: 'Peer',
-            role: 'employee',
-          },
-          {
-            id: 'peer-2',
-            first_name: 'Rory',
-            last_name: 'Recognition',
-            role: 'employee',
-          },
-        ],
-      },
-      report: { enabled: false, recipients: [] },
-      global: { enabled: false, recipients: [] },
-      pointsEligibleRecipients: [
+      recipients: [
         {
           id: 'peer-1',
           first_name: 'Pat',
           last_name: 'Peer',
           role: 'employee',
         },
+        {
+          id: 'peer-2',
+          first_name: 'Rory',
+          last_name: 'Recognition',
+          role: 'employee',
+        },
       ],
     },
+  });
+
+  mockedAxios.post.mockImplementation((url, payload) => {
+    if (url === '/recognitions/eligibility') {
+      const ids = (payload as { to_user_ids: string[] }).to_user_ids;
+      return Promise.resolve({
+        data: ids.map((id) => ({
+          user_id: id,
+          points_eligible: id === 'peer-1',
+          reason: id === 'peer-1' ? 'standard_points' : 'outside_reporting_line',
+        })),
+      });
+    }
+    return Promise.resolve({ data: {} });
   });
 
   const user = userEvent.setup();
@@ -232,11 +229,9 @@ test('shows recognition-only helper text and keeps group labels non-selectable',
 
   await waitFor(() => expect(mockedAxios.get).toHaveBeenCalled());
 
-  expect(screen.queryByRole('option', { name: 'Points eligible' })).not.toBeInTheDocument();
-
   await user.selectOptions(screen.getByTestId('recognition-recipient'), ['peer-2']);
 
-  expect(screen.getByText('No points will be awarded.')).toBeInTheDocument();
+  expect(screen.getByText('Recognition only (no points)')).toBeInTheDocument();
 });
 
 test('submits multiple recipients using to_user_ids', async () => {
@@ -246,30 +241,36 @@ test('submits multiple recipients using to_user_ids', async () => {
 
   mockedAxios.get.mockResolvedValue({
     data: {
-      peer: { enabled: false, recipients: [] },
-      report: { enabled: false, recipients: [] },
-      global: {
-        enabled: true,
-        recipients: [
-          {
-            id: 'global-1',
-            first_name: 'Riley',
-            last_name: 'Recipient',
-            role: 'employee',
-          },
-          {
-            id: 'global-2',
-            first_name: 'Jordan',
-            last_name: 'Recipient',
-            role: 'employee',
-          },
-        ],
-        description: 'Company leaders can recognise anyone.',
-      },
+      recipients: [
+        {
+          id: 'global-1',
+          first_name: 'Riley',
+          last_name: 'Recipient',
+          role: 'employee',
+        },
+        {
+          id: 'global-2',
+          first_name: 'Jordan',
+          last_name: 'Recipient',
+          role: 'employee',
+        },
+      ],
     },
   });
 
-  mockedAxios.post.mockResolvedValue({ data: {} });
+  mockedAxios.post.mockImplementation((url, payload) => {
+    if (url === '/recognitions/eligibility') {
+      const ids = (payload as { to_user_ids: string[] }).to_user_ids;
+      return Promise.resolve({
+        data: ids.map((id) => ({
+          user_id: id,
+          points_eligible: true,
+          reason: 'role_allows_points',
+        })),
+      });
+    }
+    return Promise.resolve({ data: {} });
+  });
 
   const onSuccess = jest.fn();
   const user = userEvent.setup();
@@ -307,23 +308,25 @@ test('submits recognition as private when show on feed is unchecked', async () =
 
   mockedAxios.get.mockResolvedValue({
     data: {
-      peer: {
-        enabled: true,
-        recipients: [
-          {
-            id: 'peer-1',
-            first_name: 'Pat',
-            last_name: 'Peer',
-            role: 'employee',
-          },
-        ],
-      },
-      report: { enabled: false, recipients: [] },
-      global: { enabled: false, recipients: [] },
+      recipients: [
+        {
+          id: 'peer-1',
+          first_name: 'Pat',
+          last_name: 'Peer',
+          role: 'employee',
+        },
+      ],
     },
   });
 
-  mockedAxios.post.mockResolvedValue({ data: {} });
+  mockedAxios.post.mockImplementation((url) => {
+    if (url === '/recognitions/eligibility') {
+      return Promise.resolve({
+        data: [{ user_id: 'peer-1', points_eligible: true, reason: 'standard_points' }],
+      });
+    }
+    return Promise.resolve({ data: {} });
+  });
 
   const user = userEvent.setup();
 

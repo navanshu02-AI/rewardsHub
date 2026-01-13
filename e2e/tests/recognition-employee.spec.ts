@@ -39,64 +39,25 @@ test.describe('employee recognition flow', () => {
     const recipientsData = await recipientsResponse.json();
     const recipientSelect = page.getByTestId('recognition-recipient');
 
-    await expect(recipientSelect.locator('option', { hasText: 'Points eligible' })).toHaveCount(0);
-
-    const scopeButtons = {
-      peer: page.getByTestId('recognition-scope-peer'),
-      report: page.getByTestId('recognition-scope-report'),
-      global: page.getByTestId('recognition-scope-global')
-    };
-
-    for (const [scopeKey, button] of Object.entries(scopeButtons)) {
-      const enabled = recipientsData?.[scopeKey]?.enabled ?? false;
-      if (enabled) {
-        await expect(button).toBeEnabled();
-      } else {
-        await expect(button).toBeDisabled();
-      }
-    }
-
-    await expect(page.getByTestId('recognition-points')).toHaveCount(0);
-
-    const scopeOrder = ['peer', 'report', 'global'] as const;
     const targetFirstName = TEST_USERS.employee2.firstName;
     const targetLastName = TEST_USERS.employee2.lastName;
-    let selectedScope: (typeof scopeOrder)[number] | null = null;
     let selectedRecipientId: string | null = null;
 
-    for (const scopeKey of scopeOrder) {
-      const match = recipientsData?.[scopeKey]?.recipients?.find(
-        (recipient: { first_name: string; last_name: string; id: string }) =>
-          recipient.first_name === targetFirstName && recipient.last_name === targetLastName
-      );
-      if (match) {
-        selectedScope = scopeKey;
-        selectedRecipientId = match.id;
-        break;
-      }
+    const match = recipientsData?.recipients?.find(
+      (recipient: { first_name: string; last_name: string; id: string }) =>
+        recipient.first_name === targetFirstName && recipient.last_name === targetLastName
+    );
+    if (match) {
+      selectedRecipientId = match.id;
     }
 
-    if (!selectedScope || !selectedRecipientId) {
+    if (!selectedRecipientId) {
       throw new Error('Expected to find emp2 in recognition recipients.');
     }
 
-    if (selectedScope !== 'peer') {
-      await scopeButtons[selectedScope].click();
-    }
-
-    const pointsEligibleIds = new Set(
-      (recipientsData?.pointsEligibleRecipients ?? []).map((recipient: { id: string }) => recipient.id)
-    );
-    const recognitionOnlyRecipient = recipientsData?.[selectedScope]?.recipients?.find(
-      (recipient: { id: string }) => !pointsEligibleIds.has(recipient.id)
-    );
-
-    if (recognitionOnlyRecipient) {
-      await recipientSelect.selectOption(recognitionOnlyRecipient.id);
-      await expect(page.getByText('No points will be awarded.')).toBeVisible();
-    }
-
     await recipientSelect.selectOption(selectedRecipientId);
+    await page.getByLabel('Recognition type').selectOption('spot_award');
+    await expect(page.getByText('Points will be awarded')).toBeVisible();
 
     const message = `Automation recognition ${Date.now()}`;
     await page.getByTestId('recognition-message').fill(message);

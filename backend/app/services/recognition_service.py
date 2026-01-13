@@ -40,9 +40,8 @@ class RecognitionService:
     def __init__(self) -> None:
         pass
 
-    async def get_allowed_recipients(self, current_user: User) -> Dict[str, Dict[str, object]]:
+    async def get_allowed_recipients(self, current_user: User) -> Dict[str, object]:
         db = await get_database()
-        user_role = _normalize_role(current_user.role)
         projection = {
             "_id": 0,
             "id": 1,
@@ -53,104 +52,54 @@ class RecognitionService:
             "manager_id": 1,
             "avatar_url": 1,
         }
-
-        peers: List[RecognitionUserSummary] = []
-        peer_enabled = True
-        peer_query: Dict[str, object] = {
-            "id": {"$ne": current_user.id},
-            "is_active": True,
-            "org_id": current_user.org_id,
-        }
-        peer_message: Optional[str] = None
-        if current_user.manager_id:
-            peer_query["manager_id"] = current_user.manager_id
-            peer_message = "Peers are colleagues who share your manager."
-        elif current_user.department:
-            peer_query["department"] = current_user.department
-            peer_message = "Peers are colleagues within your department when no manager is assigned."
-        else:
-            peer_enabled = False
-            peer_message = "Peers require a shared manager. Please contact HR if your reporting line is missing."
-
-        if peer_enabled:
-            peer_docs = await db.users.find(peer_query, projection).to_list(200)
-            peers = [self._map_user_summary(doc) for doc in peer_docs]
-
-        report_enabled = user_role in (MANAGER_ROLES | PRIVILEGED_ROLES)
-        report_docs: List[Dict[str, object]] = []
-        downline_user_ids: Optional[set[str]] = None
-        if report_enabled:
-            if user_role in MANAGER_ROLES:
-                downline_user_ids = await self._get_downline_user_ids(current_user)
-                if downline_user_ids:
-                    report_docs = await db.users.find(
-                        {"id": {"$in": list(downline_user_ids)}, "org_id": current_user.org_id, "is_active": True},
-                        projection,
-                    ).to_list(200)
-            else:
-                report_docs = await db.users.find(
-                    {"manager_id": current_user.id, "is_active": True, "org_id": current_user.org_id},
-                    projection,
-                ).to_list(200)
-        reports = [self._map_user_summary(doc) for doc in report_docs]
-        report_message: Optional[str] = None
-        if report_enabled and not reports:
-            report_message = "You don't have any reports yet."
-        elif not report_enabled:
-            report_message = "Only managers and HR leaders can access the report scope."
-
-        global_enabled = True
-        global_docs: List[Dict[str, object]] = []
-        if global_enabled:
-            global_docs = await db.users.find(
-                {"id": {"$ne": current_user.id}, "is_active": True, "org_id": current_user.org_id},
-                projection,
-            ).to_list(500)
-        globals_list = [self._map_user_summary(doc) for doc in global_docs]
-        global_message: Optional[str] = None
-        if user_role in PRIVILEGED_ROLES:
-            global_message = "You can recognize anyone in the company."
-        elif user_role in MANAGER_ROLES:
-            global_message = "Appreciation can be sent to anyone; points are reserved for your reporting line."
-        else:
-            global_message = "Appreciation can be sent to anyone; points are fixed to the standard value."
-
-        if user_role in PRIVILEGED_ROLES:
-            points_eligible = globals_list
-            points_eligibility_hint: Optional[str] = None
-        elif user_role in MANAGER_ROLES:
-            if downline_user_ids is None:
-                downline_user_ids = await self._get_downline_user_ids(current_user)
-            points_eligible = [summary for summary in globals_list if summary.id in downline_user_ids]
-            points_eligibility_hint = (
-                "Points can only be awarded to teammates in your reporting line based on role and hierarchy rules."
-            )
-        else:
-            points_eligible = globals_list
-            points_eligibility_hint = None
-
+        docs = await db.users.find(
+            {"id": {"$ne": current_user.id}, "is_active": True, "org_id": current_user.org_id},
+            projection,
+        ).to_list(500)
+        recipients = [self._map_user_summary(doc) for doc in docs]
         return {
-            "peer": {
-                "enabled": peer_enabled,
-                "recipients": [summary.dict() for summary in peers],
-                "description": peer_message,
-                "emptyMessage": "You need to share a manager to send peer recognition." if not peers else None,
-            },
-            "report": {
-                "enabled": report_enabled,
-                "recipients": [summary.dict() for summary in reports],
-                "description": report_message,
-                "emptyMessage": report_message if report_enabled and not reports else None,
-            },
-            "global": {
-                "enabled": global_enabled,
-                "recipients": [summary.dict() for summary in globals_list],
-                "description": global_message,
-                "emptyMessage": global_message if global_enabled and not globals_list else None,
-            },
-            "pointsEligibleRecipients": [summary.dict() for summary in points_eligible],
-            "pointsEligibilityHint": points_eligibility_hint,
+            "recipients": [summary.dict() for summary in recipients],
+            "emptyMessage": "No eligible teammates yet." if not recipients else None,
         }
+
+    async def get_recipient_eligibility(
+        self,
+        current_user: User,
+        recipient_ids: Sequence[str],
+    ) -> List[Dict[str, object]]:
+        user_role = _normalize_role(current_user.role)
+        cleaned_ids = [rid for rid in recipient_ids if rid]
+        unique_ids = list(dict.fromkeys(cleaned_ids))
+        if not unique_ids:
+            raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Recipients are required")
+        if current_user.id in unique_ids:
+            raise HTTPException(
+                status_code=status.HTTP_400_BAD_REQUEST,
+                detail="You must choose someone other than yourself",
+            )
+
+        recipients = await self._load_users(unique_ids, org_id=current_user.org_id)
+        if len(recipients) != len(unique_ids):
+            raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail="One or more selected teammates were not found")
+
+        downline_user_ids: Optional[set[str]] = None
+        if user_role in MANAGER_ROLES:
+            downline_user_ids = await self._get_downline_user_ids(current_user)
+
+        eligibility: List[Dict[str, object]] = []
+        for recipient in recipients:
+            recipient_id = str(recipient.get("id"))
+            points_eligible = self._is_points_eligible(user_role, recipient_id, downline_user_ids)
+            reason = self._points_eligibility_reason(user_role, points_eligible)
+            eligibility.append(
+                {
+                    "user_id": recipient_id,
+                    "points_eligible": points_eligible,
+                    "reason": reason,
+                }
+            )
+
+        return eligibility
 
     async def create_recognition(
         self,
@@ -159,7 +108,7 @@ class RecognitionService:
     ) -> Recognition:
         db = await get_database()
         user_role = _normalize_role(current_user.role)
-        scope = payload.scope or RecognitionScope.PEER
+        scope = payload.scope or RecognitionScope.GLOBAL
 
         recipient_ids: List[str] = []
         if payload.to_user_id:
@@ -185,6 +134,8 @@ class RecognitionService:
 
         can_award_points = self._can_award_points(user_role, recipients, downline_user_ids)
         points_awarded = self._determine_points(user_role, payload.points_awarded, allow_points=can_award_points)
+        if payload.recognition_type == RecognitionType.KUDOS:
+            points_awarded = 0
 
         values_tags = payload.values_tags or []
         normalized_tags = [tag.strip() for tag in values_tags if tag and tag.strip()]
@@ -838,6 +789,25 @@ class RecognitionService:
                 return False
             return all(recipient.get("id") in downline_user_ids for recipient in recipients)
         return True
+
+    def _is_points_eligible(
+        self,
+        user_role: UserRole,
+        recipient_id: str,
+        downline_user_ids: Optional[set[str]],
+    ) -> bool:
+        if user_role in PRIVILEGED_ROLES:
+            return True
+        if user_role in MANAGER_ROLES:
+            return bool(downline_user_ids and recipient_id in downline_user_ids)
+        return True
+
+    def _points_eligibility_reason(self, user_role: UserRole, points_eligible: bool) -> str:
+        if user_role in PRIVILEGED_ROLES:
+            return "role_allows_points"
+        if user_role in MANAGER_ROLES:
+            return "reporting_line" if points_eligible else "outside_reporting_line"
+        return "standard_points"
 
     async def _get_downline_user_ids(self, current_user: User) -> set[str]:
         db = await get_database()

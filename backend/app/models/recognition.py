@@ -48,8 +48,18 @@ class RecognitionCreate(BaseModel):
     recognition_type: RecognitionType
     achievement_type: Optional[AchievementType] = None
     is_public: bool = True
-    scope: RecognitionScope = RecognitionScope.PEER
+    scope: RecognitionScope = RecognitionScope.GLOBAL
     values_tags: Optional[List[str]] = None
+
+
+class RecognitionEligibilityRequest(BaseModel):
+    to_user_ids: List[str] = Field(default_factory=list)
+
+
+class RecognitionEligibilityEntry(BaseModel):
+    user_id: str
+    points_eligible: bool
+    reason: Optional[str] = None
 
 class RecognitionHistoryEntry(BaseModel):
     id: str

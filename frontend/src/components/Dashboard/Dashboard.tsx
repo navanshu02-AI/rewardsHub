@@ -60,17 +60,8 @@ interface RecipientSummary {
   role?: string;
 }
 
-interface RecipientScope {
-  enabled: boolean;
-  recipients: RecipientSummary[];
-  description?: string;
-  emptyMessage?: string;
-}
-
 interface RecipientResponse {
-  peer: RecipientScope;
-  report: RecipientScope;
-  global: RecipientScope;
+  recipients: RecipientSummary[];
 }
 
 interface AnalyticsOverview {
@@ -252,7 +243,7 @@ const Dashboard: React.FC = () => {
   const fetchGiftRecipients = async () => {
     try {
       const response = await api.get<RecipientResponse>('/recognitions/recipients');
-      const recipients = response.data?.global?.recipients ?? [];
+      const recipients = response.data?.recipients ?? [];
       setGiftRecipients(recipients);
       if (recipients.length > 0) {
         setSelectedRecipientId(recipients[0].id);

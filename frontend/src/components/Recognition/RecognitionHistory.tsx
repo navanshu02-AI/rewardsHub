@@ -28,13 +28,20 @@ type RecognitionUserSummary = {
 type Direction = 'received' | 'sent';
 
 const RECOGNITION_TYPE_LABELS: Record<string, string> = {
+  kudos: 'Kudos',
+  spot_award: 'Spot Award',
+  milestone: 'Milestone',
   peer_to_peer: 'Peer to Peer',
   manager_to_employee: 'Manager to Employee',
   team_recognition: 'Team Recognition',
   company_wide: 'Company Wide',
-  milestone: 'Milestone',
-  spot_award: 'Spot Award'
 };
+
+const RECOGNITION_TYPE_OPTIONS = [
+  { value: 'kudos', label: 'Kudos' },
+  { value: 'spot_award', label: 'Spot Award' },
+  { value: 'milestone', label: 'Milestone' },
+];
 
 interface RecognitionHistoryProps {
   refreshToken?: number;
@@ -118,9 +125,9 @@ const RecognitionHistory: React.FC<RecognitionHistoryProps> = ({ refreshToken, s
             className="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
           >
             <option value="all">All types</option>
-            {Object.entries(RECOGNITION_TYPE_LABELS).map(([value, label]) => (
-              <option key={value} value={value}>
-                {label}
+            {RECOGNITION_TYPE_OPTIONS.map((option) => (
+              <option key={option.value} value={option.value}>
+                {option.label}
               </option>
             ))}
           </select>

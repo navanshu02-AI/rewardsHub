@@ -10,6 +10,8 @@ from app.models.enums import RecognitionType
 from app.models.recognition import (
     Recognition,
     RecognitionCreate,
+    RecognitionEligibilityEntry,
+    RecognitionEligibilityRequest,
     RecognitionFeedEntry,
     RecognitionHistoryEntry,
     RecognitionMessageAssistRequest,
@@ -44,6 +46,14 @@ async def list_recipients(current_user: User = Depends(get_current_user)) -> dic
     return await recognition_service.get_allowed_recipients(current_user)
 
 
+@router.post("/eligibility", response_model=List[RecognitionEligibilityEntry])
+async def get_recipient_eligibility(
+    payload: RecognitionEligibilityRequest,
+    current_user: User = Depends(get_current_user),
+) -> List[RecognitionEligibilityEntry]:
+    return await recognition_service.get_recipient_eligibility(current_user, payload.to_user_ids)
+
+
 @router.post("", response_model=Recognition)
 async def send_recognition(
     payload: RecognitionCreate,
@@ -74,6 +84,7 @@ async def reject_recognition(
     current_user: User = Depends(get_current_hr_admin_user),
 ) -> Recognition:
     return await recognition_service.reject_recognition(recognition_id, current_user)
+
 
 @router.post("/{recognition_id}/react", response_model=Recognition)
 async def toggle_reaction(
