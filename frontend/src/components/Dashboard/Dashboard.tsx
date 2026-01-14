@@ -377,7 +377,7 @@ const Dashboard: React.FC = () => {
       />
       <div className="space-y-8">
         <div>
-          <h1 className="text-3xl font-bold text-gray-900">
+          <h1 className="text-2xl font-semibold text-slate-900">
             Welcome back, {user?.first_name}! {REGION_CONFIG[region]?.flag}
           </h1>
           <p className="mt-2 text-gray-600">
@@ -599,7 +599,7 @@ const Dashboard: React.FC = () => {
         )}
 
         <Card as="section">
-          <CardContent className="p-4">
+          <CardContent>
             <RewardFilters
               search={search}
               onSearchChange={setSearch}

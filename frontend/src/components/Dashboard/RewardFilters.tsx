@@ -62,7 +62,7 @@ const RewardFilters: React.FC<RewardFiltersProps> = ({
         <button
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
-          className="flex w-full items-center justify-between gap-3 px-3 py-2 text-sm font-semibold text-slate-700"
+          className="flex w-full items-center justify-between gap-3 px-6 py-3 text-sm font-semibold text-slate-700"
           aria-expanded={isExpanded}
           aria-controls="reward-filters-panel"
           data-testid="reward-filters-toggle"
@@ -89,7 +89,7 @@ const RewardFilters: React.FC<RewardFiltersProps> = ({
           <div
             id="reward-filters-panel"
             data-testid="reward-filters-panel"
-            className="border-t border-slate-200 px-3 py-4"
+            className="border-t border-slate-200 px-6 py-4"
           >
             <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
               <div>
