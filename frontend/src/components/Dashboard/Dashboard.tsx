@@ -13,7 +13,6 @@ import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 import DashboardActions from './DashboardActions';
 import RewardFilters, { FilterOption } from './RewardFilters';
-import SectionHeader from '../common/SectionHeader';
 
 interface Reward {
   id: string;
@@ -62,19 +61,6 @@ interface RecipientResponse {
   recipients: RecipientSummary[];
 }
 
-interface AnalyticsOverview {
-  recognitions_last_7_days: number;
-  recognitions_last_30_days: number;
-  top_departments: Array<{
-    department: string;
-    recognition_count: number;
-  }>;
-  points_summary: {
-    awarded: number;
-    redeemed: number;
-  };
-}
-
 interface PointsLedgerEntry {
   delta: number;
 }
@@ -94,7 +80,6 @@ const Dashboard: React.FC = () => {
   const [giftRequestMade, setGiftRequestMade] = useState(false);
   const [giftError, setGiftError] = useState('');
   const [rewards, setRewards] = useState<Reward[]>([]);
-  const [analytics, setAnalytics] = useState<AnalyticsOverview | null>(null);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
   const [minPoints, setMinPoints] = useState('');
@@ -174,15 +159,12 @@ const Dashboard: React.FC = () => {
       const recommendationsPromise = aiEnabled
         ? api.get('/recommendations', { params: { region, currency } })
         : Promise.resolve(null);
-      const analyticsPromise =
-        user?.role === 'hr_admin' ? api.get('/admin/analytics/overview') : Promise.resolve(null);
       const usersPromise = user?.role === 'hr_admin' ? api.get('/users') : Promise.resolve(null);
       const rewardsSummaryPromise =
         user?.role === 'hr_admin' ? api.get('/rewards', { params: { currency, region } }) : Promise.resolve(null);
 
-      const [recommendationsRes, analyticsRes, usersRes, rewardsSummaryRes] = await Promise.all([
+      const [recommendationsRes, usersRes, rewardsSummaryRes] = await Promise.all([
         recommendationsPromise,
-        analyticsPromise,
         usersPromise,
         rewardsSummaryPromise
       ]);
@@ -192,7 +174,6 @@ const Dashboard: React.FC = () => {
       } else {
         setRecommendations(null);
       }
-      setAnalytics(analyticsRes ? analyticsRes.data : null);
       if (user?.role === 'hr_admin') {
         const userCount = usersRes?.data?.length ?? 0;
         const rewardsCount = rewardsSummaryRes?.data?.length ?? 0;
@@ -497,54 +478,22 @@ const Dashboard: React.FC = () => {
           rewardsCount={rewards.length}
         />
 
-        {user?.role === 'hr_admin' && analytics && (
-          <section className="space-y-4">
-            <SectionHeader
-              title="HR dashboard"
-              subtitle="Team recognition and points activity snapshot"
-            />
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <p className="text-sm text-slate-500">Recognitions (7 days)</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">
-                  {analytics.recognitions_last_7_days}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Last week</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <p className="text-sm text-slate-500">Recognitions (30 days)</p>
-                <p className="mt-2 text-3xl font-semibold text-slate-900">
-                  {analytics.recognitions_last_30_days}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">Last month</p>
-              </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <p className="text-sm text-slate-500">Top department</p>
-                <p className="mt-2 text-xl font-semibold text-slate-900">
-                  {analytics.top_departments[0]?.department ?? 'No data'}
-                </p>
-                <p className="text-xs text-slate-500 mt-1">
-                  {analytics.top_departments[0]?.recognition_count ?? 0} recognitions
+        {user?.role === 'hr_admin' && (
+          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+              <div>
+                <p className="text-sm font-semibold text-slate-900">HR insights</p>
+                <p className="text-sm text-slate-600">
+                  View recognition trends, department highlights, and points activity.
                 </p>
               </div>
-              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-                <p className="text-sm text-slate-500">Points activity</p>
-                <div className="mt-2 flex items-center justify-between">
-                  <div>
-                    <p className="text-xs text-slate-500">Awarded</p>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {analytics.points_summary.awarded}
-                    </p>
-                  </div>
-                  <div className="h-10 w-px bg-slate-200" aria-hidden />
-                  <div>
-                    <p className="text-xs text-slate-500">Redeemed</p>
-                    <p className="text-lg font-semibold text-slate-900">
-                      {analytics.points_summary.redeemed}
-                    </p>
-                  </div>
-                </div>
-              </div>
+              <Link
+                to="/admin/insights"
+                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                data-testid="hr-insights-link"
+              >
+                View insights →
+              </Link>
             </div>
           </section>
         )}
