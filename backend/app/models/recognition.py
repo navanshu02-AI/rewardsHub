@@ -1,7 +1,7 @@
 from datetime import datetime
 import uuid
 from typing import List, Optional, Literal
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, validator
 from app.models.enums import RecognitionType, AchievementType, RecognitionScope, RewardProvider, UserRole, RedemptionStatus
 
 class RecognitionUserSummary(BaseModel):
@@ -145,3 +145,14 @@ class RewardRedemption(BaseModel):
 class RewardRedemptionCreate(BaseModel):
     reward_id: str
     delivery_address: Optional[dict] = None
+
+    @validator("delivery_address", pre=True)
+    def _normalize_delivery_address(cls, value):
+        if value is None:
+            return None
+        if isinstance(value, str):
+            cleaned = value.strip()
+            if not cleaned:
+                return None
+            return {"text": cleaned}
+        return value

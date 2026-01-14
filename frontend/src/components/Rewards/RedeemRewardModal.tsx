@@ -1,9 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
+import api from '../../lib/api';
 
 interface Reward {
   id: string;
@@ -132,7 +129,7 @@ const RedeemRewardModal: React.FC<RedeemRewardModalProps> = ({ isOpen, reward, o
     setError(null);
 
     try {
-      const response = await axios.post(`${API}/rewards/redeem`, {
+      const response = await api.post('/rewards/redeem', {
         reward_id: reward.id,
         delivery_address: deliveryAddress.trim() || undefined
       });
