@@ -19,6 +19,7 @@ import ApprovalsPage from './pages/ApprovalsPage';
 import ProfilePage from './pages/ProfilePage';
 import AdminUsersPage from './pages/AdminUsersPage';
 import AdminRewardsPage from './pages/AdminRewardsPage';
+import AdminInsightsPage from './pages/AdminInsightsPage';
 import ProtectedRoute from './components/Common/ProtectedRoute';
 import './App.css';
 
@@ -120,6 +121,15 @@ function App() {
                   <ProtectedRoute>
                     <NavBar />
                     <AdminRewardsPage />
+                  </ProtectedRoute>
+                }
+              />
+              <Route
+                path="/admin/insights"
+                element={
+                  <ProtectedRoute>
+                    <NavBar />
+                    <AdminInsightsPage />
                   </ProtectedRoute>
                 }
               />
