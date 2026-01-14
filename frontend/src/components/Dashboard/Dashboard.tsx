@@ -13,6 +13,8 @@ import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 import DashboardActions from './DashboardActions';
 import RewardFilters, { FilterOption } from './RewardFilters';
+import Button from '../ui/Button';
+import { Card, CardContent } from '../ui/Card';
 
 interface Reward {
   id: string;
@@ -401,74 +403,73 @@ const Dashboard: React.FC = () => {
         </section>
 
         {showGettingStarted && (
-          <section
-            className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"
-            data-testid="getting-started-card"
-          >
-            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-                  Getting started
-                </p>
-                <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                  Set up your rewards program in minutes
-                </h2>
-                <p className="mt-1 text-sm text-slate-600">
-                  Add your first teammates, build a reward catalog, and send recognition to kick things off.
-                </p>
-              </div>
-              <button
-                type="button"
-                onClick={handleDismissGettingStarted}
-                className="self-start text-sm font-medium text-slate-500 hover:text-slate-700"
-                data-testid="getting-started-dismiss"
-              >
-                Dismiss
-              </button>
-            </div>
-            <ul className="mt-6 space-y-3 text-sm text-slate-700">
-              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-                <span className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span>
-                  Add Users
-                </span>
-                <Link
-                  to="/admin/users"
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                  data-testid="getting-started-add-users"
-                >
-                  Go to Users →
-                </Link>
-              </li>
-              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-                <span className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span>
-                  Add Rewards
-                </span>
-                <Link
-                  to="/admin/rewards"
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                  data-testid="getting-started-add-rewards"
-                >
-                  Go to Rewards →
-                </Link>
-              </li>
-              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-                <span className="flex items-center gap-2">
-                  <span className="text-emerald-500">✓</span>
-                  Send Recognition
-                </span>
+          <Card as="section" data-testid="getting-started-card">
+            <CardContent>
+              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+                    Getting started
+                  </p>
+                  <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                    Set up your rewards program in minutes
+                  </h2>
+                  <p className="mt-1 text-sm text-slate-600">
+                    Add your first teammates, build a reward catalog, and send recognition to kick things off.
+                  </p>
+                </div>
                 <button
                   type="button"
-                  onClick={() => setShowRecognitionModal(true)}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                  data-testid="getting-started-send-recognition"
+                  onClick={handleDismissGettingStarted}
+                  className="self-start text-sm font-medium text-slate-500 hover:text-slate-700"
+                  data-testid="getting-started-dismiss"
                 >
-                  Open recognition →
+                  Dismiss
                 </button>
-              </li>
-            </ul>
-          </section>
+              </div>
+              <ul className="mt-6 space-y-3 text-sm text-slate-700">
+                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                  <span className="flex items-center gap-2">
+                    <span className="text-emerald-500">✓</span>
+                    Add Users
+                  </span>
+                  <Link
+                    to="/admin/users"
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    data-testid="getting-started-add-users"
+                  >
+                    Go to Users →
+                  </Link>
+                </li>
+                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                  <span className="flex items-center gap-2">
+                    <span className="text-emerald-500">✓</span>
+                    Add Rewards
+                  </span>
+                  <Link
+                    to="/admin/rewards"
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    data-testid="getting-started-add-rewards"
+                  >
+                    Go to Rewards →
+                  </Link>
+                </li>
+                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                  <span className="flex items-center gap-2">
+                    <span className="text-emerald-500">✓</span>
+                    Send Recognition
+                  </span>
+                  <button
+                    type="button"
+                    onClick={() => setShowRecognitionModal(true)}
+                    className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                    data-testid="getting-started-send-recognition"
+                  >
+                    Open recognition →
+                  </button>
+                </li>
+              </ul>
+            </CardContent>
+          </Card>
         )}
 
         <StatsCards
@@ -479,136 +480,142 @@ const Dashboard: React.FC = () => {
         />
 
         {user?.role === 'hr_admin' && (
-          <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
-              <div>
-                <p className="text-sm font-semibold text-slate-900">HR insights</p>
-                <p className="text-sm text-slate-600">
-                  View recognition trends, department highlights, and points activity.
-                </p>
+          <Card as="section">
+            <CardContent>
+              <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-sm font-semibold text-slate-900">HR insights</p>
+                  <p className="text-sm text-slate-600">
+                    View recognition trends, department highlights, and points activity.
+                  </p>
+                </div>
+                <Link
+                  to="/admin/insights"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  data-testid="hr-insights-link"
+                >
+                  View insights →
+                </Link>
               </div>
-              <Link
-                to="/admin/insights"
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                data-testid="hr-insights-link"
-              >
-                View insights →
-              </Link>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
         )}
 
         {aiEnabled && (
           <section>
-            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-              <div className="flex flex-col gap-2">
-                <h2 className="text-xl font-semibold text-gray-900">Recommend a gift</h2>
-                <p className="text-sm text-slate-600">
-                  Choose a recipient and budget to find thoughtful rewards to send.
-                </p>
-              </div>
-              <div className="mt-4 grid gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="gift-recipient">
-                    Recipient
-                  </label>
-                  <select
-                    id="gift-recipient"
-                    data-testid="gift-recipient"
-                    value={selectedRecipientId}
-                    onChange={(event) => setSelectedRecipientId(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            <Card>
+              <CardContent>
+                <div className="flex flex-col gap-2">
+                  <h2 className="text-xl font-semibold text-gray-900">Recommend a gift</h2>
+                  <p className="text-sm text-slate-600">
+                    Choose a recipient and budget to find thoughtful rewards to send.
+                  </p>
+                </div>
+                <div className="mt-4 grid gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-recipient">
+                      Recipient
+                    </label>
+                    <select
+                      id="gift-recipient"
+                      data-testid="gift-recipient"
+                      value={selectedRecipientId}
+                      onChange={(event) => setSelectedRecipientId(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    >
+                      <option value="">Select a teammate</option>
+                      {giftRecipients.map((recipient) => (
+                        <option key={recipient.id} value={recipient.id}>
+                          {recipient.first_name} {recipient.last_name}
+                          {recipient.department ? ` · ${recipient.department}` : ''}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-min">
+                        Budget min
+                      </label>
+                      <input
+                        id="gift-budget-min"
+                        type="number"
+                        min={0}
+                        value={giftBudgetMin}
+                        onChange={(event) => setGiftBudgetMin(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-max">
+                        Budget max
+                      </label>
+                      <input
+                        id="gift-budget-max"
+                        type="number"
+                        min={0}
+                        value={giftBudgetMax}
+                        onChange={(event) => setGiftBudgetMax(event.target.value)}
+                        className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                      />
+                    </div>
+                  </div>
+                  <Button
+                    type="button"
+                    data-testid="gift-recommendations-submit"
+                    onClick={handleGiftRecommendations}
+                    disabled={giftLoading}
+                    className="disabled:cursor-not-allowed disabled:bg-blue-300"
                   >
-                    <option value="">Select a teammate</option>
-                    {giftRecipients.map((recipient) => (
-                      <option key={recipient.id} value={recipient.id}>
-                        {recipient.first_name} {recipient.last_name}
-                        {recipient.department ? ` · ${recipient.department}` : ''}
-                      </option>
+                    {giftLoading ? 'Finding gifts…' : 'Get gift recommendations'}
+                  </Button>
+                  {giftError && (
+                    <p className="text-sm text-amber-600" role="status">
+                      {giftError}
+                    </p>
+                  )}
+                </div>
+
+                {giftRecommendations.length > 0 && (
+                  <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
+                    {giftRecommendations.slice(0, 4).map((reward) => (
+                      <RewardCard
+                        key={reward.id}
+                        reward={reward}
+                        onRedeemReward={redeemReward}
+                        userPoints={user?.points_balance || 0}
+                      />
                     ))}
-                  </select>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-min">
-                      Budget min
-                    </label>
-                    <input
-                      id="gift-budget-min"
-                      type="number"
-                      min={0}
-                      value={giftBudgetMin}
-                      onChange={(event) => setGiftBudgetMin(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
                   </div>
-                  <div>
-                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-max">
-                      Budget max
-                    </label>
-                    <input
-                      id="gift-budget-max"
-                      type="number"
-                      min={0}
-                      value={giftBudgetMax}
-                      onChange={(event) => setGiftBudgetMax(event.target.value)}
-                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                    />
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  data-testid="gift-recommendations-submit"
-                  onClick={handleGiftRecommendations}
-                  disabled={giftLoading}
-                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
-                >
-                  {giftLoading ? 'Finding gifts…' : 'Get gift recommendations'}
-                </button>
-                {giftError && (
-                  <p className="text-sm text-amber-600" role="status">
-                    {giftError}
+                )}
+                {giftRequestMade && !giftLoading && giftRecommendations.length === 0 && !giftError && (
+                  <p className="mt-4 text-sm text-slate-600">
+                    No gifts returned yet. Adjust the budget or choose a different recipient.
                   </p>
                 )}
-              </div>
-
-            {giftRecommendations.length > 0 && (
-              <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-                {giftRecommendations.slice(0, 4).map((reward) => (
-                  <RewardCard
-                    key={reward.id}
-                    reward={reward}
-                    onRedeemReward={redeemReward}
-                    userPoints={user?.points_balance || 0}
-                  />
-                ))}
-              </div>
-            )}
-            {giftRequestMade && !giftLoading && giftRecommendations.length === 0 && !giftError && (
-              <p className="mt-4 text-sm text-slate-600">
-                No gifts returned yet. Adjust the budget or choose a different recipient.
-              </p>
-            )}
-            </div>
+              </CardContent>
+            </Card>
           </section>
         )}
 
-        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-          <RewardFilters
-            search={search}
-            onSearchChange={setSearch}
-            category={category}
-            onCategoryChange={setCategory}
-            rewardType={rewardType}
-            onRewardTypeChange={setRewardType}
-            minPoints={minPoints}
-            onMinPointsChange={setMinPoints}
-            maxPoints={maxPoints}
-            onMaxPointsChange={setMaxPoints}
-            categories={categories}
-            rewardTypes={rewardTypes}
-          />
-        </section>
+        <Card as="section">
+          <CardContent className="p-4">
+            <RewardFilters
+              search={search}
+              onSearchChange={setSearch}
+              category={category}
+              onCategoryChange={setCategory}
+              rewardType={rewardType}
+              onRewardTypeChange={setRewardType}
+              minPoints={minPoints}
+              onMinPointsChange={setMinPoints}
+              maxPoints={maxPoints}
+              onMaxPointsChange={setMaxPoints}
+              categories={categories}
+              rewardTypes={rewardTypes}
+            />
+          </CardContent>
+        </Card>
 
         <RewardsCatalog
           rewards={rewards}
