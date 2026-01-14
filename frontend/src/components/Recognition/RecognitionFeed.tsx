@@ -1,9 +1,6 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import axios from 'axios';
 import { useAuth } from '../../contexts/AuthContext';
-
-const BACKEND_URL = process.env.REACT_APP_BACKEND_URL || 'http://localhost:8000';
-const API = `${BACKEND_URL}/api/v1`;
+import api from '../../lib/api';
 
 type RecognitionUserSummary = {
   id: string;
@@ -65,7 +62,7 @@ const RecognitionFeed: React.FC = () => {
         if (append && lastCursor) {
           params.cursor = lastCursor;
         }
-        const response = await axios.get<RecognitionFeedEntry[]>(`${API}/recognitions/feed`, { params });
+        const response = await api.get<RecognitionFeedEntry[]>('/recognitions/feed', { params });
         const nextItems = response.data;
         setFeed((prev) => (append ? [...prev, ...nextItems] : nextItems));
         setHasMore(nextItems.length === PAGE_SIZE);
@@ -85,7 +82,7 @@ const RecognitionFeed: React.FC = () => {
 
   const handleToggleReaction = async (recognitionId: string, emoji: string) => {
     try {
-      const response = await axios.post<ReactionResponse>(`${API}/recognitions/${recognitionId}/react`, { emoji });
+      const response = await api.post<ReactionResponse>(`/recognitions/${recognitionId}/react`, { emoji });
       const updatedReactions = response.data.reactions;
       setFeed((prev) =>
         prev.map((entry) =>
