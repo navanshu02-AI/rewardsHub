@@ -320,21 +320,21 @@ const AdminRewardsPage: React.FC = () => {
                 onClick={handleSeedRewards}
                 disabled={saving}
                 data-testid="seed-rewards-button"
-                className="rounded-full border border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
+                className="rounded-lg border border-emerald-500 bg-emerald-500 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-emerald-400 disabled:cursor-not-allowed disabled:opacity-70"
               >
                 Seed sample rewards
               </button>
             )}
             <button
               onClick={() => loadRewards()}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
             >
               Refresh
             </button>
             <button
               onClick={openCreateModal}
               data-testid="create-reward-button"
-              className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500"
+              className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
             >
               Create reward
             </button>
@@ -408,7 +408,7 @@ const AdminRewardsPage: React.FC = () => {
                 <div className="col-span-1 text-right">
                   <button
                     onClick={() => openEditModal(reward)}
-                    className="rounded-full border border-slate-200 px-3 py-1 text-xs font-medium text-slate-600 transition hover:border-blue-200 hover:bg-blue-50"
+                    className="rounded-lg border border-slate-200 px-3 py-1 text-xs font-semibold text-slate-600 transition hover:border-blue-200 hover:bg-blue-50"
                   >
                     Edit
                   </button>
@@ -420,7 +420,7 @@ const AdminRewardsPage: React.FC = () => {
       </div>
 
       {(isCreateOpen || isEditOpen) && (
-        <div className="fixed inset-0 z-40 flex items-center justify-center bg-slate-900/40 p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-slate-900/40 p-4">
           <div
             className="w-full max-w-2xl rounded-2xl bg-white p-6 shadow-xl"
             role="dialog"
@@ -428,7 +428,7 @@ const AdminRewardsPage: React.FC = () => {
           >
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-xl font-semibold text-slate-900">
+                <h2 className="text-2xl font-semibold text-slate-900">
                   {isCreateOpen ? 'Create reward' : 'Edit reward'}
                 </h2>
                 <p className="text-sm text-slate-600">
@@ -624,14 +624,14 @@ const AdminRewardsPage: React.FC = () => {
                     setIsEditOpen(false);
                     setSelectedReward(null);
                   }}
-                  className="rounded-full border border-slate-200 px-4 py-2 text-sm font-medium text-slate-700"
+                  className="rounded-lg border border-slate-200 px-4 py-2 text-sm font-semibold text-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
+                  className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500 disabled:cursor-not-allowed disabled:opacity-70"
                 >
                   {saving ? 'Saving…' : 'Save reward'}
                 </button>

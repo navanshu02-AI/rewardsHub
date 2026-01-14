@@ -291,14 +291,14 @@ const AdminUsersPage: React.FC = () => {
           <div className="flex flex-wrap items-center gap-3">
             <button
               onClick={() => loadUsers()}
-              className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+              className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
             >
               Refresh
             </button>
             <button
               onClick={openProvisionModal}
               data-testid="provision-user-button"
-              className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white shadow-sm transition hover:bg-blue-500"
+              className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white shadow-sm transition hover:bg-blue-500"
             >
               Provision user
             </button>
@@ -358,7 +358,7 @@ const AdminUsersPage: React.FC = () => {
                       <div className="flex flex-wrap gap-2">
                         <button
                           onClick={() => openEditModal(userItem)}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                         >
                           Edit reporting
                         </button>
@@ -367,14 +367,14 @@ const AdminUsersPage: React.FC = () => {
                             openStatusModal(userItem, userItem.is_active === false ? 'activate' : 'deactivate')
                           }
                           data-testid={`toggle-user-status-${userItem.id}`}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50"
                         >
                           {userItem.is_active === false ? 'Activate' : 'Deactivate'}
                         </button>
                         <button
                           onClick={() => handleCopyInviteLink(userItem)}
                           disabled={inviteLoadingId === userItem.id}
-                          className="rounded-full border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
+                          className="rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-semibold text-slate-700 shadow-sm transition hover:border-blue-200 hover:bg-blue-50 disabled:cursor-not-allowed disabled:opacity-60"
                         >
                           {inviteLoadingId === userItem.id ? 'Copying...' : 'Copy invite link'}
                         </button>
@@ -411,7 +411,7 @@ const AdminUsersPage: React.FC = () => {
               type="submit"
               data-testid="import-csv-submit"
               disabled={importing}
-              className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+              className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
             >
               {importing ? 'Importing...' : 'Import CSV'}
             </button>
@@ -457,7 +457,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Provision user</h2>
+                <h2 className="text-2xl font-semibold text-slate-900">Provision user</h2>
                 <p className="text-sm text-slate-600">Invite a new teammate and assign their role.</p>
               </div>
               <button
@@ -559,14 +559,14 @@ const AdminUsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsProvisionOpen(false)}
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? 'Saving...' : 'Provision'}
                 </button>
@@ -591,7 +591,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">Edit reporting</h2>
+                <h2 className="text-2xl font-semibold text-slate-900">Edit reporting</h2>
                 <p className="text-sm text-slate-600">
                   Update reporting details for {selectedUser.first_name} {selectedUser.last_name}.
                 </p>
@@ -653,14 +653,14 @@ const AdminUsersPage: React.FC = () => {
                 <button
                   type="button"
                   onClick={() => setIsEditOpen(false)}
-                  className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                  className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={saving}
-                  className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                  className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
                 >
                   {saving ? 'Saving...' : 'Save changes'}
                 </button>
@@ -685,7 +685,7 @@ const AdminUsersPage: React.FC = () => {
           <div className="w-full max-w-lg rounded-2xl bg-white p-6 shadow-xl">
             <div className="flex items-start justify-between">
               <div>
-                <h2 className="text-lg font-semibold text-slate-900">
+                <h2 className="text-2xl font-semibold text-slate-900">
                   {statusAction === 'deactivate' ? 'Deactivate user' : 'Activate user'}
                 </h2>
                 <p className="text-sm text-slate-600">
@@ -712,7 +712,7 @@ const AdminUsersPage: React.FC = () => {
               <button
                 type="button"
                 onClick={closeStatusModal}
-                className="rounded-full border border-slate-200 bg-white px-4 py-2 text-sm font-medium text-slate-700"
+                className="rounded-lg border border-slate-200 bg-white px-4 py-2 text-sm font-semibold text-slate-700"
               >
                 Cancel
               </button>
@@ -720,7 +720,7 @@ const AdminUsersPage: React.FC = () => {
                 type="button"
                 onClick={handleStatusSubmit}
                 disabled={saving}
-                className="rounded-full border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-medium text-white disabled:cursor-not-allowed disabled:opacity-60"
+                className="rounded-lg border border-blue-600 bg-blue-600 px-4 py-2 text-sm font-semibold text-white disabled:cursor-not-allowed disabled:opacity-60"
               >
                 {saving
                   ? statusAction === 'deactivate'
