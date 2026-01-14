@@ -427,7 +427,7 @@ const Dashboard: React.FC = () => {
                 </button>
               </div>
               <ul className="mt-6 space-y-3 text-sm text-slate-700">
-                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <Card as="li" className="flex items-center justify-between px-4 py-3">
                   <span className="flex items-center gap-2">
                     <span className="text-emerald-500">✓</span>
                     Add Users
@@ -439,8 +439,8 @@ const Dashboard: React.FC = () => {
                   >
                     Go to Users →
                   </Link>
-                </li>
-                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                </Card>
+                <Card as="li" className="flex items-center justify-between px-4 py-3">
                   <span className="flex items-center gap-2">
                     <span className="text-emerald-500">✓</span>
                     Add Rewards
@@ -452,8 +452,8 @@ const Dashboard: React.FC = () => {
                   >
                     Go to Rewards →
                   </Link>
-                </li>
-                <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                </Card>
+                <Card as="li" className="flex items-center justify-between px-4 py-3">
                   <span className="flex items-center gap-2">
                     <span className="text-emerald-500">✓</span>
                     Send Recognition
@@ -466,7 +466,7 @@ const Dashboard: React.FC = () => {
                   >
                     Open recognition →
                   </button>
-                </li>
+                </Card>
               </ul>
             </CardContent>
           </Card>

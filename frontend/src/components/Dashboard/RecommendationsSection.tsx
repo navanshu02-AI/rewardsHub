@@ -96,21 +96,23 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
         )}
 
         {showEmptyState && (
-          <div className="mt-6 flex flex-col items-start gap-3 rounded-lg border border-dashed border-slate-200 bg-slate-50 p-4">
-            <p className="text-sm font-medium text-slate-700">
-              {aiEnabled
-                ? 'We are still tailoring recommendations for you. In the meantime, browse what is available.'
-                : 'Personalized recommendations are not enabled for your workspace yet.'}
-            </p>
-            <Button
-              type="button"
-              variant="secondary"
-              onClick={onBrowseRewards}
-              data-testid="recommendations-browse-rewards"
-            >
-              Browse rewards
-            </Button>
-          </div>
+          <Card className="mt-6 border-dashed bg-slate-50">
+            <CardContent className="flex flex-col items-start gap-3 p-4">
+              <p className="text-sm font-medium text-slate-700">
+                {aiEnabled
+                  ? 'We are still tailoring recommendations for you. In the meantime, browse what is available.'
+                  : 'Personalized recommendations are not enabled for your workspace yet.'}
+              </p>
+              <Button
+                type="button"
+                variant="secondary"
+                onClick={onBrowseRewards}
+                data-testid="recommendations-browse-rewards"
+              >
+                Browse rewards
+              </Button>
+            </CardContent>
+          </Card>
         )}
       </CardContent>
     </Card>
