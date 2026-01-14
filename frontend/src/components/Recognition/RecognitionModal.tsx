@@ -497,10 +497,16 @@ const RecognitionModal: React.FC<RecognitionModalProps> = ({ isOpen, onClose, on
                 <div className="flex items-center justify-between gap-4 rounded-lg border border-gray-200 bg-gray-50 px-4 py-3">
                   <div>
                     <label className="text-sm font-medium text-gray-700" htmlFor="recognition-public">
-                      Show on feed
+                      Post to company feed
                     </label>
                     <p className="text-xs text-gray-500">
-                      Public recognitions appear in the company feed.
+                      If enabled, this recognition appears in the Company Feed tab.{' '}
+                      <a
+                        href="/recognitions?tab=feed"
+                        className="font-medium text-blue-600 underline-offset-2 hover:underline"
+                      >
+                        View feed
+                      </a>
                     </p>
                   </div>
                   <input
