@@ -11,7 +11,6 @@ import AcceptInvitePage from './components/Auth/AcceptInvitePage';
 import SetupOrgPage from './pages/SetupOrgPage';
 import Dashboard from './components/Dashboard/Dashboard';
 import RecognitionHistoryPage from './pages/RecognitionHistoryPage';
-import RecognitionFeedPage from './pages/RecognitionFeedPage';
 import RedemptionsPage from './pages/RedemptionsPage';
 import AllRedemptionsPage from './pages/AllRedemptionsPage';
 import PointsLedgerPage from './pages/PointsLedgerPage';
@@ -75,8 +74,7 @@ function App() {
                 path="/feed"
                 element={
                   <ProtectedRoute>
-                    <NavBar />
-                    <RecognitionFeedPage />
+                    <Navigate to="/recognitions?tab=feed" replace />
                   </ProtectedRoute>
                 }
               />

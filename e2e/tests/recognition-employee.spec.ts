@@ -95,8 +95,9 @@ test.describe('employee recognition flow', () => {
     );
 
     await page.goto('/feed');
+    await expect(page).toHaveURL(/\\/recognitions\\?tab=feed/);
     await feedResponsePromise;
-
+    await expect(page.getByRole('tab', { name: 'Company feed' })).toHaveAttribute('aria-selected', 'true');
     await expect(page.getByText(message)).toHaveCount(0);
   });
 
