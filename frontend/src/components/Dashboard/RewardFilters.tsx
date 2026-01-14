@@ -1,4 +1,5 @@
 import React, { useMemo, useState } from 'react';
+import { Card } from '../ui/Card';
 
 export interface FilterOption {
   value: string;
@@ -57,7 +58,7 @@ const RewardFilters: React.FC<RewardFiltersProps> = ({
         />
       </div>
 
-      <div className="w-full overflow-hidden rounded-lg border border-slate-200">
+      <Card className="w-full overflow-hidden">
         <button
           type="button"
           onClick={() => setIsExpanded((prev) => !prev)}
@@ -158,7 +159,7 @@ const RewardFilters: React.FC<RewardFiltersProps> = ({
             </div>
           </div>
         )}
-      </div>
+      </Card>
     </div>
   );
 };
