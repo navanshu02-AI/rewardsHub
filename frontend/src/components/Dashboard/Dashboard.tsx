@@ -12,6 +12,7 @@ import StatsCards from './StatsCards';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 import DashboardActions from './DashboardActions';
+import RewardFilters, { FilterOption } from './RewardFilters';
 
 interface Reward {
   id: string;
@@ -39,11 +40,6 @@ interface Reward {
   rating?: number;
   review_count: number;
   tags: string[];
-}
-
-interface FilterOption {
-  value: string;
-  label: string;
 }
 
 interface Recommendations {
@@ -643,89 +639,20 @@ const Dashboard: React.FC = () => {
       )}
 
       <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div className="flex flex-col gap-4 lg:flex-row lg:items-end">
-          <div className="flex-1">
-            <label className="text-sm font-medium text-slate-700" htmlFor="reward-search">
-              Search rewards
-            </label>
-            <input
-              id="reward-search"
-              type="text"
-              value={search}
-              onChange={(event) => setSearch(event.target.value)}
-              placeholder="Search by title, brand, or description"
-              className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-            />
-          </div>
-          <div className="flex flex-1 flex-wrap gap-4">
-            <div className="min-w-[180px] flex-1">
-              <label className="text-sm font-medium text-slate-700" htmlFor="reward-category">
-                Category
-              </label>
-              <select
-                id="reward-category"
-                value={category}
-                onChange={(event) => setCategory(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">All categories</option>
-                {categories.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <div className="min-w-[180px] flex-1">
-              <label className="text-sm font-medium text-slate-700" htmlFor="reward-type">
-                Reward type
-              </label>
-              <select
-                id="reward-type"
-                value={rewardType}
-                onChange={(event) => setRewardType(event.target.value)}
-                className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              >
-                <option value="">All types</option>
-                {rewardTypes.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </div>
-          </div>
-          <div className="flex flex-1 flex-wrap gap-4">
-            <div className="min-w-[140px] flex-1">
-              <label className="text-sm font-medium text-slate-700" htmlFor="min-points">
-                Min points
-              </label>
-              <input
-                id="min-points"
-                type="number"
-                min={0}
-                value={minPoints}
-                onChange={(event) => setMinPoints(event.target.value)}
-                placeholder="0"
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-            <div className="min-w-[140px] flex-1">
-              <label className="text-sm font-medium text-slate-700" htmlFor="max-points">
-                Max points
-              </label>
-              <input
-                id="max-points"
-                type="number"
-                min={0}
-                value={maxPoints}
-                onChange={(event) => setMaxPoints(event.target.value)}
-                placeholder="1000"
-                className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-              />
-            </div>
-          </div>
-        </div>
+        <RewardFilters
+          search={search}
+          onSearchChange={setSearch}
+          category={category}
+          onCategoryChange={setCategory}
+          rewardType={rewardType}
+          onRewardTypeChange={setRewardType}
+          minPoints={minPoints}
+          onMinPointsChange={setMinPoints}
+          maxPoints={maxPoints}
+          onMaxPointsChange={setMaxPoints}
+          categories={categories}
+          rewardTypes={rewardTypes}
+        />
       </section>
 
       <RewardsCatalog
