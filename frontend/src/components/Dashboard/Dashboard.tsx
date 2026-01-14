@@ -11,6 +11,7 @@ import RecognitionCallout from './RecognitionCallout';
 import StatsCards from './StatsCards';
 import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
+import DashboardActions from './DashboardActions';
 
 interface Reward {
   id: string;
@@ -360,6 +361,13 @@ const Dashboard: React.FC = () => {
     }
   };
 
+  const handleBrowseRecommendations = () => {
+    const recommendationsSection = document.getElementById('recommendations-section');
+    if (recommendationsSection) {
+      recommendationsSection.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  };
+
   const showGettingStarted =
     user?.role === 'hr_admin' && gettingStartedEligible && !gettingStartedDismissed;
 
@@ -387,13 +395,21 @@ const Dashboard: React.FC = () => {
         }}
         onSuccess={handleRedeemSuccess}
       />
-      <div className="mb-8">
+      <div className="mb-4">
         <h1 className="text-3xl font-bold text-gray-900">
           Welcome back, {user?.first_name}! {REGION_CONFIG[region]?.flag}
         </h1>
         <p className="mt-2 text-gray-600">
           Your personalized rewards and recognition dashboard tailored to your region
         </p>
+      </div>
+      <div className="mb-8">
+        <DashboardActions
+          onOpenRecognition={() => setShowRecognitionModal(true)}
+          onBrowseRewards={handleBrowseRewards}
+          onBrowseRecommendations={handleBrowseRecommendations}
+          aiEnabled={aiEnabled}
+        />
       </div>
 
       <section className="mb-8 grid gap-6 lg:grid-cols-2">

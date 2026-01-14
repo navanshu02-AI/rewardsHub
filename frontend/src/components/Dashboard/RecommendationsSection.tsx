@@ -55,7 +55,10 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
   const showEmptyState = !aiEnabled || !hasRecommendations;
 
   return (
-    <section className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+    <section
+      id="recommendations-section"
+      className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
+    >
       <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
         <div>
           <h2 className="text-xl font-semibold text-gray-900">Recommendations</h2>
