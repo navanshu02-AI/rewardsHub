@@ -1,5 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
+import { Card, CardContent } from '../ui/Card';
 
 interface StatsCardsProps {
   availablePoints: number;
@@ -75,17 +76,16 @@ const StatsCards: React.FC<StatsCardsProps> = ({
           </div>
         );
 
-        const cardClassName =
-          'bg-white p-6 rounded-lg shadow-sm border border-gray-200 transition-shadow hover:shadow-md';
-
         return stat.link ? (
-          <Link key={index} to={stat.link} className={cardClassName}>
-            {cardContent}
+          <Link key={index} to={stat.link} className="group">
+            <Card className="transition-shadow group-hover:shadow-md">
+              <CardContent>{cardContent}</CardContent>
+            </Card>
           </Link>
         ) : (
-          <div key={index} className={cardClassName}>
-            {cardContent}
-          </div>
+          <Card key={index}>
+            <CardContent>{cardContent}</CardContent>
+          </Card>
         );
       })}
     </div>
