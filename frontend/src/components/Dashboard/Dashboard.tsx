@@ -13,6 +13,7 @@ import RecognitionModal from '../Recognition/RecognitionModal';
 import RedeemRewardModal from '../Rewards/RedeemRewardModal';
 import DashboardActions from './DashboardActions';
 import RewardFilters, { FilterOption } from './RewardFilters';
+import SectionHeader from '../common/SectionHeader';
 
 interface Reward {
   id: string;
@@ -391,231 +392,236 @@ const Dashboard: React.FC = () => {
         }}
         onSuccess={handleRedeemSuccess}
       />
-      <div className="mb-4">
-        <h1 className="text-3xl font-bold text-gray-900">
-          Welcome back, {user?.first_name}! {REGION_CONFIG[region]?.flag}
-        </h1>
-        <p className="mt-2 text-gray-600">
-          Your personalized rewards and recognition dashboard tailored to your region
-        </p>
-      </div>
-      <div className="mb-8">
+      <div className="space-y-8">
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900">
+            Welcome back, {user?.first_name}! {REGION_CONFIG[region]?.flag}
+          </h1>
+          <p className="mt-2 text-gray-600">
+            Your personalized rewards and recognition dashboard tailored to your region
+          </p>
+        </div>
         <DashboardActions
           onOpenRecognition={() => setShowRecognitionModal(true)}
           onBrowseRewards={handleBrowseRewards}
           onBrowseRecommendations={handleBrowseRecommendations}
           aiEnabled={aiEnabled}
         />
-      </div>
 
-      <section className="mb-8 grid gap-6 lg:grid-cols-2">
-        <RecognitionCallout onOpenRecognition={() => setShowRecognitionModal(true)} />
-        <RecommendationsSection
-          recommendations={recommendations}
-          onRedeemReward={redeemReward}
-          userPoints={user?.points_balance || 0}
-          aiEnabled={aiEnabled}
-          onBrowseRewards={handleBrowseRewards}
-        />
-      </section>
-
-      {showGettingStarted && (
-        <section
-          className="mt-6 rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"
-          data-testid="getting-started-card"
-        >
-          <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-            <div>
-              <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
-                Getting started
-              </p>
-              <h2 className="mt-2 text-2xl font-semibold text-slate-900">
-                Set up your rewards program in minutes
-              </h2>
-              <p className="mt-1 text-sm text-slate-600">
-                Add your first teammates, build a reward catalog, and send recognition to kick things off.
-              </p>
-            </div>
-            <button
-              type="button"
-              onClick={handleDismissGettingStarted}
-              className="self-start text-sm font-medium text-slate-500 hover:text-slate-700"
-              data-testid="getting-started-dismiss"
-            >
-              Dismiss
-            </button>
-          </div>
-          <ul className="mt-6 space-y-3 text-sm text-slate-700">
-            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-              <span className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span>
-                Add Users
-              </span>
-              <Link
-                to="/admin/users"
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                data-testid="getting-started-add-users"
-              >
-                Go to Users →
-              </Link>
-            </li>
-            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-              <span className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span>
-                Add Rewards
-              </span>
-              <Link
-                to="/admin/rewards"
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                data-testid="getting-started-add-rewards"
-              >
-                Go to Rewards →
-              </Link>
-            </li>
-            <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
-              <span className="flex items-center gap-2">
-                <span className="text-emerald-500">✓</span>
-                Send Recognition
-              </span>
-              <button
-                type="button"
-                onClick={() => setShowRecognitionModal(true)}
-                className="text-sm font-semibold text-blue-600 hover:text-blue-700"
-                data-testid="getting-started-send-recognition"
-              >
-                Open recognition →
-              </button>
-            </li>
-          </ul>
+        <section className="grid gap-6 lg:grid-cols-2">
+          <RecognitionCallout onOpenRecognition={() => setShowRecognitionModal(true)} />
+          <RecommendationsSection
+            recommendations={recommendations}
+            onRedeemReward={redeemReward}
+            userPoints={user?.points_balance || 0}
+            aiEnabled={aiEnabled}
+            onBrowseRewards={handleBrowseRewards}
+          />
         </section>
-      )}
 
-      <StatsCards
-        availablePoints={availablePoints}
-        totalPointsEarned={totalPointsEarned}
-        recognitionCount={recognitionCount}
-        rewardsCount={rewards.length}
-      />
-
-      {user?.role === 'hr_admin' && analytics && (
-        <section className="mt-10">
-          <div className="flex items-center justify-between mb-4">
-            <div>
-              <h2 className="text-2xl font-semibold text-gray-900">HR dashboard</h2>
-              <p className="text-sm text-gray-600">Team recognition and points activity snapshot</p>
-            </div>
-          </div>
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <p className="text-sm text-slate-500">Recognitions (7 days)</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{analytics.recognitions_last_7_days}</p>
-              <p className="text-xs text-slate-500 mt-1">Last week</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <p className="text-sm text-slate-500">Recognitions (30 days)</p>
-              <p className="mt-2 text-3xl font-semibold text-slate-900">{analytics.recognitions_last_30_days}</p>
-              <p className="text-xs text-slate-500 mt-1">Last month</p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <p className="text-sm text-slate-500">Top department</p>
-              <p className="mt-2 text-xl font-semibold text-slate-900">
-                {analytics.top_departments[0]?.department ?? 'No data'}
-              </p>
-              <p className="text-xs text-slate-500 mt-1">
-                {analytics.top_departments[0]?.recognition_count ?? 0} recognitions
-              </p>
-            </div>
-            <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
-              <p className="text-sm text-slate-500">Points activity</p>
-              <div className="mt-2 flex items-center justify-between">
-                <div>
-                  <p className="text-xs text-slate-500">Awarded</p>
-                  <p className="text-lg font-semibold text-slate-900">{analytics.points_summary.awarded}</p>
-                </div>
-                <div className="h-10 w-px bg-slate-200" aria-hidden />
-                <div>
-                  <p className="text-xs text-slate-500">Redeemed</p>
-                  <p className="text-lg font-semibold text-slate-900">{analytics.points_summary.redeemed}</p>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-      )}
-
-      {aiEnabled && (
-        <section className="mt-10">
-          <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
-            <div className="flex flex-col gap-2">
-              <h2 className="text-xl font-semibold text-gray-900">Recommend a gift</h2>
-              <p className="text-sm text-slate-600">
-                Choose a recipient and budget to find thoughtful rewards to send.
-              </p>
-            </div>
-            <div className="mt-4 grid gap-4">
+        {showGettingStarted && (
+          <section
+            className="rounded-2xl border border-blue-100 bg-white p-6 shadow-sm"
+            data-testid="getting-started-card"
+          >
+            <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
               <div>
-                <label className="text-sm font-medium text-slate-700" htmlFor="gift-recipient">
-                  Recipient
-                </label>
-                <select
-                  id="gift-recipient"
-                  data-testid="gift-recipient"
-                  value={selectedRecipientId}
-                  onChange={(event) => setSelectedRecipientId(event.target.value)}
-                  className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                >
-                  <option value="">Select a teammate</option>
-                  {giftRecipients.map((recipient) => (
-                    <option key={recipient.id} value={recipient.id}>
-                      {recipient.first_name} {recipient.last_name}
-                      {recipient.department ? ` · ${recipient.department}` : ''}
-                    </option>
-                  ))}
-                </select>
-              </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-min">
-                    Budget min
-                  </label>
-                  <input
-                    id="gift-budget-min"
-                    type="number"
-                    min={0}
-                    value={giftBudgetMin}
-                    onChange={(event) => setGiftBudgetMin(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
-                <div>
-                  <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-max">
-                    Budget max
-                  </label>
-                  <input
-                    id="gift-budget-max"
-                    type="number"
-                    min={0}
-                    value={giftBudgetMax}
-                    onChange={(event) => setGiftBudgetMax(event.target.value)}
-                    className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
-                  />
-                </div>
+                <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
+                  Getting started
+                </p>
+                <h2 className="mt-2 text-2xl font-semibold text-slate-900">
+                  Set up your rewards program in minutes
+                </h2>
+                <p className="mt-1 text-sm text-slate-600">
+                  Add your first teammates, build a reward catalog, and send recognition to kick things off.
+                </p>
               </div>
               <button
                 type="button"
-                data-testid="gift-recommendations-submit"
-                onClick={handleGiftRecommendations}
-                disabled={giftLoading}
-                className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                onClick={handleDismissGettingStarted}
+                className="self-start text-sm font-medium text-slate-500 hover:text-slate-700"
+                data-testid="getting-started-dismiss"
               >
-                {giftLoading ? 'Finding gifts…' : 'Get gift recommendations'}
+                Dismiss
               </button>
-              {giftError && (
-                <p className="text-sm text-amber-600" role="status">
-                  {giftError}
-                </p>
-              )}
             </div>
+            <ul className="mt-6 space-y-3 text-sm text-slate-700">
+              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <span className="flex items-center gap-2">
+                  <span className="text-emerald-500">✓</span>
+                  Add Users
+                </span>
+                <Link
+                  to="/admin/users"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  data-testid="getting-started-add-users"
+                >
+                  Go to Users →
+                </Link>
+              </li>
+              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <span className="flex items-center gap-2">
+                  <span className="text-emerald-500">✓</span>
+                  Add Rewards
+                </span>
+                <Link
+                  to="/admin/rewards"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  data-testid="getting-started-add-rewards"
+                >
+                  Go to Rewards →
+                </Link>
+              </li>
+              <li className="flex items-center justify-between rounded-lg border border-slate-200 px-4 py-3">
+                <span className="flex items-center gap-2">
+                  <span className="text-emerald-500">✓</span>
+                  Send Recognition
+                </span>
+                <button
+                  type="button"
+                  onClick={() => setShowRecognitionModal(true)}
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  data-testid="getting-started-send-recognition"
+                >
+                  Open recognition →
+                </button>
+              </li>
+            </ul>
+          </section>
+        )}
+
+        <StatsCards
+          availablePoints={availablePoints}
+          totalPointsEarned={totalPointsEarned}
+          recognitionCount={recognitionCount}
+          rewardsCount={rewards.length}
+        />
+
+        {user?.role === 'hr_admin' && analytics && (
+          <section className="space-y-4">
+            <SectionHeader
+              title="HR dashboard"
+              subtitle="Team recognition and points activity snapshot"
+            />
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <p className="text-sm text-slate-500">Recognitions (7 days)</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">
+                  {analytics.recognitions_last_7_days}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Last week</p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <p className="text-sm text-slate-500">Recognitions (30 days)</p>
+                <p className="mt-2 text-3xl font-semibold text-slate-900">
+                  {analytics.recognitions_last_30_days}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">Last month</p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <p className="text-sm text-slate-500">Top department</p>
+                <p className="mt-2 text-xl font-semibold text-slate-900">
+                  {analytics.top_departments[0]?.department ?? 'No data'}
+                </p>
+                <p className="text-xs text-slate-500 mt-1">
+                  {analytics.top_departments[0]?.recognition_count ?? 0} recognitions
+                </p>
+              </div>
+              <div className="bg-white border border-slate-200 rounded-xl p-4 shadow-sm">
+                <p className="text-sm text-slate-500">Points activity</p>
+                <div className="mt-2 flex items-center justify-between">
+                  <div>
+                    <p className="text-xs text-slate-500">Awarded</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {analytics.points_summary.awarded}
+                    </p>
+                  </div>
+                  <div className="h-10 w-px bg-slate-200" aria-hidden />
+                  <div>
+                    <p className="text-xs text-slate-500">Redeemed</p>
+                    <p className="text-lg font-semibold text-slate-900">
+                      {analytics.points_summary.redeemed}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </section>
+        )}
+
+        {aiEnabled && (
+          <section>
+            <div className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm">
+              <div className="flex flex-col gap-2">
+                <h2 className="text-xl font-semibold text-gray-900">Recommend a gift</h2>
+                <p className="text-sm text-slate-600">
+                  Choose a recipient and budget to find thoughtful rewards to send.
+                </p>
+              </div>
+              <div className="mt-4 grid gap-4">
+                <div>
+                  <label className="text-sm font-medium text-slate-700" htmlFor="gift-recipient">
+                    Recipient
+                  </label>
+                  <select
+                    id="gift-recipient"
+                    data-testid="gift-recipient"
+                    value={selectedRecipientId}
+                    onChange={(event) => setSelectedRecipientId(event.target.value)}
+                    className="mt-1 w-full rounded-lg border border-slate-200 bg-white px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                  >
+                    <option value="">Select a teammate</option>
+                    {giftRecipients.map((recipient) => (
+                      <option key={recipient.id} value={recipient.id}>
+                        {recipient.first_name} {recipient.last_name}
+                        {recipient.department ? ` · ${recipient.department}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div className="grid grid-cols-2 gap-4">
+                  <div>
+                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-min">
+                      Budget min
+                    </label>
+                    <input
+                      id="gift-budget-min"
+                      type="number"
+                      min={0}
+                      value={giftBudgetMin}
+                      onChange={(event) => setGiftBudgetMin(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-slate-700" htmlFor="gift-budget-max">
+                      Budget max
+                    </label>
+                    <input
+                      id="gift-budget-max"
+                      type="number"
+                      min={0}
+                      value={giftBudgetMax}
+                      onChange={(event) => setGiftBudgetMax(event.target.value)}
+                      className="mt-1 w-full rounded-lg border border-slate-200 px-3 py-2 text-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+                    />
+                  </div>
+                </div>
+                <button
+                  type="button"
+                  data-testid="gift-recommendations-submit"
+                  onClick={handleGiftRecommendations}
+                  disabled={giftLoading}
+                  className="inline-flex items-center justify-center rounded-lg bg-blue-600 px-4 py-2 text-sm font-semibold text-white transition hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-blue-300"
+                >
+                  {giftLoading ? 'Finding gifts…' : 'Get gift recommendations'}
+                </button>
+                {giftError && (
+                  <p className="text-sm text-amber-600" role="status">
+                    {giftError}
+                  </p>
+                )}
+              </div>
 
             {giftRecommendations.length > 0 && (
               <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2">
@@ -634,32 +640,33 @@ const Dashboard: React.FC = () => {
                 No gifts returned yet. Adjust the budget or choose a different recipient.
               </p>
             )}
-          </div>
+            </div>
+          </section>
+        )}
+
+        <section className="rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+          <RewardFilters
+            search={search}
+            onSearchChange={setSearch}
+            category={category}
+            onCategoryChange={setCategory}
+            rewardType={rewardType}
+            onRewardTypeChange={setRewardType}
+            minPoints={minPoints}
+            onMinPointsChange={setMinPoints}
+            maxPoints={maxPoints}
+            onMaxPointsChange={setMaxPoints}
+            categories={categories}
+            rewardTypes={rewardTypes}
+          />
         </section>
-      )}
 
-      <section className="mb-6 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <RewardFilters
-          search={search}
-          onSearchChange={setSearch}
-          category={category}
-          onCategoryChange={setCategory}
-          rewardType={rewardType}
-          onRewardTypeChange={setRewardType}
-          minPoints={minPoints}
-          onMinPointsChange={setMinPoints}
-          maxPoints={maxPoints}
-          onMaxPointsChange={setMaxPoints}
-          categories={categories}
-          rewardTypes={rewardTypes}
+        <RewardsCatalog
+          rewards={rewards}
+          onRedeemReward={redeemReward}
+          userPoints={user?.points_balance || 0}
         />
-      </section>
-
-      <RewardsCatalog
-        rewards={rewards}
-        onRedeemReward={redeemReward}
-        userPoints={user?.points_balance || 0}
-      />
+      </div>
     </div>
   );
 };

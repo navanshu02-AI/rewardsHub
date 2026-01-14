@@ -1,5 +1,6 @@
 import React from 'react';
 import RewardCard from '../Rewards/RewardCard';
+import SectionHeader from '../common/SectionHeader';
 
 interface Reward {
   id: string;
@@ -59,26 +60,26 @@ const RecommendationsSection: React.FC<RecommendationsSectionProps> = ({
       id="recommendations-section"
       className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm"
     >
-      <div className="flex flex-col gap-4 lg:flex-row lg:items-start lg:justify-between">
-        <div>
-          <h2 className="text-xl font-semibold text-gray-900">Recommendations</h2>
-          <p className="mt-2 text-sm text-slate-600">
-            {hasRecommendations
-              ? recommendations?.reason
-              : 'Explore the rewards catalog for something that fits the moment.'}
-          </p>
-        </div>
-        {hasRecommendations && (
-          <div className="text-left lg:text-right">
-            <div className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
-              {Math.round((recommendations?.confidence_score ?? 0) * 100)}% Match
+      <SectionHeader
+        title="Recommendations"
+        subtitle={
+          hasRecommendations
+            ? recommendations?.reason
+            : 'Explore the rewards catalog for something that fits the moment.'
+        }
+        action={
+          hasRecommendations ? (
+            <div className="text-left lg:text-right">
+              <div className="inline-flex items-center rounded-full bg-blue-100 px-3 py-1 text-sm font-medium text-blue-800">
+                {Math.round((recommendations?.confidence_score ?? 0) * 100)}% Match
+              </div>
+              <p className="mt-1 text-xs text-gray-500">
+                Based on: {recommendations?.personalization_factors.join(', ')}
+              </p>
             </div>
-            <p className="mt-1 text-xs text-gray-500">
-              Based on: {recommendations?.personalization_factors.join(', ')}
-            </p>
-          </div>
-        )}
-      </div>
+          ) : null
+        }
+      />
 
       {!showEmptyState && (
         <div className="mt-6 grid grid-cols-1 gap-6 md:grid-cols-2 xl:grid-cols-3">

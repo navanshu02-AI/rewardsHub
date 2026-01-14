@@ -1,5 +1,6 @@
 import React from 'react';
 import RewardCard from '../Rewards/RewardCard';
+import SectionHeader from '../common/SectionHeader';
 
 interface Reward {
   id: string;
@@ -41,13 +42,11 @@ const RewardsCatalog: React.FC<RewardsCatalogProps> = ({
   userPoints
 }) => {
   return (
-    <div className="mb-8" id="rewards-catalog">
-      <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-bold text-gray-900">Rewards Catalog 🛍️</h2>
-        <div className="text-sm text-gray-500">
-          {rewards.length} rewards available
-        </div>
-      </div>
+    <section id="rewards-catalog" className="space-y-6">
+      <SectionHeader
+        title="Rewards Catalog 🛍️"
+        action={<div className="text-sm text-gray-500">{rewards.length} rewards available</div>}
+      />
       
       {rewards.length > 0 ? (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -71,7 +70,7 @@ const RewardsCatalog: React.FC<RewardsCatalogProps> = ({
           <p className="text-gray-500">Add rewards for your preferred regions to get started!</p>
         </div>
       )}
-    </div>
+    </section>
   );
 };
 
