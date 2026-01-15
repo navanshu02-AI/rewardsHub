@@ -1,6 +1,6 @@
 import React from 'react';
 import RewardCard from '../Rewards/RewardCard';
-import SectionHeader from '../common/SectionHeader';
+import SectionHeader from '../Common/SectionHeader';
 import Button from '../ui/Button';
 import { Card, CardContent } from '../ui/Card';
 

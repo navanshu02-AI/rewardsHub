@@ -1,7 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import api from '../lib/api';
 import { useAuth } from '../contexts/AuthContext';
-import SectionHeader from '../components/common/SectionHeader';
+import SectionHeader from '../components/Common/SectionHeader';
 
 interface AnalyticsOverview {
   recognitions_last_7_days: number;
